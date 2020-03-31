@@ -21,6 +21,6 @@
 #define COMPILER_TEMPLATE_LOOP_START_MARKER_LENGTH        1u
 #define COMPILER_TEMPLATE_LOOP_END_MARKER_LENGTH          1u
 
-void compileFile(const char* path);
+void compileFile(const char* path, const char* outputPath);
 
 #endif

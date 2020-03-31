@@ -37,26 +37,28 @@ void compileFile(const char* path, const char* outputPath) {
     fclose(input);
 
     uint8_t* output = (uint8_t*) malloc(inputSize);
-    size_t outputSize = 0;
-    size_t outputCapacity = inputSize;
+    size_t   outputSize = 0;
+    size_t   outputCapacity = inputSize;
 
     uint8_t* start = inputBuffer;
     uint8_t* end = inputBuffer + mem_find(inputBuffer, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
-    size_t length = end - start;
+    size_t   length = end - start;
 
     uint8_t* limit = inputBuffer + inputSize;
 
-    size_t remainingLength;
-    size_t index;
-    size_t templateStartIndex;
+    size_t   remainingLength;
+    size_t   index;
+    size_t   templateStartIndex;
 
     while(end < limit) {
         if(start != end) {
             LOG_DEBUG("\n--> Found plaintext at %zu\n", start - inputBuffer);
+
             if(outputSize + 1 + COMPILER_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
                 outputCapacity += REALLOC_STEP_SIZE;
                 output = (uint8_t*) realloc(output, outputCapacity);
             }
+
             LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
             outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_PLAINTEXT_MARKER, COMPILER_PLAINTEXT_MARKER_LENGTH, start, length);
             LOG_DEBUG("done\n");
@@ -70,18 +72,16 @@ void compileFile(const char* path, const char* outputPath) {
         while(*end == ' ' || *end == '\t')
             ++end;
 
-        // Template conditional start.
         if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
             LOG_DEBUG("Detected template conditional start\n");
+
             end += Options::getTemplateConditionalStartLength();
 
             while(*end == ' ' || *end == '\t')
                 ++end;
 
             start = end;
-
             remainingLength = inputSize - (end - inputBuffer);
-
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
             if(index == remainingLength) {
@@ -102,6 +102,7 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_CONDITIONAL_START_MARKER, COMPILER_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
@@ -110,10 +111,9 @@ void compileFile(const char* path, const char* outputPath) {
             end = start;
         } else if(membcmp(end, Options::getTemplateConditionalEnd(), Options::getTemplateConditionalEndLength())) {
             LOG_DEBUG("Detected template conditional end\n");
+
             start = end;
-
             remainingLength = inputSize - (end - inputBuffer);
-
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
             if(index == remainingLength) {
@@ -134,13 +134,15 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template conditional end as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_CONDITIONAL_END_MARKER, COMPILER_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
 
                 end = start;
-            } else { // Template.
+            } else {
                 LOG_DEBUG("Re-detected as ordinary template\n");
+
                 ++end;
                 length = end - start;
 
@@ -148,6 +150,7 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_MARKER, COMPILER_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
@@ -156,6 +159,7 @@ void compileFile(const char* path, const char* outputPath) {
             }
         } if(membcmp(end, Options::getTemplateLoopStart(), Options::getTemplateLoopStartLength())) {
             LOG_DEBUG("Detected template loop start\n");
+
             end += Options::getTemplateLoopStartLength();
 
             while(*end == ' ' || *end == '\t')
@@ -165,10 +169,9 @@ void compileFile(const char* path, const char* outputPath) {
 
             uint8_t* leftStart = start;
             uint8_t* leftEnd = start;
-            size_t sepIndex;
+            size_t   sepIndex;
 
             remainingLength = inputSize - (end - inputBuffer);
-
             sepIndex = mem_find(end, remainingLength, Options::getTemplateLoopSeparator(), Options::getTemplateLoopSeparatorLength(), Options::getTemplateLoopSeparatorLookup());
 
             if(sepIndex == remainingLength) {
@@ -230,15 +233,15 @@ void compileFile(const char* path, const char* outputPath) {
 
             outputSize += BDP::writeValue(Global::BDP832, output + outputSize, tempBuffer, tempBufferSize);
             free(tempBuffer);
+
             LOG_DEBUG("done\n");
 
             end = leftStart;
         } else if(membcmp(end, Options::getTemplateLoopEnd(), Options::getTemplateLoopEndLength())) {
             LOG_DEBUG("Detected template loop end\n");
+
             start = end;
-
             remainingLength = inputSize - (end - inputBuffer);
-
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
             if(index == remainingLength) {
@@ -259,13 +262,15 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_LOOP_END_MARKER, COMPILER_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
 
                 end = start;
-            } else { // Template.
+            } else {
                 LOG_DEBUG("Re-detected as ordinary template\n");
+
                 ++end;
                 length = end - start;
 
@@ -273,6 +278,7 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_MARKER, COMPILER_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
@@ -281,9 +287,7 @@ void compileFile(const char* path, const char* outputPath) {
             }
         } else { // Template.
             start = end;
-
             remainingLength = inputSize - (end - inputBuffer);
-
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
             if(index == remainingLength) {
@@ -302,6 +306,7 @@ void compileFile(const char* path, const char* outputPath) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
+
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
                 outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_MARKER, COMPILER_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n");
@@ -318,18 +323,18 @@ void compileFile(const char* path, const char* outputPath) {
             break;
 
         remainingLength = inputSize - (start - inputBuffer);
-
         end = start + mem_find(start, remainingLength, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
-
         length = end - start;
     }
 
     if(end > start) {
         LOG_DEBUG("\n--> Found plaintext at %zu\n", start - inputBuffer);
+
         if(outputSize + 1 + COMPILER_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
             outputCapacity += REALLOC_STEP_SIZE;
             output = (uint8_t*) realloc(output, outputCapacity);
         }
+
         LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
         outputSize += BDP::writePair(Global::BDP832, output + outputSize, COMPILER_PLAINTEXT_MARKER, COMPILER_PLAINTEXT_MARKER_LENGTH, start, length);
         LOG_DEBUG("done\n")
@@ -345,5 +350,6 @@ void compileFile(const char* path, const char* outputPath) {
     FILE* dest = fopen(outputPath, "wb");
     fwrite(output, 1, outputSize, dest);
     fclose(dest);
+    
     free(output);
 }

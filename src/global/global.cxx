@@ -12,6 +12,7 @@ void Global::init() {
 }
 
 void Global::destroy() {
+    printf("\nDestroying...\n");
     delete Global::BDP832;
 
     Global::Cache::destroy();

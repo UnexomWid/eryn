@@ -27,10 +27,14 @@ void Compile(const Napi::CallbackInfo& info) {
     const char* outputPath = info[1].As<Napi::String>().Utf8Value().c_str();
 
     try {
-        compileFile(path);
+        compileFile(path, outputPath);
     } catch(std::exception &e) {
         fprintf(stderr, "%s\n", e.what());
     }
+}
+
+void Destroy(void* args) {
+    Global::destroy();
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
