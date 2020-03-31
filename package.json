@@ -1,0 +1,18 @@
+{
+  "name": "eryn",
+  "version": "1.0.0",
+  "description": "Server-side render framework",
+  "main": "index.js",
+  "scripts": {
+    "install": "prebuildify-load || cmake-js compile"
+  },
+  "dependencies": {
+    "cmake-js": "^6.1.0",
+    "prebuildify-load": "^2.0.0"
+  },
+  "author": "UnexomWid",
+  "license": "MIT",
+  "devDependencies": {
+    "node-addon-api": "github:nodejs/node-addon-api"
+  }
+}
