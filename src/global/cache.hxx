@@ -1,5 +1,5 @@
-#ifndef SERA_GLOBAL_CACHE_HXX_GUARD
-#define SERA_GLOBAL_CACHE_HXX_GUARD
+#ifndef ERYN_GLOBAL_CACHE_HXX_GUARD
+#define ERYN_GLOBAL_CACHE_HXX_GUARD
 
 #include <vector>
 #include <cstdint>
