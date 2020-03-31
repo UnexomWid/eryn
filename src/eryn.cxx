@@ -32,7 +32,7 @@ void Compile(const Napi::CallbackInfo& info) {
     try {
         compileFile(path, outputPath);
     } catch(std::exception &e) {
-        fprintf(stderr, "%s\n", e.what());
+        throw Napi::Error::New(env, e.what());
     }
 }
 

@@ -1,6 +1,5 @@
 #include "mem_find.h"
 
-#include <stddef.h>
 #include <string.h>
 
 size_t mem_find(const uint8_t* source, size_t sourceSize, const uint8_t* pattern, uint8_t patternSize, const uint8_t* lookup) {

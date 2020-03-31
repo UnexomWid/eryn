@@ -19,6 +19,7 @@ using Global::Options;
 
 void compileFile(const char* path, const char* outputPath) {
     LOG_INFO("===> Compiling file '%s'\n", path);
+
     FILE* input = fopen(path, "rb");
 
     if(input == NULL) {
@@ -54,7 +55,7 @@ void compileFile(const char* path, const char* outputPath) {
         if(start != end) {
             LOG_DEBUG("\n--> Found plaintext at %zu\n", start - inputBuffer);
 
-            if(outputSize + 1 + COMPILER_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
+            while(outputSize + 1 + COMPILER_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
                 outputCapacity += REALLOC_STEP_SIZE;
                 output = (uint8_t*) realloc(output, outputCapacity);
             }
@@ -98,7 +99,7 @@ void compileFile(const char* path, const char* outputPath) {
             if(start != end) { // Template conditional start.
                 length = end - start;
 
-                if(outputSize + 1 + COMPILER_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + 1 + COMPILER_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + 4 + length > outputCapacity) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
@@ -130,7 +131,7 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
                 length = 0;
 
-                if(outputSize + 1 + COMPILER_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + 1 + COMPILER_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + 4 + length > outputCapacity) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
@@ -146,7 +147,7 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
                 length = end - start;
 
-                if(outputSize + 1 + COMPILER_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + 1 + COMPILER_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
                     outputCapacity += REALLOC_STEP_SIZE;
                     output = (uint8_t*) realloc(output, outputCapacity);
                 }
@@ -350,6 +351,6 @@ void compileFile(const char* path, const char* outputPath) {
     FILE* dest = fopen(outputPath, "wb");
     fwrite(output, 1, outputSize, dest);
     fclose(dest);
-    
+
     free(output);
 }
