@@ -1,4 +1,7 @@
+#define NAPI_VERSION 5
+
 #include "napi.h"
+#include <node_api.h>
 
 #include "global/global.hxx"
 #include "compiler/compiler.hxx"
@@ -39,6 +42,8 @@ void Destroy(void* args) {
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     Global::init();
+
+    napi_add_env_cleanup_hook((napi_env) env, Destroy, nullptr);
 
     exports.Set(Napi::String::New(env, "eval"),
                 Napi::Function::New(env, Eval));
