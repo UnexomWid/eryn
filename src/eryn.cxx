@@ -24,6 +24,7 @@ void Compile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     const char* path = info[0].As<Napi::String>().Utf8Value().c_str();
+    const char* outputPath = info[1].As<Napi::String>().Utf8Value().c_str();
 
     try {
         compileFile(path);

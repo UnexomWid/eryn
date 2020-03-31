@@ -17,7 +17,7 @@
 using Global::Cache;
 using Global::Options;
 
-void compileFile(const char* path) {
+void compileFile(const char* path, const char* outputPath) {
     LOG_INFO("===> Compiling file '%s'\n", path);
     FILE* input = fopen(path, "rb");
 
@@ -342,7 +342,7 @@ void compileFile(const char* path) {
 
     free(inputBuffer);
 
-    FILE* dest = fopen("C:/Users/UnexomWid/Desktop/output.txt", "wb");
+    FILE* dest = fopen(outputPath, "wb");
     fwrite(output, 1, outputSize, dest);
     fclose(dest);
     free(output);
