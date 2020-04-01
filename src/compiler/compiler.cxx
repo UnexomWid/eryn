@@ -301,7 +301,7 @@ void compileFile(const char* path, const char* outputPath) {
 
                 uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
 
-                CompilationException exception("Unexpected end of template", "did you forget to provide the right argument before the separator?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk, chunkIndex);
 
                 free(chunk);
                 free(output);
