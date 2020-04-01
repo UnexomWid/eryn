@@ -21,6 +21,8 @@
 #define COMPILER_TEMPLATE_LOOP_START_MARKER_LENGTH        1u
 #define COMPILER_TEMPLATE_LOOP_END_MARKER_LENGTH          1u
 
+#define COMPILER_ERROR_CHUNK_SIZE 15
+
 void compileFile(const char* path, const char* outputPath);
 
 #endif
