@@ -41,6 +41,7 @@ void Destroy(void* args) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+    printf("[eryn] Init\n");
     Global::init();
 
     napi_add_env_cleanup_hook((napi_env) env, Destroy, nullptr);

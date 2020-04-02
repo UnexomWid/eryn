@@ -90,13 +90,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -105,6 +106,26 @@ void compileFile(const char* path, const char* outputPath) {
                 throw exception;
             }
 
+            if(index == 0) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = end - inputBuffer - 1;
+
+                mem_lncol(inputBuffer, errorIndex, &ln, &col);
+
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+
+                CompilationException exception("Unexpected template end", "did you forget to write the condition?", ln, col, chunk, chunkIndex, chunkSize);
+
+                free(chunk);
+                free(output);
+                free(inputBuffer);
+
+                throw exception;
+            }
+            
             LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
 
             end = end + index - 1;
@@ -137,13 +158,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -211,12 +233,13 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected end of template", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected end of template", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -227,13 +250,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + sepIndex) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -244,13 +268,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = end - inputBuffer;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -261,13 +286,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -295,13 +321,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (leftStart + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -352,13 +379,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);
@@ -404,6 +432,148 @@ void compileFile(const char* path, const char* outputPath) {
 
                 end = start;
             }
+        } if(membcmp(end, Options::getTemplateComponent(), Options::getTemplateComponentLength())) {
+            LOG_DEBUG("Detected template component\n");
+
+            end += Options::getTemplateComponentLength();
+
+            while((*end == ' ' || *end == '\t') && end < inputBuffer + inputSize)
+                ++end;
+
+            start = end;
+
+            uint8_t* leftStart = start;
+            uint8_t* leftEnd = start;
+            size_t   sepIndex;
+
+            remainingLength = inputSize - (end - inputBuffer);
+            sepIndex = mem_find(end, remainingLength, Options::getTemplateComponentSeparator(), Options::getTemplateComponentSeparatorLength(), Options::getTemplateComponentSeparatorLookup());
+            index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+
+            if(sepIndex > index) {
+                
+            } else if(sepIndex == remainingLength) {
+                
+            } else if(sepIndex == 0) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = end - inputBuffer;
+
+                mem_lncol(inputBuffer, errorIndex, &ln, &col);
+
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+
+                CompilationException exception("Unexpected separator", "did you forget to provide the component name before the separator?", ln, col, chunk, chunkIndex, chunkSize);
+
+                free(chunk);
+                free(output);
+                free(inputBuffer);
+
+                throw exception;
+            } else if(index == remainingLength) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - inputBuffer - 1;
+
+                mem_lncol(inputBuffer, errorIndex, &ln, &col);
+
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
+
+                free(chunk);
+                free(output);
+                free(inputBuffer);
+
+                throw exception;
+            } 
+            
+            if(index == 0) {
+                LOG_DEBUG("Detected empty template component");
+            } else {
+                LOG_DEBUG("Found template component at %zu\n", end + sepIndex - inputBuffer);
+                LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+
+                if(sepIndex < index) {
+                    leftEnd = end + sepIndex - 1;
+
+                    while(*leftEnd == ' ' || *leftEnd == '\t')
+                        --leftEnd;
+                    ++leftEnd;
+
+                    start = end + sepIndex + Options::getTemplateComponentSeparatorLength();
+                    end = end + index - 1;
+                    while(*end == ' ' || *end == '\t')
+                        --end;
+                    ++end;
+
+                    if(end == start) {
+                        size_t ln;
+                        size_t col;
+                        size_t chunkIndex;
+                        size_t chunkSize;
+                        size_t errorIndex = (leftStart + index) - inputBuffer - 1;
+
+                        mem_lncol(inputBuffer, errorIndex, &ln, &col);
+
+                        uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+
+                        CompilationException exception("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk, chunkIndex, chunkSize);
+
+                        free(chunk);
+                        free(output);
+                        free(inputBuffer);
+
+                        throw exception;
+                    }
+
+                    while(*start == ' ' || *start == '\t')
+                        ++start;
+                    length = end - start;
+                } else {
+                    leftEnd = end + index - 1;
+
+                    while(*leftEnd == ' ' || *leftEnd == '\t')
+                        --leftEnd;
+                    ++leftEnd;
+
+                    start = leftStart;
+                    end = leftEnd;
+                    length = 0;
+                }
+
+                size_t leftLength = leftEnd - leftStart;
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + COMPILER_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity) {
+                    outputCapacity += REALLOC_STEP_SIZE;
+                    output = (uint8_t*) realloc(output, outputCapacity);
+                }
+
+                LOG_DEBUG("Writing template component as BDP832 pair %zu -> %zu...", leftStart - inputBuffer, end - inputBuffer);
+                outputSize += BDP::writeName(Global::BDP832, output + outputSize, COMPILER_TEMPLATE_COMPONENT_MARKER, COMPILER_TEMPLATE_COMPONENT_MARKER_LENGTH);
+
+                size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + length;
+                uint8_t* tempBuffer = (uint8_t*) malloc(tempBufferSize);
+
+                BDP::writeValue(Global::BDP832, tempBuffer, leftStart, leftLength);
+                BDP::writeValue(Global::BDP832, tempBuffer + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, start, length);
+
+                while(outputSize + tempBufferSize > outputCapacity) {
+                    outputCapacity += REALLOC_STEP_SIZE;
+                    output = (uint8_t*) realloc(output, outputCapacity);
+                }
+
+                outputSize += BDP::writeValue(Global::BDP832, output + outputSize, tempBuffer, tempBufferSize);
+                free(tempBuffer);
+
+                LOG_DEBUG("done\n");
+
+                end = leftStart;
+            }
         } else { // Template.
             start = end;
             remainingLength = inputSize - (end - inputBuffer);
@@ -413,13 +583,14 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
+                size_t chunkSize;
                 size_t errorIndex = (end + index) - inputBuffer - 1;
 
                 mem_lncol(inputBuffer, errorIndex, &ln, &col);
 
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex);            
+                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex);
+                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
 
                 free(chunk);
                 free(output);

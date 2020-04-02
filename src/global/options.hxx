@@ -32,6 +32,13 @@ namespace Global {
             static uint8_t  templateLoopSeparatorLength;
             static uint8_t* templateLoopSeparatorLookup;
 
+            static uint8_t* templateComponent;
+            static uint8_t  templateComponentLength;
+
+            static uint8_t* templateComponentSeparator;
+            static uint8_t  templateComponentSeparatorLength;
+            static uint8_t* templateComponentSeparatorLookup;
+
         public:
             static const uint8_t* getTemplateStart();
             static       uint8_t  getTemplateStartLength();
@@ -57,6 +64,13 @@ namespace Global {
             static       uint8_t  getTemplateLoopSeparatorLength();
             static const uint8_t* getTemplateLoopSeparatorLookup();
 
+            static const uint8_t* getTemplateComponent();
+            static       uint8_t  getTemplateComponentLength();
+
+            static const uint8_t* getTemplateComponentSeparator();
+            static       uint8_t  getTemplateComponentSeparatorLength();
+            static const uint8_t* getTemplateComponentSeparatorLookup();
+
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);
 
@@ -66,6 +80,9 @@ namespace Global {
             static void setTemplateLoopStart(const char* value);
             static void setTemplateLoopEnd(const char* value);
             static void setTemplateLoopSeparator(const char* value);
+
+            static void setTemplateComponent(const char* value);
+            static void setTemplateComponentSeparator(const char* value);
 
             static bool getBypassCache();
             static void setBypassCache(bool value);

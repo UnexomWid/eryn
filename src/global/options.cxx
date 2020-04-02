@@ -31,6 +31,13 @@ uint8_t* Global::Options::templateLoopSeparator = nullptr;
 uint8_t  Global::Options::templateLoopSeparatorLength = 0;
 uint8_t* Global::Options::templateLoopSeparatorLookup = nullptr;
 
+uint8_t* Global::Options::templateComponent = nullptr;
+uint8_t  Global::Options::templateComponentLength = 0;
+
+uint8_t* Global::Options::templateComponentSeparator = nullptr;
+uint8_t  Global::Options::templateComponentSeparatorLength = 0;
+uint8_t* Global::Options::templateComponentSeparatorLookup = nullptr;
+
 void Global::Options::setTemplateStart(const char* value) {
     if(templateStart != nullptr)
         free(templateStart);
@@ -148,6 +155,41 @@ void Global::Options::setTemplateLoopSeparator(const char* value) {
     Global::Options::templateLoopSeparatorLength = length;
 }
 
+void Global::Options::setTemplateComponent(const char* value) {
+    if(templateComponent != nullptr)
+        free(templateComponent);
+
+    uint8_t length = (uint8_t) strlen(value);
+    templateComponent = (uint8_t*) malloc(length);
+
+    memcpy(templateComponent, value, length);
+
+    Global::Options::templateComponentLength = length;
+}
+
+void Global::Options::setTemplateComponentSeparator(const char* value) {
+    if(templateComponentSeparator != nullptr)
+        free(templateComponentSeparator);
+
+    uint8_t length = (uint8_t) strlen(value);
+    templateComponentSeparator = (uint8_t*) malloc(length);
+
+    memcpy(templateComponentSeparator, value, length);
+
+    if(templateComponentSeparatorLookup != nullptr)
+        free(templateComponentSeparatorLookup);
+
+    if(length < HORSPOOL_THRESHOLD) {
+        templateComponentSeparatorLookup = (uint8_t*) malloc(length);
+        build_kmp_lookup(templateComponentSeparatorLookup, templateComponentSeparator, length);
+    } else {
+        templateComponentSeparatorLookup = (uint8_t*) malloc(256);
+        build_horspool_lookup(templateComponentSeparatorLookup, templateComponentSeparator, length);
+    }
+
+    Global::Options::templateComponentSeparatorLength = length;
+}
+
 void Global::Options::restoreDefaults() {
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
@@ -158,6 +200,9 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateLoopStart("@");
     Global::Options::setTemplateLoopEnd("#");
     Global::Options::setTemplateLoopSeparator(":");
+
+    Global::Options::setTemplateComponent("%");
+    Global::Options::setTemplateComponentSeparator(":");
 
     Global::Options::bypassCache = false;
 }
@@ -250,6 +295,26 @@ uint8_t Global::Options::getTemplateLoopSeparatorLength() {
 
 const uint8_t* Global::Options::getTemplateLoopSeparatorLookup() {
     return Global::Options::templateLoopSeparatorLookup;
+}
+
+const uint8_t* Global::Options::getTemplateComponent() {
+    return Global::Options::templateComponent;
+}
+
+uint8_t Global::Options::getTemplateComponentLength() {
+    return Global::Options::templateComponentLength;
+}
+
+const uint8_t* Global::Options::getTemplateComponentSeparator() {
+    return Global::Options::templateComponentSeparator;
+}
+
+uint8_t Global::Options::getTemplateComponentSeparatorLength() {
+    return Global::Options::templateComponentSeparatorLength;
+}
+
+const uint8_t* Global::Options::getTemplateComponentSeparatorLookup() {
+    return Global::Options::templateComponentSeparatorLookup;
 }
 
 bool Global::Options::getBypassCache() {

@@ -14,7 +14,7 @@ CompilationException::~CompilationException() {
         free((char*) message);
 }
 
-CompilationException::CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex) {
+CompilationException::CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
     std::string buffer(msg);
     buffer.reserve(buffer.size() + 256);
 
@@ -25,7 +25,7 @@ CompilationException::CompilationException(const char* msg, const char* descript
     buffer += " (";
     buffer += description;
     buffer += ")\n";
-    buffer += (const char*) chunk;
+    buffer += std::string(chunk, chunk + chunkSize);
     buffer += "\n";
 
     for(size_t i = 0; i < chunkIndex; ++i)
