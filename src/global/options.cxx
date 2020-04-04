@@ -38,6 +38,13 @@ uint8_t* Global::Options::templateComponentSeparator = nullptr;
 uint8_t  Global::Options::templateComponentSeparatorLength = 0;
 uint8_t* Global::Options::templateComponentSeparatorLookup = nullptr;
 
+uint8_t* Global::Options::templateComponentSelf = nullptr;
+uint8_t  Global::Options::templateComponentSelfLength = 0;
+uint8_t* Global::Options::templateComponentSelfLookup = nullptr;
+
+uint8_t* Global::Options::templateComponentEnd = nullptr;
+uint8_t  Global::Options::templateComponentEndLength = 0;
+
 void Global::Options::setTemplateStart(const char* value) {
     if(templateStart != nullptr)
         free(templateStart);
@@ -190,6 +197,41 @@ void Global::Options::setTemplateComponentSeparator(const char* value) {
     Global::Options::templateComponentSeparatorLength = length;
 }
 
+void Global::Options::setTemplateComponentSelf(const char* value) {
+    if(templateComponentSelf != nullptr)
+        free(templateComponentSelf);
+
+    uint8_t length = (uint8_t) strlen(value);
+    templateComponentSelf = (uint8_t*) malloc(length);
+
+    memcpy(templateComponentSelf, value, length);
+
+    if(templateComponentSelfLookup != nullptr)
+        free(templateComponentSelfLookup);
+
+    if(length < HORSPOOL_THRESHOLD) {
+        templateComponentSelfLookup = (uint8_t*) malloc(length);
+        build_kmp_lookup(templateComponentSelfLookup, templateComponentSelf, length);
+    } else {
+        templateComponentSelfLookup = (uint8_t*) malloc(256);
+        build_horspool_lookup(templateComponentSelfLookup, templateComponentSelf, length);
+    }
+
+    Global::Options::templateComponentSelfLength = length;
+}
+
+void Global::Options::setTemplateComponentEnd(const char* value) {
+    if(templateComponentEnd != nullptr)
+        free(templateComponentEnd);
+
+    uint8_t length = (uint8_t) strlen(value);
+    templateComponentEnd = (uint8_t*) malloc(length);
+
+    memcpy(templateComponentEnd, value, length);
+
+    Global::Options::templateComponentEndLength = length;
+}
+
 void Global::Options::restoreDefaults() {
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
@@ -203,6 +245,8 @@ void Global::Options::restoreDefaults() {
 
     Global::Options::setTemplateComponent("%");
     Global::Options::setTemplateComponentSeparator(":");
+    Global::Options::setTemplateComponentSelf("/");
+    Global::Options::setTemplateComponentEnd("/");
 
     Global::Options::bypassCache = false;
 }
@@ -210,11 +254,11 @@ void Global::Options::restoreDefaults() {
 void Global::Options::destroy() {
     if(templateStart != nullptr)
         free(templateStart);
-    if(templateEnd != nullptr)
-        free(templateEnd);
-
     if(templateStartLookup != nullptr)
         free(templateStartLookup);
+
+    if(templateEnd != nullptr)
+        free(templateEnd);
     if(templateEndLookup != nullptr)
         free(templateEndLookup);
 
@@ -227,6 +271,22 @@ void Global::Options::destroy() {
         free(templateLoopStart);
     if(templateLoopEnd != nullptr)
         free(templateLoopEnd);
+
+    if(templateComponent != nullptr)
+        free(templateComponent);
+        
+    if(templateComponentSeparator != nullptr)
+        free(templateComponentSeparator);
+    if(templateComponentSeparatorLookup != nullptr)
+        free(templateComponentSeparatorLookup);
+
+    if(templateComponentSelf != nullptr)
+        free(templateComponentSelf);
+    if(templateComponentSelfLookup != nullptr)
+        free(templateComponentSelfLookup);
+
+    if(templateComponentEnd != nullptr)
+        free(templateComponentEnd);
 }
 
 const uint8_t* Global::Options::getTemplateStart() {
@@ -315,6 +375,26 @@ uint8_t Global::Options::getTemplateComponentSeparatorLength() {
 
 const uint8_t* Global::Options::getTemplateComponentSeparatorLookup() {
     return Global::Options::templateComponentSeparatorLookup;
+}
+
+const uint8_t* Global::Options::getTemplateComponentSelf() {
+    return Global::Options::templateComponentSelf;
+}
+
+uint8_t Global::Options::getTemplateComponentSelfLength() {
+    return Global::Options::templateComponentSelfLength;
+}
+
+const uint8_t* Global::Options::getTemplateComponentSelfLookup() {
+    return Global::Options::templateComponentSelfLookup;
+}
+
+const uint8_t* Global::Options::getTemplateComponentEnd() {
+    return Global::Options::templateComponentEnd;
+}
+
+uint8_t Global::Options::getTemplateComponentEndLength() {
+    return Global::Options::templateComponentEndLength;
 }
 
 bool Global::Options::getBypassCache() {

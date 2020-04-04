@@ -10,9 +10,11 @@ include_directories(${CMAKE_JS_INC})
 file(GLOB SOURCE_FILES
     src/*.hxx
     src/*.cxx
+    src/*.dxx
 
     src/**/*.hxx
     src/**/*.cxx
+    src/**/*.dxx
 
     lib/*.hxx
     lib/*.cxx

@@ -69,11 +69,11 @@ uint8_t* mem_lnchunk(const uint8_t* source, size_t index, size_t size, register 
         ++start;
 
     if(chunkIndex != 0)
-        *chunkIndex = source + index - limit;
+        *chunkIndex = source + index - start;
 
     if(index + chunk < size)
         limit = source + index + chunk;
-    else limit = source + size;
+    else limit = source + size - 1;
 
     while(end < limit && *end != '\n' && *end != '\r')
         ++end;
