@@ -87,7 +87,9 @@ uint8_t* mem_lnchunk(const uint8_t* source, size_t index, size_t size, register 
     if(chunkSize != 0)
         *chunkSize = chunk;
 
-    uint8_t* data = (uint8_t*) malloc(chunk);
+    uint8_t* data;
+    if((data = (uint8_t*) malloc(chunk)) == NULL)
+        return 0;
     memcpy(data, start, chunk);
 
     return data;

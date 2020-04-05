@@ -3,6 +3,7 @@
 #include "compiler.hxx"
 #include "../def/osh.dxx"
 #include "../../lib/bdp.hxx"
+#include "../../lib/buffer.hxx"
 #include "../../lib/mem_find.h"
 #include "../../lib/mem_index.h"
 #include "../global/cache.hxx"
@@ -12,11 +13,10 @@
 
 #include <stack>
 #include <vector>
+#include <memory>
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
-
-#define REALLOC_STEP_SIZE 4096
 
 using Global::Cache;
 using Global::Options;
@@ -30,25 +30,26 @@ void compileFile(const char* path, const char* outputPath) {
         throw std::runtime_error("Cannot open file");
 
     fseek(input, 0, SEEK_END);
-    long inputSize = ftell(input);
+    long fileLength = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    LOG_DEBUG("File size is %ld bytes\n\n", inputSize);
+    LOG_DEBUG("File size is %ld bytes\n\n", fileLength);
 
-    uint8_t* inputBuffer = (uint8_t*) malloc(inputSize);
+    size_t inputSize = (size_t) fileLength;
+    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
 
-    fread(inputBuffer, 1, inputSize, input);
+    fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    uint8_t* output = (uint8_t*) malloc(inputSize);
     size_t   outputSize = 0;
     size_t   outputCapacity = inputSize;
+    std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
 
-    uint8_t* start = inputBuffer;
-    uint8_t* end = inputBuffer + mem_find(inputBuffer, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
+    uint8_t* start = inputBuffer.get();
+    uint8_t* end = inputBuffer.get() + mem_find(inputBuffer.get(), inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
     size_t   length = end - start;
 
-    uint8_t* limit = inputBuffer + inputSize;
+    uint8_t* limit = inputBuffer.get() + inputSize;
 
     size_t   remainingLength;
     size_t   index;
@@ -64,7 +65,7 @@ void compileFile(const char* path, const char* outputPath) {
     struct TemplateStackInfo {
         TemplateType type;      // The template type.
         size_t outputEndIndex;  // At which index the template ends in the output (for writing the index of the template end).
-        size_t inputStartIndex; // At which index the template starts in the input (for providing more information when an exception occurs).
+        size_t inputStartIndex; // At which index the template starts in the input (provides more information when an exception occurs).
 
         TemplateStackInfo(TemplateType typ, size_t outEnd, size_t inStart) : type(typ), outputEndIndex(outEnd), inputStartIndex(inStart) { };
     };
@@ -73,18 +74,16 @@ void compileFile(const char* path, const char* outputPath) {
 
     while(end < limit) {
         if(start != end) {
-            LOG_DEBUG("--> Found plaintext at %zu\n", start - inputBuffer);
+            LOG_DEBUG("--> Found plaintext at %zu\n", start - inputBuffer.get());
 
-            while(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
-                outputCapacity += REALLOC_STEP_SIZE;
-                output = (uint8_t*) realloc(output, outputCapacity);
-            }
+            while(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity)
+                qexpand(output.get(), outputCapacity);
 
-            LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-            outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+            LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
             LOG_DEBUG("done\n\n");
         }
-        templateStartIndex = end - inputBuffer;
+        templateStartIndex = end - inputBuffer.get();
 
         LOG_DEBUG("--> Found template start at %zu\n", templateStartIndex);
 
@@ -102,26 +101,22 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
 
             start = end;
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
             if(index == 0) {
@@ -129,21 +124,16 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = end - inputBuffer - 1;
+                size_t errorIndex = end - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
 
-                CompilationException exception("Unexpected template end", "did you forget to write the condition?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                CompilationException exception("Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -153,14 +143,12 @@ void compileFile(const char* path, const char* outputPath) {
             if(start != end) { // Template conditional start.
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + 4 + length + OSH_FORMAT > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + 4 + length + OSH_FORMAT > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, start, length);
-                memset(output + outputSize, 0, OSH_FORMAT);
+                LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, start, length);
+                memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
                 templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex));
                 outputSize += OSH_FORMAT;
@@ -172,29 +160,25 @@ void compileFile(const char* path, const char* outputPath) {
             LOG_DEBUG("Detected template conditional end\n");
 
             start = end;
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);       
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);   
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -206,27 +190,21 @@ void compileFile(const char* path, const char* outputPath) {
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);   
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected conditional end", "there is no conditional to close; delete this", ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
-                }
-                if(templateStack.top().type != TemplateType::CONDITIONAL) {
+                    throw CompilationException("Unexpected conditional end", "there is no conditional to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                } else if(templateStack.top().type != TemplateType::CONDITIONAL) {
                     size_t ln;
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(inputBuffer.get(), templateStack.top().inputStartIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -248,29 +226,22 @@ void compileFile(const char* path, const char* outputPath) {
                     msgBuffer += std::to_string(col);
                     msgBuffer += " first";
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected conditional end", msgBuffer.c_str(), ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
+                    throw CompilationException("Unexpected conditional end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
 
                 ++end;
                 length = 0;
 
-                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template conditional end as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_CONDITIONAL_END_MARKER, OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
-                memcpy(output + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+                LOG_DEBUG("Writing template conditional end as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_END_MARKER, OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
+                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
@@ -282,13 +253,11 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
+                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n\n");
 
                 end = start;
@@ -307,82 +276,63 @@ void compileFile(const char* path, const char* outputPath) {
             uint8_t* leftEnd = start;
             size_t   sepIndex;
 
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             sepIndex = mem_find(end, remainingLength, Options::getTemplateLoopSeparator(), Options::getTemplateLoopSeparatorLength(), Options::getTemplateLoopSeparatorLookup());
             index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(sepIndex > index) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
 
-                CompilationException exception("Unexpected end of template", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected end of template", "did you forget to write the loop separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(sepIndex == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + sepIndex) - inputBuffer - 1;
+                size_t errorIndex = (end + sepIndex) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);         
 
-                CompilationException exception("Unexpected EOF", "did you forget to write the loop separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to write the loop separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(sepIndex == 0) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = end - inputBuffer;
+                size_t errorIndex = end - inputBuffer.get();
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
 
-                CompilationException exception("Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template loop separator at %zu\n", end + sepIndex - inputBuffer);
-            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+            LOG_DEBUG("Found template loop separator at %zu\n", end + sepIndex - inputBuffer.get());
+            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
             leftEnd = end + sepIndex - 1;
             start = end + sepIndex + Options::getTemplateLoopSeparatorLength();
@@ -401,18 +351,13 @@ void compileFile(const char* path, const char* outputPath) {
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (leftStart + index) - inputBuffer - 1;
+                size_t errorIndex = (leftStart + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                CompilationException exception("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
             while(*start == ' ' || *start == '\t')
@@ -421,13 +366,11 @@ void compileFile(const char* path, const char* outputPath) {
             length = end - start;
             size_t leftLength = leftEnd - leftStart;
 
-            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_START_MARKER_LENGTH > outputCapacity) {
-                outputCapacity += REALLOC_STEP_SIZE;
-                output = (uint8_t*) realloc(output, outputCapacity);
-            }
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_START_MARKER_LENGTH > outputCapacity)
+                qexpand(output.get(), outputCapacity);
 
-            LOG_DEBUG("Writing template loop start as BDP832 pair %zu -> %zu...", leftStart - inputBuffer, end - inputBuffer);
-            outputSize += BDP::writeName(Global::BDP832, output + outputSize, OSH_TEMPLATE_LOOP_START_MARKER, OSH_TEMPLATE_LOOP_START_MARKER_LENGTH);
+            LOG_DEBUG("Writing template loop start as BDP832 pair %zu -> %zu...", leftStart - inputBuffer.get(), end - inputBuffer.get());
+            outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_START_MARKER, OSH_TEMPLATE_LOOP_START_MARKER_LENGTH);
 
             size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + length;
             uint8_t* tempBuffer = (uint8_t*) malloc(tempBufferSize);
@@ -435,13 +378,11 @@ void compileFile(const char* path, const char* outputPath) {
             BDP::writeValue(Global::BDP832, tempBuffer, leftStart, leftLength);
             BDP::writeValue(Global::BDP832, tempBuffer + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, start, length);
 
-            while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity) {
-                outputCapacity += REALLOC_STEP_SIZE;
-                output = (uint8_t*) realloc(output, outputCapacity);
-            }
+            while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity)
+                qexpand(output.get(), outputCapacity);
 
-            outputSize += BDP::writeValue(Global::BDP832, output + outputSize, tempBuffer, tempBufferSize);
-            memset(output + outputSize, 0, OSH_FORMAT);
+            outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer, tempBufferSize);
+            memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
             templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex));
             outputSize += OSH_FORMAT;
@@ -454,29 +395,25 @@ void compileFile(const char* path, const char* outputPath) {
             LOG_DEBUG("Detected template loop end\n");
 
             start = end;
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -488,27 +425,21 @@ void compileFile(const char* path, const char* outputPath) {
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                    CompilationException exception("Unexpected loop end", "there is no loop to close; delete this", ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
-                }
-                if(templateStack.top().type != TemplateType::LOOP) {
+                    throw CompilationException("Unexpected loop end", "there is no loop to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                } else if(templateStack.top().type != TemplateType::LOOP) {
                     size_t ln;
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(inputBuffer.get(), templateStack.top().inputStartIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -530,29 +461,22 @@ void compileFile(const char* path, const char* outputPath) {
                     msgBuffer += std::to_string(col);
                     msgBuffer += " first";
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected loop end", msgBuffer.c_str(), ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
+                    throw CompilationException("Unexpected loop end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
 
                 ++end;
                 length = 0;
 
-                if(outputSize + 1 + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                if(outputSize + 1 + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
-                memcpy(output + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+                LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
+                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
@@ -564,13 +488,11 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
                 length = end - start;
 
-                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
+                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n\n");
 
                 end = start;
@@ -580,7 +502,7 @@ void compileFile(const char* path, const char* outputPath) {
 
             end += Options::getTemplateComponentLength();
 
-            while((*end == ' ' || *end == '\t') && end < inputBuffer + inputSize)
+            while((*end == ' ' || *end == '\t') && end < inputBuffer.get() + inputSize)
                 ++end;
 
             start = end;
@@ -589,53 +511,44 @@ void compileFile(const char* path, const char* outputPath) {
             uint8_t* leftEnd = start;
             size_t   sepIndex;
 
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             sepIndex = mem_find(end, remainingLength, Options::getTemplateComponentSeparator(), Options::getTemplateComponentSeparatorLength(), Options::getTemplateComponentSeparatorLookup());
             index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(sepIndex == 0) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = end - inputBuffer;
+                size_t errorIndex = end - inputBuffer.get();
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);            
 
-                CompilationException exception("Unexpected separator", "did you forget to provide the component name before the separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected separator", "did you forget to provide the component name before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } 
             
             if(index == 0) {
                 LOG_DEBUG("Detected empty template component\n\n");
             } else {
-                LOG_DEBUG("Found template component at %zu\n", end + sepIndex - inputBuffer);
-                LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+                LOG_DEBUG("Found template component at %zu\n", end + sepIndex - inputBuffer.get());
+                LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
-                templateEndIndex = end + index - inputBuffer;
+                templateEndIndex = end + index - inputBuffer.get();
 
                 if(sepIndex < index) {
                     leftEnd = end + sepIndex - 1;
@@ -655,18 +568,13 @@ void compileFile(const char* path, const char* outputPath) {
                         size_t col;
                         size_t chunkIndex;
                         size_t chunkSize;
-                        size_t errorIndex = (leftStart + index) - inputBuffer - 1;
+                        size_t errorIndex = (leftStart + index) - inputBuffer.get() - 1;
 
-                        mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                        uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                        mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                        std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                            mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);         
 
-                        CompilationException exception("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                        free(chunk);
-                        free(output);
-                        free(inputBuffer);
-
-                        throw exception;
+                        throw CompilationException("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
                     }
 
                     while(*start == ' ' || *start == '\t')
@@ -685,14 +593,13 @@ void compileFile(const char* path, const char* outputPath) {
                 }
 
                 size_t leftLength = leftEnd - leftStart;
-                // Here.
 
                 bool isSelf = false;
                 uint8_t* selfStart;
 
                 if(end - start + 1 >= Options::getTemplateComponentSelfLength()) {
                     selfStart = end - Options::getTemplateComponentSelfLength();
-                    if(0 == mem_find(selfStart, inputSize - (selfStart - inputBuffer), Options::getTemplateComponentSelf(), Options::getTemplateComponentSelfLength(), Options::getTemplateComponentSelfLookup())) {
+                    if(0 == mem_find(selfStart, inputSize - (selfStart - inputBuffer.get()), Options::getTemplateComponentSelf(), Options::getTemplateComponentSelfLength(), Options::getTemplateComponentSelfLookup())) {
                         LOG_DEBUG("Detected self-closing template component\n");
 
                         isSelf = true;
@@ -716,27 +623,20 @@ void compileFile(const char* path, const char* outputPath) {
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = (selfStart) - inputBuffer;
+                    size_t errorIndex = (selfStart) - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
+                    throw CompilationException("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template component as BDP832 pair %zu -> %zu...", leftStart - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writeName(Global::BDP832, output + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
+                LOG_DEBUG("Writing template component as BDP832 pair %zu -> %zu...", leftStart - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
 
                 size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + length;
                 uint8_t* tempBuffer = (uint8_t*) malloc(tempBufferSize);
@@ -744,13 +644,11 @@ void compileFile(const char* path, const char* outputPath) {
                 BDP::writeValue(Global::BDP832, tempBuffer, leftStart, leftLength);
                 BDP::writeValue(Global::BDP832, tempBuffer + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, start, length);
 
-                while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                outputSize += BDP::writeValue(Global::BDP832, output + outputSize, tempBuffer, tempBufferSize);
-                memset(output + outputSize, 0, OSH_FORMAT);
+                outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer, tempBufferSize);
+                memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
                 if(!isSelf)
                     templateStack.push(TemplateStackInfo(TemplateType::COMPONENT,outputSize, templateStartIndex));
@@ -765,29 +663,25 @@ void compileFile(const char* path, const char* outputPath) {
             LOG_DEBUG("Detected template component end\n");
 
             start = end;
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+            LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -799,27 +693,21 @@ void compileFile(const char* path, const char* outputPath) {
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected component end", "there is no component to close; delete this", ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
-                }
-                if(templateStack.top().type != TemplateType::COMPONENT) {
+                    throw CompilationException("Unexpected component end", "there is no component to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                } else if(templateStack.top().type != TemplateType::COMPONENT) {
                     size_t ln;
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - inputBuffer;
+                    size_t errorIndex = start - inputBuffer.get();
 
-                    mem_lncol(inputBuffer, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(inputBuffer.get(), templateStack.top().inputStartIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -841,29 +729,22 @@ void compileFile(const char* path, const char* outputPath) {
                     msgBuffer += std::to_string(col);
                     msgBuffer += " first";
 
-                    mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                    uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);
+                    mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                        mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    CompilationException exception("Unexpected component end", msgBuffer.c_str(), ln, col, chunk, chunkIndex, chunkSize);
-
-                    free(chunk);
-                    free(output);
-                    free(inputBuffer);
-
-                    throw exception;
+                    throw CompilationException("Unexpected component end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
 
                 ++end;
                 length = 0;
 
-                while(outputSize + 1 + OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + 1 + OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template component end as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
-                memcpy(output + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+                LOG_DEBUG("Writing template component end as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
+                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
@@ -875,41 +756,35 @@ void compileFile(const char* path, const char* outputPath) {
                 ++end;
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
+                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n\n");
 
                 end = start;
             }
         } else { // Template.
             start = end;
-            remainingLength = inputSize - (end - inputBuffer);
+            remainingLength = inputSize - (end - inputBuffer.get());
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - inputBuffer.get();
 
             if(index == remainingLength) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = (end + index) - inputBuffer - 1;
+                size_t errorIndex = (end + index) - inputBuffer.get() - 1;
 
-                mem_lncol(inputBuffer, errorIndex, &ln, &col);
-                uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);            
+                mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+                    mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);    
 
-                CompilationException exception("Unexpected EOF", "did you forget to close the template?", ln, col, chunk, chunkIndex, chunkSize);
-
-                free(chunk);
-                free(output);
-                free(inputBuffer);
-
-                throw exception;
+                throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index != 0) {
-                LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer);
+                LOG_DEBUG("Found template end at %zu\n", end + index - inputBuffer.get());
 
                 end = end + index - 1;
                 while(*end == ' ' || *end == '\t')
@@ -918,13 +793,11 @@ void compileFile(const char* path, const char* outputPath) {
 
                 length = end - start;
 
-                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
-                    outputCapacity += REALLOC_STEP_SIZE;
-                    output = (uint8_t*) realloc(output, outputCapacity);
-                }
+                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity)
+                    qexpand(output.get(), outputCapacity);
 
-                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-                outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
+                LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
                 LOG_DEBUG("done\n\n");
 
                 end = start;
@@ -933,12 +806,12 @@ void compileFile(const char* path, const char* outputPath) {
             }
         }
 
-        start = end + index + Options::getTemplateEndLength();
+        start = inputBuffer.get() + templateEndIndex + Options::getTemplateEndLength();
 
         if(start >= limit)
             break;
 
-        remainingLength = inputSize - (start - inputBuffer);
+        remainingLength = inputSize - (start - inputBuffer.get());
         end = start + mem_find(start, remainingLength, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
         length = end - start;
     }
@@ -950,8 +823,9 @@ void compileFile(const char* path, const char* outputPath) {
         size_t chunkSize;
         size_t errorIndex = templateStack.top().inputStartIndex;
 
-        mem_lncol(inputBuffer, errorIndex, &ln, &col);
-        uint8_t* chunk = mem_lnchunk(inputBuffer, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize);
+        mem_lncol(inputBuffer.get(), errorIndex, &ln, &col);
+        std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
+            mem_lnchunk(inputBuffer.get(), errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
         std::string msgBuffer;
         msgBuffer.reserve(64);
@@ -972,38 +846,30 @@ void compileFile(const char* path, const char* outputPath) {
 
         msgBuffer += "template";      
 
-        CompilationException exception(msgBuffer.c_str(), "did you forget to close this?", ln, col, chunk, chunkIndex, chunkSize);
-
-        free(chunk);
-        free(output);
-        free(inputBuffer);
-
-        throw exception;
+        throw CompilationException(msgBuffer.c_str(), "did you forget to close this?", ln, col, chunk.get(), chunkIndex, chunkSize);
     }
 
     if(end > start) {
-        LOG_DEBUG("--> Found plaintext at %zu\n", start - inputBuffer);
+        LOG_DEBUG("--> Found plaintext at %zu\n", start - inputBuffer.get());
 
-        if(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
-            outputCapacity += REALLOC_STEP_SIZE;
-            output = (uint8_t*) realloc(output, outputCapacity);
-        }
+        if(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity)
+            qexpand(output.get(), outputCapacity);
 
-        LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer, end - inputBuffer);
-        outputSize += BDP::writePair(Global::BDP832, output + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+        LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - inputBuffer.get(), end - inputBuffer.get());
+        outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
         LOG_DEBUG("done\n\n")
     }
 
-    if(outputSize != outputCapacity)
-        output = (uint8_t*) realloc(output, outputSize);
+    // Bring the capacity to the actual size.
+    if(outputSize != outputCapacity) {
+        uint8_t* newBuffer = qrealloc(output.get(), outputSize);
+        output.release();
+        output.reset(newBuffer);
+    }
 
     LOG_DEBUG("Wrote %zd bytes to output\n", outputSize)
 
-    free(inputBuffer);
-
     FILE* dest = fopen(outputPath, "wb");
-    fwrite(output, 1, outputSize, dest);
+    fwrite(output.get(), 1, outputSize, dest);
     fclose(dest);
-
-    free(output);
 }

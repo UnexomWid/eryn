@@ -25,12 +25,15 @@ CompilationException::CompilationException(const char* msg, const char* descript
     buffer += " (";
     buffer += description;
     buffer += ")\n";
-    buffer += std::string(chunk, chunk + chunkSize);
-    buffer += "\n";
 
-    for(size_t i = 0; i < chunkIndex; ++i)
-        buffer += "-";
-    buffer += "^\n";
+    if(chunk != nullptr && chunk != 0) {
+        buffer += std::string(chunk, chunk + chunkSize);
+        buffer += "\n";
+
+        for(size_t i = 0; i < chunkIndex; ++i)
+            buffer += "-";
+        buffer += "^\n";
+    }
 
     message = strdup(buffer.c_str());
 }
