@@ -14,6 +14,14 @@ CompilationException::~CompilationException() {
         free((char*) message);
 }
 
+CompilationException::CompilationException(const char* msg, const char* description) {
+    std::string buffer(msg);
+    buffer += "(";
+    buffer += description;
+    buffer += ")";
+    message = strdup(buffer.c_str());
+}
+
 CompilationException::CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
     std::string buffer(msg);
     buffer.reserve(buffer.size() + 256);
