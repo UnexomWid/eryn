@@ -58,8 +58,6 @@ void build_horspool_lookup(uint8_t* lookup, const uint8_t* pattern, uint8_t patt
         lookup[*pattern] = value--;
         ++pattern;
     }
-
-    lookup[*pattern] = patternSize;
 }
 
 void build_kmp_lookup(uint8_t* lookup, const uint8_t* pattern, uint8_t patternSize) {

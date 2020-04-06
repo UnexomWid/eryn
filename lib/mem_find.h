@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define HORSPOOL_THRESHOLD 2
+#define HORSPOOL_THRESHOLD 3
 
 #ifdef __cplusplus
 extern "C" {
