@@ -1066,22 +1066,47 @@ namespace BDP {
     uint64_t getMaxLength(uint8_t lengthBitSize);
 
     /**
+     * Checks whether or not the endianness of the platform is little-endian.
+     *
+     * @return True if the architecture uses little endian. False otherwise.
+     */
+    bool isLittleEndian();
+
+    /**
      * Converts an unsigned integer to a byte array.
      *
-     * @param[in] value The value to convert..
-     * @param[in] byteCount The number of bytes to convert the value to.
      * @param[out] destination The byte array where to store the converted value.
+     * @param[in] source The value to convert.
+     * @param[in] count The number of bytes to convert the value to.
      */
-    void uintToBytes(uint64_t value, uint8_t byteCount, uint8_t *&destination);
+    void lengthToBytes(uint8_t* destination, uint64_t source, uint8_t count);
 
     /**
      * Converts a byte array to an unsigned integer.
      *
-     * @param[in] bytes The byte array to convert.
-     * @param[in] byteCount The number of bytes to convert to an unsigned integer.
      * @param[out] destination The variable where to store the converted byte array.
+     * @param[in] source The byte array to convert.
+     * @param[in] count The number of bytes to convert to an unsigned integer.
      */
-    void bytesToUInt(const uint8_t *bytes, uint8_t byteCount, uint64_t &destination);
+    void bytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count);
+
+    /**
+     * Directly converts an unsigned integer to a byte array.
+     *
+     * @param[out] destination The byte array where to store the converted value.
+     * @param[in] source The value to convert.
+     * @param[in] count The number of bytes to convert the value to.
+     */
+    void directLengthToBytes(uint8_t* destination, uint64_t source, uint8_t count);
+
+    /**
+     * Directly converts a byte array to an unsigned integer.
+     *
+     * @param[out] destination The variable where to store the converted byte array.
+     * @param[in] source The byte array to convert.
+     * @param[in] count The number of bytes to convert to an unsigned integer.
+     */
+    void directBytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count);
 }
 
 #endif

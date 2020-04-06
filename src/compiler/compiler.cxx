@@ -220,18 +220,18 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
 
-                    msgBuffer += "close the";          
+                    msgBuffer += "close the ";          
 
                     switch(templateStack.top().type) {
                         case TemplateType::LOOP:
-                            msgBuffer += " loop ";
+                            msgBuffer += "loop";
                             break;
                         case TemplateType::COMPONENT:
-                            msgBuffer += " component ";
+                            msgBuffer += "component";
                             break;
                     }
 
-                    msgBuffer += "template at ";
+                    msgBuffer += " template at ";
                     msgBuffer += std::to_string(ln);
                     msgBuffer += ":";
                     msgBuffer += std::to_string(col);
@@ -252,7 +252,10 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
 
                 LOG_DEBUG("Writing template conditional end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_END_MARKER, OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
-                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+
+                if(BDP::isLittleEndian())
+                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
@@ -487,7 +490,10 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
 
                 LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
-                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+
+                if(BDP::isLittleEndian())
+                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
@@ -755,7 +761,10 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
 
                 LOG_DEBUG("Writing template component end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
-                memcpy(output.get() + templateStack.top().outputEndIndex, &outputSize, OSH_FORMAT);
+                
+                if(BDP::isLittleEndian())
+                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
