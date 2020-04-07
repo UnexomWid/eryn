@@ -10,7 +10,7 @@
 /// Classic malloc. Rounds the size to a power of 2. Throws an exception if it fails.
 uint8_t* qalloc(size_t &size);
 /// Classic malloc. Leaves the size as-is. Throws an exception if it fails.
-uint8_t* qmalloc(size_t &size);
+uint8_t* qmalloc(size_t size);
 /// Classic realloc. Throws an exception if it fails.
 uint8_t* qrealloc(uint8_t* buffer, size_t size);
 /// Classic realloc with double the buffer size. Throws an exception if it fails.

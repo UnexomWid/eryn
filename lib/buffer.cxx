@@ -31,7 +31,7 @@ uint8_t* qalloc(size_t &size) {
     return ptr;
 }
 
-uint8_t* qmalloc(size_t &size) {
+uint8_t* qmalloc(size_t size) {
     uint8_t* ptr = (uint8_t*) malloc(size);
 
     if(!ptr)
