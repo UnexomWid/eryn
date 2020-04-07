@@ -26,11 +26,12 @@ Napi::Value Eval(const Napi::CallbackInfo& info) {
 void Compile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    const char* path = info[0].As<Napi::String>().Utf8Value().c_str();
-    const char* outputPath = info[1].As<Napi::String>().Utf8Value().c_str();
+    const char* wd = info[0].As<Napi::String>().Utf8Value().c_str();
+    const char* path = info[1].As<Napi::String>().Utf8Value().c_str();
+    const char* outputPath = info[2].As<Napi::String>().Utf8Value().c_str();
 
     try {
-        compileFile(path, outputPath);
+        compileFile(wd, path, outputPath);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

@@ -20,7 +20,7 @@
 using Global::Cache;
 using Global::Options;
 
-void compileFile(const char* path, const char* outputPath) {
+void compileFile(const char* wd, const char* path, const char* outputPath) {
     LOG_INFO("===> Compiling file '%s'\n", path);
 
     FILE* input = fopen(path, "rb");
@@ -40,7 +40,7 @@ void compileFile(const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    OSHData compiled = compileBytes(inputBuffer.get(), inputSize);
+    OSHData compiled = compileBytes(inputBuffer.get(), inputSize, wd);
 
     LOG_DEBUG("Wrote %zd bytes to output\n", compiled.size)
 
@@ -51,7 +51,7 @@ void compileFile(const char* path, const char* outputPath) {
     qfree((uint8_t*) compiled.data);
 }
 
-OSHData compileBytes(uint8_t* input, size_t inputSize) {
+OSHData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     size_t   outputSize = 0;
     size_t   outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
@@ -655,22 +655,27 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
                 LOG_DEBUG("Writing template component as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
                 outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
 
-                size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + length;
-                uint8_t* tempBuffer = (uint8_t*) malloc(tempBufferSize);
+                size_t componentPathLength;
+                std::unique_ptr<uint8_t, decltype(qfree)*> componentPath(
+                    componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), qfree);
 
-                BDP::writeValue(Global::BDP832, tempBuffer, leftStart, leftLength);
-                BDP::writeValue(Global::BDP832, tempBuffer + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, start, length);
+                size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + length;
+                std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
+
+                printf("\n%zu %s\n", componentPathLength, componentPath.get());
+
+                BDP::writeValue(Global::BDP832, tempBuffer.get(), componentPath.get(), componentPathLength);
+                BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, start, length);
 
                 while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity)
                     qexpand(output.get(), outputCapacity);
 
-                outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer, tempBufferSize);
+                outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer.get(), tempBufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
                 if(!isSelf)
                     templateStack.push(TemplateStackInfo(TemplateType::COMPONENT,outputSize, templateStartIndex));
                 outputSize += OSH_FORMAT;
-                free(tempBuffer);
 
                 LOG_DEBUG("done\n\n");
 
@@ -891,4 +896,29 @@ OSHData compileBytes(uint8_t* input, size_t inputSize) {
     output.release();
 
     return OSHData(compiled, outputSize);
+}
+
+uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength) {
+    if(*componentPath == '/' || *componentPath == '\\') {
+        uint8_t* absolute = qmalloc(componentPathLength);
+        memcpy(absolute, componentPath, componentPathLength);
+
+        absoluteLength = componentPathLength;
+        return absolute;
+    }
+
+    std::string pathBuilder(wd);
+    pathBuilder.reserve(pathBuilder.size() + 256);
+
+    if(pathBuilder[pathBuilder.size() - 1] != '/' && pathBuilder[pathBuilder.size() - 1] != '\\')
+        pathBuilder += '/';
+    pathBuilder.append(componentPath, componentPathLength);
+
+    const char* absolute = strdup(pathBuilder.c_str());
+
+    if(!absolute)
+        throw MemoryException("Cannot allocate memory for component path", pathBuilder.size());
+
+    absoluteLength = pathBuilder.size();
+    return (uint8_t*) absolute;
 }

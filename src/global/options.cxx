@@ -50,7 +50,7 @@ void Global::Options::setTemplateStart(const char* value) {
     if(templateStart != nullptr)
         qfree(templateStart);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateStart = qmalloc(length);
 
     memcpy(templateStart, value, length);
@@ -73,7 +73,7 @@ void Global::Options::setTemplateEnd(const char* value) {
     if(templateEnd != nullptr)
         qfree(templateEnd);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateEnd = qmalloc(length);
 
     memcpy(templateEnd, value, length);
@@ -96,7 +96,7 @@ void Global::Options::setTemplateConditionalStart(const char* value) {
     if(templateConditionalStart != nullptr)
         qfree(templateConditionalStart);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateConditionalStart = qmalloc(length);
 
     memcpy(templateConditionalStart, value, length);
@@ -108,7 +108,7 @@ void Global::Options::setTemplateConditionalEnd(const char* value) {
     if(templateConditionalEnd != nullptr)
         qfree(templateConditionalEnd);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateConditionalEnd = qmalloc(length);
 
     memcpy(templateConditionalEnd, value, length);
@@ -120,7 +120,7 @@ void Global::Options::setTemplateLoopStart(const char* value) {
     if(templateLoopStart != nullptr)
         qfree(templateLoopStart);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateLoopStart = qmalloc(length);
 
     memcpy(templateLoopStart, value, length);
@@ -132,7 +132,7 @@ void Global::Options::setTemplateLoopEnd(const char* value) {
     if(templateLoopEnd != nullptr)
         qfree(templateLoopEnd);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateLoopEnd = qmalloc(length);
 
     memcpy(templateLoopEnd, value, length);
@@ -144,7 +144,7 @@ void Global::Options::setTemplateLoopSeparator(const char* value) {
     if(templateLoopSeparator != nullptr)
         qfree(templateLoopSeparator);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateLoopSeparator = qmalloc(length);
 
     memcpy(templateLoopSeparator, value, length);
@@ -167,7 +167,7 @@ void Global::Options::setTemplateComponent(const char* value) {
     if(templateComponent != nullptr)
         qfree(templateComponent);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateComponent = qmalloc(length);
 
     memcpy(templateComponent, value, length);
@@ -179,7 +179,7 @@ void Global::Options::setTemplateComponentSeparator(const char* value) {
     if(templateComponentSeparator != nullptr)
         qfree(templateComponentSeparator);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateComponentSeparator = qmalloc(length);
 
     memcpy(templateComponentSeparator, value, length);
@@ -202,7 +202,7 @@ void Global::Options::setTemplateComponentSelf(const char* value) {
     if(templateComponentSelf != nullptr)
         qfree(templateComponentSelf);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateComponentSelf = qmalloc(length);
 
     memcpy(templateComponentSelf, value, length);
@@ -225,7 +225,7 @@ void Global::Options::setTemplateComponentEnd(const char* value) {
     if(templateComponentEnd != nullptr)
         qfree(templateComponentEnd);
 
-    size_t length = strlen(value);
+    uint8_t length = (uint8_t) strlen(value);
     templateComponentEnd = qmalloc(length);
 
     memcpy(templateComponentEnd, value, length);
