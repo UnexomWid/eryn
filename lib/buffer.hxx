@@ -33,4 +33,12 @@ class MemoryException : public std::exception {
         MemoryException& operator=(const MemoryException &e);
 };
 
+/// Simple struct for holding binary data.
+struct BinaryData {
+    const uint8_t* data;
+    const size_t   size;
+
+    BinaryData(const uint8_t* d, const size_t s);
+};
+
 #endif

@@ -1,0 +1,8 @@
+#ifndef ERYN_LOGGING_DXX_GUARD
+#define ERYN_LOGGING_DXX_GUARD
+
+#define LOG_DEBUG(...) 
+#define LOG_INFO(...)  printf("[eryn] "##__VA_ARGS__);
+#define LOG_ERROR(...) fprintf(stderr, "[eryn] "##__VA_ARGS__);
+
+#endif

@@ -98,3 +98,5 @@ MemoryException& MemoryException::operator=(const MemoryException &e) {
 
     return *this;
 }
+
+BinaryData::BinaryData(const uint8_t* d, const size_t s) : data(d), size(s) { }

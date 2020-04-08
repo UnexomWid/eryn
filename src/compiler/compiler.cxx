@@ -2,9 +2,10 @@
 
 #include "compiler.hxx"
 #include "../../lib/bdp.hxx"
-#include "../../lib/buffer.hxx"
 #include "../../lib/mem_find.h"
 #include "../../lib/mem_index.h"
+#include "../def/osh.dxx"
+#include "../def/logging.dxx"
 #include "../global/cache.hxx"
 #include "../global/global.hxx"
 #include "../global/options.hxx"
@@ -26,7 +27,7 @@ void compileFile(const char* wd, const char* path, const char* outputPath) {
     FILE* input = fopen(path, "rb");
 
     if(input == NULL)
-        throw std::runtime_error("Cannot open file");
+        throw CompilationException("Compiler error", "cannot open input file");
 
     fseek(input, 0, SEEK_END);
     long fileLength = ftell(input);
@@ -40,7 +41,7 @@ void compileFile(const char* wd, const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    OSHData compiled = compileBytes(inputBuffer.get(), inputSize, wd);
+    BinaryData compiled = compileBytes(inputBuffer.get(), inputSize, wd);
 
     LOG_DEBUG("Wrote %zd bytes to output\n", compiled.size)
 
@@ -51,7 +52,7 @@ void compileFile(const char* wd, const char* path, const char* outputPath) {
     qfree((uint8_t*) compiled.data);
 }
 
-OSHData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
+BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     size_t   outputSize = 0;
     size_t   outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
@@ -895,7 +896,7 @@ OSHData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     uint8_t* compiled = output.get();
     output.release();
 
-    return OSHData(compiled, outputSize);
+    return BinaryData(compiled, outputSize);
 }
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength) {
