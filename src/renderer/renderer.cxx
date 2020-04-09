@@ -14,7 +14,7 @@
 using Global::Cache;
 using Global::Options;
 
-void renderFile(const char* path, const char* outputPath) {
+void renderFile(BridgeData data, const char* path, const char* outputPath) {
     LOG_INFO("===> Rendering file '%s'\n", path);
 
     FILE* input = fopen(path, "rb");
@@ -34,9 +34,9 @@ void renderFile(const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    BinaryData rendered = renderBytes(inputBuffer.get(), inputSize);
+    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize);
 
-    LOG_DEBUG("Wrote %zd bytes to output\n", compiled.size)
+    LOG_DEBUG("Wrote %zd bytes to output\n", rendered.size)
 
     FILE* dest = fopen(outputPath, "wb");
     fwrite(rendered.data, 1, rendered.size, dest);
@@ -45,7 +45,7 @@ void renderFile(const char* path, const char* outputPath) {
     qfree((uint8_t*) rendered.data);
 }
 
-BinaryData renderBytes(uint8_t* input, size_t inputSize) {
+BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
@@ -58,19 +58,30 @@ BinaryData renderBytes(uint8_t* input, size_t inputSize) {
     std::unique_ptr<uint8_t, decltype(qfree)*> value(qalloc(outputCapacity), qfree);
 
     while(inputIndex < inputSize) {
-        inputIndex += BDP::readPair(Global::BDP832, (uint8_t*)input, (uint8_t*)name.get(), (uint64_t*)&nameLength, (uint8_t*)value.get(), (uint64_t*)&valueLength);
+        inputIndex += BDP::readPair(Global::BDP832, input + inputIndex, (uint8_t*)name.get(), (uint64_t*)&nameLength, (uint8_t*)value.get(), (uint64_t*)&valueLength);
 
         uint8_t nameByte = *name;
         
-        // Only compares the first byte, for performance reasons.
+        // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
             while(outputSize + valueLength > outputCapacity)
                 qexpand(output.get(), outputCapacity);
             memcpy(output.get() + outputSize, value.get(), valueLength);
+            outputSize += valueLength;
         } else if(nameByte == *OSH_TEMPLATE_MARKER) {
-
-        }
+            evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
+        } else throw RenderingException("Not Implemented", "this template type is not implemented");
     }
 
-    return BinaryData(nullptr, 0);
+    // Bring the capacity to the actual size.
+    if(outputSize != outputCapacity) {
+        uint8_t* newBuffer = qrealloc(output.get(), outputSize);
+        output.release();
+        output.reset(newBuffer);
+    }
+
+    uint8_t* rendered = output.get();
+    output.release();
+
+    return BinaryData(rendered, outputSize);
 }
