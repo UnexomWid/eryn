@@ -508,10 +508,10 @@ void BDP::directLengthToBytes(uint8_t* destination, uint64_t source, uint8_t cou
 
 void BDP::directBytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count) {
     if(count == 4u)
-        *reinterpret_cast<uint32_t*>(&destination) = *reinterpret_cast<const uint32_t*>(source);
+        destination = *reinterpret_cast<const uint32_t*>(source);
     else if(count == 1u)
-        *reinterpret_cast<uint8_t*>(&destination) = *source;
+        destination = *source;
     else if(count == 8u)
         destination = *reinterpret_cast<const uint64_t*>(source);
-    else *reinterpret_cast<uint16_t*>(&destination) = *reinterpret_cast<const uint16_t*>(source);
+    else destination = *reinterpret_cast<const uint16_t*>(source);
 }

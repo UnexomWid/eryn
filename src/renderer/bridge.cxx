@@ -84,3 +84,9 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
         outputSize += length;
     } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined");
 }
+
+bool evalConditionalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+    Napi::Value result = data.RunScript(std::string(reinterpret_cast<char*>(templateBytes), templateLength));
+
+    return (bool) result.ToBoolean();
+}

@@ -64,12 +64,28 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
         
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
+            LOG_DEBUG("Found plaintext\n");
             while(outputSize + valueLength > outputCapacity)
                 qexpand(output.get(), outputCapacity);
             memcpy(output.get() + outputSize, value.get(), valueLength);
             outputSize += valueLength;
         } else if(nameByte == *OSH_TEMPLATE_MARKER) {
+            LOG_DEBUG("Found template\n");
             evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
+        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
+            LOG_DEBUG("Found conditional template start\n");
+            size_t conditionalEnd;
+            if(BDP::isLittleEndian())
+                BDP::directBytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+            else BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+
+            inputIndex += 4;
+
+            if(!evalConditionalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity))
+                inputIndex = conditionalEnd;
+        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_END_MARKER) {
+            LOG_DEBUG("Found conditional template end\n");
+            continue;
         } else throw RenderingException("Not Implemented", "this template type is not implemented");
     }
 
