@@ -16,7 +16,7 @@ RenderingException::~RenderingException() {
 
 RenderingException::RenderingException(const char* msg, const char* description) {
     std::string buffer(msg);
-    buffer += "(";
+    buffer += " (";
     buffer += description;
     buffer += ")";
     message = strdup(buffer.c_str());

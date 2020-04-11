@@ -90,3 +90,43 @@ bool evalConditionalTemplate(BridgeData data, uint8_t* templateBytes, size_t tem
 
     return (bool) result.ToBoolean();
 }
+
+void evalAssignment(BridgeData data, const std::string &assignment) {
+    data.RunScript(assignment);
+}
+
+void unassign(BridgeData data, const std::string &assignment) {
+    data.RunScript(assignment.substr(0, assignment.find_first_of('=')) + "=undefined");
+}
+
+size_t getArrayLength(BridgeData data, uint8_t* arrayBytes, size_t arraySize) {
+    Napi::Value result = data.RunScript(std::string(reinterpret_cast<char*>(arrayBytes), arraySize));
+    if(!result.IsArray())
+        throw RenderingException("Unsupported loop right operand", "must be Array");
+    return result.As<Napi::Array>().Length();    
+}
+
+void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, uint8_t* iterator, size_t iteratorSize, uint8_t* array, size_t arraySize) {
+    data.RunScript("var " + std::string(reinterpret_cast<char*>(iterator), iteratorSize));
+    
+    assignment.reserve(256);
+    assignment.append(reinterpret_cast<char*>(iterator), iteratorSize);
+    assignment += "=";
+
+    assignmentUnassignIndex = assignment.size() - 1;
+
+    assignment.append(reinterpret_cast<char*>(array), arraySize);
+    assignment += "[";
+
+    assignmentUpdateIndex = assignment.size();
+}
+
+void updateLoopAssignment(std::string &assignment, size_t &arrayIndex) {
+    assignment += std::to_string(arrayIndex);
+    assignment += "]";
+    arrayIndex++;
+}
+
+void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex) {
+    assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
+}

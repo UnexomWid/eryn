@@ -75,9 +75,9 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     };
 
     struct TemplateStackInfo {
-        TemplateType type;      // The template type.
-        size_t outputEndIndex;  // At which index the template ends in the output (for writing the index of the template end).
-        size_t inputStartIndex; // At which index the template starts in the input (provides more information when an exception occurs).
+        TemplateType type;       // The template type.
+        size_t outputEndIndex;   // At which index the template ends in the output (for writing the index of the template end).
+        size_t inputStartIndex;  // At which index the template starts in the input (provides more information when an exception occurs).
 
         TemplateStackInfo(TemplateType typ, size_t outEnd, size_t inStart) : type(typ), outputEndIndex(outEnd), inputStartIndex(inStart) { };
     };
@@ -504,7 +504,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = 0;
 
-                if(outputSize + 1 + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + 4 + length > outputCapacity) {
+                if(outputSize + 1 + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + 4 + OSH_FORMAT + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -513,10 +513,16 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
 
-                if(BDP::isLittleEndian())
-                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
-                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
-                
+                if(BDP::isLittleEndian()) {
+                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize + OSH_FORMAT, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + outputSize, templateStack.top().outputEndIndex + OSH_FORMAT, OSH_FORMAT);
+                }
+                else {
+                    BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize + OSH_FORMAT, OSH_FORMAT);
+                    BDP::lengthToBytes(output.get() + outputSize, templateStack.top().outputEndIndex + OSH_FORMAT, OSH_FORMAT);
+                }
+
+                outputSize += OSH_FORMAT;
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");
 
@@ -705,7 +711,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
                 if(!isSelf)
-                    templateStack.push(TemplateStackInfo(TemplateType::COMPONENT,outputSize, templateStartIndex));
+                    templateStack.push(TemplateStackInfo(TemplateType::COMPONENT, outputSize, templateStartIndex));
                 outputSize += OSH_FORMAT;
 
                 LOG_DEBUG("done\n\n");
