@@ -804,12 +804,14 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     output.reset(newOutput);
                 }
 
+                size_t backup = outputSize;
+
                 LOG_DEBUG("Writing template component end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
                 
                 if(BDP::isLittleEndian())
-                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
-                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, backup - templateStack.top().outputEndIndex - OSH_FORMAT, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, backup - templateStack.top().outputEndIndex - OSH_FORMAT, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n\n");

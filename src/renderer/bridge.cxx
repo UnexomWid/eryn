@@ -95,8 +95,8 @@ void evalAssignment(BridgeData data, const std::string &assignment) {
     data.RunScript(assignment);
 }
 
-void unassign(BridgeData data, const std::string &assignment) {
-    data.RunScript(assignment.substr(0, assignment.find_first_of('=')) + "=undefined");
+void unassign(BridgeData data, const std::string &assignment, size_t assignmentUnassignIndex) {
+    data.RunScript(assignment.substr(0, assignmentUnassignIndex) + "=undefined");
 }
 
 size_t getArrayLength(BridgeData data, uint8_t* arrayBytes, size_t arraySize) {
@@ -129,4 +129,22 @@ void updateLoopAssignment(std::string &assignment, size_t &arrayIndex) {
 
 void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex) {
     assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
+}
+
+BridgeBackup backupContext(BridgeData data) {
+    try {
+        return data.RunScript("context");
+    } catch(std::exception &e) {
+        return Napi::Value();
+    }
+}
+
+void initContext(BridgeData data, uint8_t* context, size_t contextSize) {
+    if(contextSize == 0)
+        data.RunScript("var context=undefined");
+    else data.RunScript("var context=" + std::string(reinterpret_cast<char*>(context), contextSize));
+}
+
+void restoreContext(BridgeData data, BridgeBackup backup) {
+    data.RunScript("context=" + stringify(data, backup.ToObject()));
 }

@@ -35,7 +35,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize);
+    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize, nullptr, 0, nullptr, 0);
 
     LOG_DEBUG("Wrote %zd bytes to output\n", rendered.size)
 
@@ -46,11 +46,52 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     qfree((uint8_t*) rendered.data);
 }
 
-BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
+void renderComponent(BridgeData data, uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
+    std::string path(reinterpret_cast<char*>(component), componentSize);
+
+    LOG_INFO("===> Rendering component '%s'\n", path.c_str());
+
+    FILE* input = fopen(path.c_str(), "rb");
+
+    if(input == NULL)
+        throw RenderingException("Render error", "cannot open component file; did you forget to compile it?");
+
+    fseek(input, 0, SEEK_END);
+    long fileLength = ftell(input);
+    fseek(input, 0, SEEK_SET);
+
+    LOG_DEBUG("Component size is %ld bytes\n\n", fileLength);
+
+    size_t inputSize = (size_t) fileLength;
+    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
+
+    fread(inputBuffer.get(), 1, inputSize, input);
+    fclose(input);
+
+    renderBytes(data, inputBuffer.get(), inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+}
+
+BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
 
+    renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+
+    // Bring the capacity to the actual size.
+    if(outputSize != outputCapacity) {
+        uint8_t* newBuffer = qrealloc(output.get(), outputSize);
+        output.release();
+        output.reset(newBuffer);
+    }
+
+    uint8_t* rendered = output.get();
+    output.release();
+
+    return BinaryData(rendered, outputSize);
+}
+
+void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
     size_t inputIndex  = 0;
     size_t nameLength  = 0;
     size_t valueLength = 0;
@@ -85,7 +126,7 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
             LOG_DEBUG("Found plaintext\n");
-            
+
             while(outputSize + valueLength > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
@@ -96,7 +137,12 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
             outputSize += valueLength;
         } else if(nameByte == *OSH_TEMPLATE_MARKER) {
             LOG_DEBUG("Found template\n");
-            evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
+
+            if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value.get(), OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
+                if(contentSize == 0u)
+                    throw RenderingException("No content", "there is no content for this component");
+                else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
+            } else evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
             LOG_DEBUG("Found conditional template start\n");
 
@@ -141,7 +187,7 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
                 BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
                 inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
                 right = input + inputIndex;
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + rightLength;
+                inputIndex += rightLength;
             }
 
             loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength));
@@ -174,21 +220,59 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
                 evalAssignment(data, loopStack.top().assignment);
                 inputIndex = returnIndex;
             } else {
-                unassign(data, loopStack.top().assignment);
+                unassign(data, loopStack.top().assignment, loopStack.top().assignmentUnassignIndex);
                 loopStack.pop();
             }
+        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_MARKER) {
+            LOG_DEBUG("Found component template\n");
+
+            size_t leftLength;
+            size_t rightLength;
+
+            uint8_t* left;
+            uint8_t* right;
+
+            inputIndex -= valueLength;
+
+            if(BDP::isLittleEndian()) {
+                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                BDP::directBytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+
+                BDP::directBytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                right = input + inputIndex;
+                inputIndex += rightLength;
+            } else {
+                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+
+                BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                right = input + inputIndex;
+                inputIndex += rightLength;
+            }
+
+            size_t contentLength;
+
+            if(BDP::isLittleEndian()) {
+                BDP::directBytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
+            } else BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
+
+            inputIndex += OSH_FORMAT;
+
+            BridgeBackup contextBackup = backupContext(data);
+
+            initContext(data, right, rightLength);
+            renderComponent(data, left, leftLength, output, outputSize, outputCapacity, input + inputIndex, contentLength, content, contentSize);
+            restoreContext(data, contextBackup);
+
+            inputIndex += contentLength;
+        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_END_MARKER) {
+            LOG_DEBUG("Found component template end\n");
+
+            continue;
         } else throw RenderingException("Not Implemented", "this template type is not implemented");
     }
-
-    // Bring the capacity to the actual size.
-    if(outputSize != outputCapacity) {
-        uint8_t* newBuffer = qrealloc(output.get(), outputSize);
-        output.release();
-        output.reset(newBuffer);
-    }
-
-    uint8_t* rendered = output.get();
-    output.release();
-
-    return BinaryData(rendered, outputSize);
 }
