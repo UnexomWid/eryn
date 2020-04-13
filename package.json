@@ -1,7 +1,7 @@
 {
   "name": "eryn",
-  "version": "1.0.0",
-  "description": "Server-side render framework",
+  "version": "0.1.0",
+  "description": "Server-side native template processor",
   "main": "index.js",
   "scripts": {
     "install": "prebuildify-load || cmake-js compile"
