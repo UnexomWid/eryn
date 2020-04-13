@@ -1,4 +1,5 @@
 #include "rendering.hxx"
+#include "../def/warnings.dxx"
 
 RenderingException::RenderingException(const RenderingException &e) {
     message = strdup(e.message);
@@ -18,7 +19,7 @@ RenderingException::RenderingException(const char* msg, const char* description)
     std::string buffer(msg);
     buffer += " (";
     buffer += description;
-    buffer += ")";
+    buffer += ")\n";
     message = strdup(buffer.c_str());
 }
 

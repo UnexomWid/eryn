@@ -1,14 +1,12 @@
-#define NAPI_VERSION 5
-
 #include "napi.h"
 #include <node_api.h>
-#include <cstdio>
 
+#include "def/logging.dxx"
 #include "global/global.hxx"
 #include "compiler/compiler.hxx"
 #include "renderer/renderer.hxx"
 
-std::string stringify(const Napi::Env& env, const Napi::Object& object) {
+std::string jsonStringify(const Napi::Env& env, const Napi::Object& object) {
     Napi::Object json = env.Global().Get("JSON").As<Napi::Object>();
     Napi::Function stringify = env.Global().Get("JSON").As<Napi::Object>().Get("stringify").As<Napi::Function>();
 
@@ -19,7 +17,7 @@ Napi::Value eval(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     Napi::String expression = info[0].As<Napi::String>();
-    std::string context = stringify(env, info[1].As<Napi::Object>());
+    std::string context = jsonStringify(env, info[1].As<Napi::Object>());
     env.RunScript("var context = " + context);
     Napi::Value x = env.RunScript(expression);
     return x;
@@ -46,7 +44,7 @@ void render(const Napi::CallbackInfo& info) {
     const char* outputPath = info[1].As<Napi::String>().Utf8Value().c_str();
     Napi::Object context = info[2].As<Napi::Object>();
 
-    env.RunScript("var context=" + stringify(env, context));
+    env.RunScript("var context=" + jsonStringify(env, context));
 
     try {
         renderFile(env, path, outputPath);
@@ -55,12 +53,14 @@ void render(const Napi::CallbackInfo& info) {
     }
 }
 
-void destroy(void* args) {
+void destroy(void* args) {  
+    LOG_DEBUG("Destroying...");
+
     Global::destroy();
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
-    printf("[eryn] Init\n");
+    LOG_DEBUG("Init...\n");
     Global::init();
 
     napi_add_env_cleanup_hook((napi_env) env, destroy, nullptr);

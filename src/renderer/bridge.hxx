@@ -2,6 +2,7 @@
 #define ERYN_BRIDGE_HXX_GUARD
 
 #include "napi.h"
+#include "../def/warnings.dxx"
 #include "../../lib/buffer.hxx"
 
 #include <memory>
@@ -22,12 +23,7 @@ void updateLoopAssignment(std::string &assignment, size_t &arrayIndex);
 void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex);
 
 BridgeBackup backupContext(BridgeData data);
-BridgeBackup backupContent(BridgeData data);
-
 void initContext(BridgeData data, uint8_t* context, size_t contextSize);
-void initContent(BridgeData data, uint8_t* content, size_t contentSize);
-
 void restoreContext(BridgeData data, BridgeBackup backup);
-void restoreContent(BridgeData data, BridgeBackup backup);
 
 #endif

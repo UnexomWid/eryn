@@ -1,4 +1,5 @@
 #include "compilation.hxx"
+#include "../def/warnings.dxx"
 
 CompilationException::CompilationException(const CompilationException &e) {
     message = strdup(e.message);

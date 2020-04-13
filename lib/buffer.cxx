@@ -7,6 +7,17 @@
 #include <cstdlib>
 #include <cstring>
 
+#ifdef LOG_MEMORY_ALLOCATIONS
+    #define LOG_MEM(...) printf("\n[memory] "##__VA_ARGS__);
+    size_t allocatedAmount = 0;
+#else
+    #define LOG_MEM(...)
+#endif
+
+#ifdef _MSC_VER
+    #pragma warning(disable: 4996)
+#endif
+
 /// Brings the size to the closest power of 2 >= size.
 void adjustBufferSize(size_t &size) {
     --size;
@@ -27,7 +38,12 @@ uint8_t* qalloc(size_t &size) {
 
     if(!ptr)
         throw MemoryException("Cannot allocate memory", size);
-    printf("Allocated %p\n", ptr);
+
+    #ifdef LOG_MEMORY_ALLOCATIONS
+        LOG_MEM("Allocated %p", ptr);
+        ++allocatedAmount;
+    #endif
+
     return ptr;
 }
 
@@ -36,7 +52,12 @@ uint8_t* qmalloc(size_t size) {
 
     if(!ptr)
         throw MemoryException("Cannot allocate memory", size);
-    printf("Allocated %p\n", ptr);
+
+    #ifdef LOG_MEMORY_ALLOCATIONS
+        LOG_MEM("Allocated %p", ptr);
+        ++allocatedAmount;
+    #endif
+
     return ptr;
 }
 
@@ -45,7 +66,9 @@ uint8_t* qrealloc(uint8_t* buffer, size_t size) {
 
     if(!ptr)
         throw MemoryException("Cannot reallocate memory", size);
-    printf("Reallocated %p\n", ptr);
+
+    LOG_MEM("Reallocated %p", ptr);
+
     return ptr;
 }
 
@@ -56,7 +79,14 @@ uint8_t* qexpand(uint8_t* buffer, size_t &size) {
 void qfree(uint8_t* buffer) {
     if(buffer != nullptr && buffer != 0)
         free(buffer);
-    printf("Freed %p\n", buffer);
+
+    #ifdef LOG_MEMORY_ALLOCATIONS
+        --allocatedAmount;
+
+        LOG_MEM("Freed %p (%zu remaining)", buffer, allocatedAmount);
+        if(allocatedAmount == 0)
+            LOG_MEM("All allocated memory blocks have been freed");
+    #endif
 }
 
 MemoryException::MemoryException(const MemoryException &e) {
@@ -100,3 +130,5 @@ MemoryException& MemoryException::operator=(const MemoryException &e) {
 }
 
 BinaryData::BinaryData(const uint8_t* d, const size_t s) : data(d), size(s) { }
+
+#undef LOG_MEM

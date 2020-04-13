@@ -7,6 +7,7 @@ namespace Global {
     class Options {
         private:
             static bool bypassCache;
+            static bool throwOnEmptyContent;
 
             static uint8_t* templateStart;
             static uint8_t  templateStartLength;
@@ -47,6 +48,9 @@ namespace Global {
             static uint8_t  templateComponentEndLength;
 
         public:
+            static bool getBypassCache();
+            static bool getThrowOnEmptyContent();
+
             static const uint8_t* getTemplateStart();
             static       uint8_t  getTemplateStartLength();
             static const uint8_t* getTemplateStartLookup();
@@ -85,6 +89,9 @@ namespace Global {
             static const uint8_t* getTemplateComponentEnd();
             static       uint8_t  getTemplateComponentEndLength();
 
+            static void setBypassCache(bool value);
+            static void setThrowOnEmptyContent(bool value);
+
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);
 
@@ -99,9 +106,6 @@ namespace Global {
             static void setTemplateComponentSeparator(const char* value);
             static void setTemplateComponentSelf(const char* value);
             static void setTemplateComponentEnd(const char* value);
-
-            static bool getBypassCache();
-            static void setBypassCache(bool value);
 
             static void restoreDefaults();
             static void destroy();

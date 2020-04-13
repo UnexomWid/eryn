@@ -26,6 +26,9 @@ file(GLOB SOURCE_FILES
     lib/**/*.h
     lib/**/*.c)
 
+add_definitions(-DLOG_MEMORY_ALLOCATIONS)
+add_definitions(-DNAPI_VERSION=3)
+
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
@@ -34,6 +37,7 @@ execute_process(COMMAND node -p "require('node-addon-api').include"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     OUTPUT_VARIABLE NODE_ADDON_API_DIR
 )
+
 string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 

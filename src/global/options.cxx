@@ -6,7 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 
-bool Global::Options::bypassCache = false;
+bool Global::Options::bypassCache         = false;
+bool Global::Options::throwOnEmptyContent = true;
 
 uint8_t* Global::Options::templateStart                    = nullptr;
 uint8_t  Global::Options::templateStartLength              = 0;
@@ -45,6 +46,14 @@ uint8_t* Global::Options::templateComponentSelfLookup      = nullptr;
 
 uint8_t* Global::Options::templateComponentEnd             = nullptr;
 uint8_t  Global::Options::templateComponentEndLength       = 0;
+
+void Global::Options::setBypassCache(bool value) {
+    bypassCache = value;
+}
+
+void Global::Options::setThrowOnEmptyContent(bool value) {
+    throwOnEmptyContent = value;
+}
 
 void Global::Options::setTemplateStart(const char* value) {
     if(templateStart != nullptr)
@@ -234,6 +243,9 @@ void Global::Options::setTemplateComponentEnd(const char* value) {
 }
 
 void Global::Options::restoreDefaults() {
+    Global::Options::setBypassCache(false);
+    Global::Options::setThrowOnEmptyContent(true);
+
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
 
@@ -248,8 +260,6 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateComponentSeparator(":");
     Global::Options::setTemplateComponentSelf("/");
     Global::Options::setTemplateComponentEnd("/");
-
-    Global::Options::bypassCache = false;
 }
 
 void Global::Options::destroy() {
@@ -288,6 +298,14 @@ void Global::Options::destroy() {
 
     if(templateComponentEnd != nullptr)
         qfree(templateComponentEnd);
+}
+
+bool Global::Options::getBypassCache() {
+    return bypassCache;
+}
+
+bool Global::Options::getThrowOnEmptyContent() {
+    return throwOnEmptyContent;
 }
 
 const uint8_t* Global::Options::getTemplateStart() {
@@ -396,12 +414,4 @@ const uint8_t* Global::Options::getTemplateComponentEnd() {
 
 uint8_t Global::Options::getTemplateComponentEndLength() {
     return Global::Options::templateComponentEndLength;
-}
-
-bool Global::Options::getBypassCache() {
-    return bypassCache;
-}
-
-void Global::Options::setBypassCache(bool value) {
-    bypassCache = value;
 }

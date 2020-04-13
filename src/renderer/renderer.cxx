@@ -1,11 +1,15 @@
 #include "renderer.hxx"
-#include "../../lib/bdp.hxx"
-#include "../../lib/mem_find.h"
+
 #include "../def/osh.dxx"
 #include "../def/logging.dxx"
+
+#include "../../lib/bdp.hxx"
+#include "../../lib/mem_find.h"
+
 #include "../global/cache.hxx"
 #include "../global/global.hxx"
 #include "../global/options.hxx"
+
 #include "../except/rendering.hxx"
 
 #include <stack>
@@ -16,7 +20,7 @@ using Global::Cache;
 using Global::Options;
 
 void renderFile(BridgeData data, const char* path, const char* outputPath) {
-    LOG_INFO("===> Rendering file '%s'\n", path);
+    LOG_INFO("===> Rendering file '%s'", path);
 
     FILE* input = fopen(path, "rb");
 
@@ -27,7 +31,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     long fileLength = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    LOG_DEBUG("File size is %ld bytes\n\n", fileLength);
+    LOG_DEBUG("File size is %ld bytes\n", fileLength);
 
     size_t inputSize = (size_t) fileLength;
     std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
@@ -35,7 +39,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize, nullptr, 0, nullptr, 0);
+    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize);
 
     LOG_DEBUG("Wrote %zd bytes to output\n", rendered.size)
 
@@ -49,7 +53,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
 void renderComponent(BridgeData data, uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
     std::string path(reinterpret_cast<char*>(component), componentSize);
 
-    LOG_INFO("===> Rendering component '%s'\n", path.c_str());
+    LOG_INFO("===> Rendering component '%s'", path.c_str());
 
     FILE* input = fopen(path.c_str(), "rb");
 
@@ -60,7 +64,7 @@ void renderComponent(BridgeData data, uint8_t* component, size_t componentSize, 
     long fileLength = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    LOG_DEBUG("Component size is %ld bytes\n\n", fileLength);
+    LOG_DEBUG("Component size is %ld bytes\n", fileLength);
 
     size_t inputSize = (size_t) fileLength;
     std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
@@ -69,6 +73,12 @@ void renderComponent(BridgeData data, uint8_t* component, size_t componentSize, 
     fclose(input);
 
     renderBytes(data, inputBuffer.get(), inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+
+    LOG_DEBUG("===> Done\n");
+}
+
+BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
+    return renderBytes(data, input, inputSize, nullptr, 0, nullptr, 0);
 }
 
 BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
@@ -125,7 +135,7 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
         
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
-            LOG_DEBUG("Found plaintext\n");
+            LOG_DEBUG("--> Found plaintext");
 
             while(outputSize + valueLength > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -136,15 +146,16 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
             memcpy(output.get() + outputSize, value.get(), valueLength);
             outputSize += valueLength;
         } else if(nameByte == *OSH_TEMPLATE_MARKER) {
-            LOG_DEBUG("Found template\n");
+            LOG_DEBUG("--> Found template");
 
             if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value.get(), OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
-                if(contentSize == 0u)
-                    throw RenderingException("No content", "there is no content for this component");
-                else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
+                if(contentSize == 0u) {
+                    if(Options::getThrowOnEmptyContent())
+                        throw RenderingException("No content", "there is no content for this component");
+                } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
             } else evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
-            LOG_DEBUG("Found conditional template start\n");
+            LOG_DEBUG("--> Found conditional template start");
 
             size_t conditionalEnd;
             if(BDP::isLittleEndian())
@@ -156,11 +167,11 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
             if(!evalConditionalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity))
                 inputIndex = conditionalEnd;
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_END_MARKER) {
-            LOG_DEBUG("Found conditional template end\n");
+            LOG_DEBUG("--> Found conditional template end");
 
             continue;
         } else if(nameByte == *OSH_TEMPLATE_LOOP_START_MARKER) {
-            LOG_DEBUG("Found loop template start\n");
+            LOG_DEBUG("--> Found loop template start");
 
             size_t leftLength;
             size_t rightLength;
@@ -203,7 +214,7 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
                 evalAssignment(data, loopStack.top().assignment);
             }
         } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
-            LOG_DEBUG("Found loop template end\n");
+            LOG_DEBUG("--> Found loop template end");
 
             size_t returnIndex;
 
@@ -224,7 +235,7 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
                 loopStack.pop();
             }
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_MARKER) {
-            LOG_DEBUG("Found component template\n");
+            LOG_DEBUG("--> Found component template\n");
 
             size_t leftLength;
             size_t rightLength;
@@ -270,9 +281,9 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
 
             inputIndex += contentLength;
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_END_MARKER) {
-            LOG_DEBUG("Found component template end\n");
+            LOG_DEBUG("--> Found component template end");
 
             continue;
-        } else throw RenderingException("Not Implemented", "this template type is not implemented");
+        } else throw RenderingException("Not dupported", "this template type is not supported");
     }
 }

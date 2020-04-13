@@ -1,14 +1,16 @@
-#pragma warning(disable : 4996)
-
 #include "compiler.hxx"
+
+#include "../def/osh.dxx"
+#include "../def/logging.dxx"
+
 #include "../../lib/bdp.hxx"
 #include "../../lib/mem_find.h"
 #include "../../lib/mem_index.h"
-#include "../def/osh.dxx"
-#include "../def/logging.dxx"
+
 #include "../global/cache.hxx"
 #include "../global/global.hxx"
 #include "../global/options.hxx"
+
 #include "../except/compilation.hxx"
 
 #include <stack>
@@ -22,7 +24,7 @@ using Global::Cache;
 using Global::Options;
 
 void compileFile(const char* wd, const char* path, const char* outputPath) {
-    LOG_INFO("===> Compiling file '%s'\n", path);
+    LOG_INFO("===> Compiling file '%s'", path);
 
     FILE* input = fopen(path, "rb");
 
@@ -33,7 +35,7 @@ void compileFile(const char* wd, const char* path, const char* outputPath) {
     long fileLength = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    LOG_DEBUG("File size is %ld bytes\n\n", fileLength);
+    LOG_DEBUG("File size is %ld bytes\n", fileLength);
 
     size_t inputSize = (size_t) fileLength;
     std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
@@ -43,7 +45,7 @@ void compileFile(const char* wd, const char* path, const char* outputPath) {
 
     BinaryData compiled = compileBytes(inputBuffer.get(), inputSize, wd);
 
-    LOG_DEBUG("Wrote %zd bytes to output\n", compiled.size)
+    LOG_DEBUG("Wrote %zd bytes to output", compiled.size)
 
     FILE* dest = fopen(outputPath, "wb");
     fwrite(compiled.data, 1, compiled.size, dest);
@@ -86,7 +88,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
     while(end < limit) {
         if(start != end) {
-            LOG_DEBUG("--> Found plaintext at %zu\n", start - input);
+            LOG_DEBUG("--> Found plaintext at %zu", start - input);
 
             while(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -96,11 +98,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
             LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
             outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
-            LOG_DEBUG("done\n\n");
+            LOG_DEBUG("done\n");
         }
         templateStartIndex = end - input;
 
-        LOG_DEBUG("--> Found template start at %zu\n", templateStartIndex);
+        LOG_DEBUG("--> Found template start at %zu", templateStartIndex);
 
         end += Options::getTemplateStartLength();
 
@@ -108,7 +110,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             ++end;
 
         if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
-            LOG_DEBUG("Detected template conditional start\n");
+            LOG_DEBUG("Detected conditional template start");
 
             end += Options::getTemplateConditionalStartLength();
 
@@ -148,7 +150,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 CompilationException exception("Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -170,12 +172,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 
                 templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex));
                 outputSize += OSH_FORMAT;
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
             }
 
             end = start;
         } else if(membcmp(end, Options::getTemplateConditionalEnd(), Options::getTemplateConditionalEndLength())) {
-            LOG_DEBUG("Detected template conditional end\n");
+            LOG_DEBUG("Detected conditional template end");
 
             start = end;
             remainingLength = inputSize - (end - input);
@@ -196,7 +198,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -214,7 +216,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
                         mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    throw CompilationException("Unexpected conditional end", "there is no conditional to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                    throw CompilationException("Unexpected conditional end", "there is no conditional template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::CONDITIONAL) {
                     size_t ln;
                     size_t col;
@@ -268,11 +270,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
                 
                 templateStack.pop();
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             } else {
-                LOG_DEBUG("Re-detected as ordinary template\n");
+                LOG_DEBUG("Re-detected as ordinary template");
 
                 ++end;
                 length = end - start;
@@ -285,12 +287,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             }
         } else if(membcmp(end, Options::getTemplateLoopStart(), Options::getTemplateLoopStartLength())) {
-            LOG_DEBUG("Detected template loop start\n");
+            LOG_DEBUG("Detected loop template start");
 
             end += Options::getTemplateLoopStartLength();
 
@@ -358,8 +360,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template loop separator at %zu\n", end + sepIndex - input);
-            LOG_DEBUG("Found template end at %zu\n", end + index - input);
+            LOG_DEBUG("Found loop template separator at %zu", end + sepIndex - input);
+            LOG_DEBUG("Found template end at %zu", end + index - input);
 
             leftEnd = end + sepIndex - 1;
             start = end + sepIndex + Options::getTemplateLoopSeparatorLength();
@@ -421,11 +423,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             outputSize += OSH_FORMAT;
             free(tempBuffer);
 
-            LOG_DEBUG("done\n\n");
+            LOG_DEBUG("done\n");
 
             end = leftStart;
         } else if(membcmp(end, Options::getTemplateLoopEnd(), Options::getTemplateLoopEndLength())) {
-            LOG_DEBUG("Detected template loop end\n");
+            LOG_DEBUG("Detected loop template end");
 
             start = end;
             remainingLength = inputSize - (end - input);
@@ -446,13 +448,13 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
                 --end;
 
-            if(start == end) { // Template loop end.
+            if(start == end) { // Loop template end.
                 if(templateStack.empty()) {
                     size_t ln;
                     size_t col;
@@ -464,7 +466,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
                         mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
 
-                    throw CompilationException("Unexpected loop end", "there is no loop to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                    throw CompilationException("Unexpected loop template end", "there is no loop template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::LOOP) {
                     size_t ln;
                     size_t col;
@@ -498,7 +500,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
                         mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    throw CompilationException("Unexpected loop end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
+                    throw CompilationException("Unexpected loop template end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
 
                 ++end;
@@ -524,11 +526,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 outputSize += OSH_FORMAT;
                 templateStack.pop();
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             } else {
-                LOG_DEBUG("Re-detected as ordinary template\n");
+                LOG_DEBUG("Re-detected as ordinary template");
 
                 ++end;
                 length = end - start;
@@ -541,12 +543,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             }
         } else if(membcmp(end, Options::getTemplateComponent(), Options::getTemplateComponentLength())) {
-            LOG_DEBUG("Detected template component\n");
+            LOG_DEBUG("Detected component template");
 
             end += Options::getTemplateComponentLength();
 
@@ -591,10 +593,10 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             } 
             
             if(index == 0) {
-                LOG_DEBUG("Detected empty template component\n\n");
+                LOG_DEBUG("Detected empty component template");
             } else {
-                LOG_DEBUG("Found template component at %zu\n", end + sepIndex - input);
-                LOG_DEBUG("Found template end at %zu\n", end + index - input);
+                LOG_DEBUG("Found template component at %zu", end + sepIndex - input);
+                LOG_DEBUG("Found template end at %zu", end + index - input);
 
                 templateEndIndex = end + index - input;
 
@@ -648,7 +650,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 if(end - start + 1 >= Options::getTemplateComponentSelfLength()) {
                     selfStart = end - Options::getTemplateComponentSelfLength();
                     if(0 == mem_find(selfStart, inputSize - (selfStart - input), Options::getTemplateComponentSelf(), Options::getTemplateComponentSelfLength(), Options::getTemplateComponentSelfLookup())) {
-                        LOG_DEBUG("Detected self-closing template component\n");
+                        LOG_DEBUG("Detected self-closing component template");
 
                         isSelf = true;
                         end = selfStart - 1;
@@ -696,8 +698,6 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + length;
                 std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
 
-                printf("\n%zu %s\n", componentPathLength, componentPath.get());
-
                 BDP::writeValue(Global::BDP832, tempBuffer.get(), componentPath.get(), componentPathLength);
                 BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, start, length);
 
@@ -714,12 +714,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     templateStack.push(TemplateStackInfo(TemplateType::COMPONENT, outputSize, templateStartIndex));
                 outputSize += OSH_FORMAT;
 
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = leftStart;
             }
         } else if(membcmp(end, Options::getTemplateComponentEnd(), Options::getTemplateComponentEndLength())) {
-            LOG_DEBUG("Detected template component end\n");
+            LOG_DEBUG("Detected component template end");
 
             start = end;
             remainingLength = inputSize - (end - input);
@@ -740,7 +740,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
-            LOG_DEBUG("Found template end at %zu\n", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = end + index - 1;
             while(*end == ' ' || *end == '\t')
@@ -758,7 +758,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
                         mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
 
-                    throw CompilationException("Unexpected component end", "there is no component to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                    throw CompilationException("Unexpected component template end", "there is no component template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::COMPONENT) {
                     size_t ln;
                     size_t col;
@@ -814,11 +814,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, backup - templateStack.top().outputEndIndex - OSH_FORMAT, OSH_FORMAT);
                 
                 templateStack.pop();
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             } else {
-                LOG_DEBUG("Re-detected as ordinary template\n");
+                LOG_DEBUG("Re-detected as ordinary template");
 
                 ++end;
                 length = end - start;
@@ -831,7 +831,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             }
@@ -854,7 +854,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index != 0) {
-                LOG_DEBUG("Found template end at %zu\n", end + index - input);
+                LOG_DEBUG("Found template end at %zu", end + index - input);
 
                 end = end + index - 1;
                 while(*end == ' ' || *end == '\t')
@@ -871,11 +871,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, start, length);
-                LOG_DEBUG("done\n\n");
+                LOG_DEBUG("done\n");
 
                 end = start;
             } else {
-                LOG_DEBUG("Detected empty template\n\n");
+                LOG_DEBUG("Detected empty template\n");
             }
         }
 
@@ -933,7 +933,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
         LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
         outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
-        LOG_DEBUG("done\n\n")
+        LOG_DEBUG("done\n")
     }
 
     // Bring the capacity to the actual size.

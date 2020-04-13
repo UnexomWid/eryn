@@ -18,7 +18,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
     if(result.IsUndefined() || result.IsNull())
         return;
     else if(result.IsString()) {
-        LOG_DEBUG("Found string\n");
+        LOG_DEBUG("Type: string");
+
         std::string str = result.As<Napi::String>().Utf8Value();
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
@@ -31,7 +32,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsObject()) {
-        LOG_DEBUG("Found object\n");
+        LOG_DEBUG("Type: object");
+
         std::string str = stringify(data, result.As<Napi::Object>());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
@@ -44,7 +46,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsArray()) {
-        LOG_DEBUG("Found array\n");
+        LOG_DEBUG("Type: array");
+
         std::string str = stringify(data, result.ToObject());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
@@ -57,7 +60,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsNumber()) {
-        LOG_DEBUG("Found number\n");
+        LOG_DEBUG("Type: number");
+
         std::string str = result.ToString().Utf8Value();
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
@@ -70,7 +74,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     }else if(result.IsArrayBuffer()) {
-        LOG_DEBUG("Found array buffer\n");
+        LOG_DEBUG("Type: array buffer");
+
         uint8_t* ptr = (uint8_t*) result.As<Napi::ArrayBuffer>().Data();
         size_t length = result.As<Napi::ArrayBuffer>().ByteLength();
 
@@ -134,7 +139,7 @@ void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentU
 BridgeBackup backupContext(BridgeData data) {
     try {
         return data.RunScript("context");
-    } catch(std::exception &e) {
+    } catch(std::exception&) {
         return Napi::Value();
     }
 }
