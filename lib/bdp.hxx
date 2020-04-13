@@ -643,7 +643,7 @@ namespace BDP {
      * @note This function reads a package header from the byte array, and
      * returns it, as it is required for reading data from the package.
      */
-    Header* readHeader(uint8_t* input);
+    Header* readHeader(const uint8_t* input);
 
     /**
      * Reads a name from an input stream and writes it to a byte array.
@@ -674,7 +674,7 @@ namespace BDP {
      * a value should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readName(const Header* header, uint8_t* input, uint8_t* name, uint64_t* nameLength);
+    uint64_t readName(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength);
     /**
      * Reads a name from an input stream and writes it to a stream.
      *
@@ -719,7 +719,7 @@ namespace BDP {
      * package. After reading the name, a value should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readName(const Header* header, uint8_t* input, std::ostream &name, uint64_t* nameLength);
+    uint64_t readName(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength);
 
     /**
      * Reads a value from an input stream and writes it to a byte array.
@@ -750,7 +750,7 @@ namespace BDP {
      * a name should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readValue(const Header* header, uint8_t* input, uint8_t* value, uint64_t* valueLength);
+    uint64_t readValue(const Header* header, const uint8_t* input, uint8_t* value, uint64_t* valueLength);
     /**
      * Reads a value from an input stream and writes it to a stream.
      *
@@ -795,7 +795,7 @@ namespace BDP {
      * package. After reading the value, a name should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readValue(const Header* header, uint8_t* input, std::ostream &value, uint64_t* valueLength);
+    uint64_t readValue(const Header* header, const uint8_t* input, std::ostream &value, uint64_t* valueLength);
 
     /**
      * Reads a name and a value from an input stream and writes them to a pair of byte
@@ -828,7 +828,7 @@ namespace BDP {
      *
      * @note The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, uint8_t* input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
+    uint64_t readPair(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a byte array and
      * a stream.
@@ -859,7 +859,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, uint8_t* input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
+    uint64_t readPair(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a byte array and
      * a stream, using a specified buffer size.
@@ -906,7 +906,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, uint8_t* input, std::ostream &name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
+    uint64_t readPair(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a stream and a
      * byte array, using a specified buffer size.
@@ -950,7 +950,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, uint8_t* input, std::ostream &name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
+    uint64_t readPair(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of streams, using
      * a specified buffer size.
@@ -1008,7 +1008,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, uint8_t* input, uint8_t *&output, uint64_t* outputLength);
+    uint64_t readData(uint8_t lengthByteSize, const uint8_t* input, uint8_t *&output, uint64_t* outputLength);
     /**
      * Reads data from an input stream and writes it to a strean, using a specified
      * buffer size.
@@ -1052,7 +1052,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, uint8_t* input, std::ostream &output,uint64_t* outputLength);
+    uint64_t readData(uint8_t lengthByteSize, const uint8_t* input, std::ostream &output,uint64_t* outputLength);
 
     /**
      * Returns the maximum value that can be stored with a specified amount of bits.

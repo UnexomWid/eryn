@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 
 bool Global::Options::bypassCache         = false;
 bool Global::Options::throwOnEmptyContent = true;
@@ -282,6 +283,10 @@ void Global::Options::destroy() {
         qfree(templateLoopStart);
     if(templateLoopEnd != nullptr)
         qfree(templateLoopEnd);
+    if(templateLoopSeparator != nullptr)
+        qfree(templateLoopSeparator);
+    if(templateLoopSeparatorLookup != nullptr)
+        qfree(templateLoopSeparatorLookup);
 
     if(templateComponent != nullptr)
         qfree(templateComponent);

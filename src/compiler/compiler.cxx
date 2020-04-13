@@ -23,6 +23,33 @@
 using Global::Cache;
 using Global::Options;
 
+uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
+
+void compile(const char* wd, const char* path) {
+    LOG_INFO("===> Compiling file '%s'", path);
+
+    FILE* input = fopen(path, "rb");
+
+    if(input == NULL)
+        throw CompilationException("Compilation error", "cannot open input file");
+
+    fseek(input, 0, SEEK_END);
+    long fileLength = ftell(input);
+    fseek(input, 0, SEEK_SET);
+
+    LOG_DEBUG("File size is %ld bytes\n", fileLength);
+
+    size_t inputSize = (size_t) fileLength;
+    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
+
+    fread(inputBuffer.get(), 1, inputSize, input);
+    fclose(input);
+
+    Cache::addEntry(path, compileBytes(inputBuffer.get(), inputSize, wd));
+
+    LOG_DEBUG("Wrote %zu bytes to output", Cache::getEntry(path).size);
+}
+
 void compileFile(const char* wd, const char* path, const char* outputPath) {
     LOG_INFO("===> Compiling file '%s'", path);
 
@@ -130,8 +157,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -144,8 +171,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = end - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
                 CompilationException exception("Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -192,8 +219,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);   
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -213,8 +240,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t errorIndex = start - input;
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected conditional end", "there is no conditional template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::CONDITIONAL) {
@@ -247,8 +274,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     msgBuffer += " first";
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected conditional end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
@@ -318,8 +345,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
                 throw CompilationException("Unexpected end of template", "did you forget to write the loop separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(sepIndex == remainingLength) {
@@ -330,8 +357,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + sepIndex) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);         
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);         
 
                 throw CompilationException("Unexpected EOF", "did you forget to write the loop separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(sepIndex == 0) {
@@ -342,8 +369,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = end - input;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
                 throw CompilationException("Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index == remainingLength) {
@@ -354,8 +381,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);           
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -383,8 +410,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (leftStart + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
 
                 throw CompilationException("Unexpected end of template", "did you forget to provide the right argument after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -442,8 +469,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -463,8 +490,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t errorIndex = start - input;
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
 
                     throw CompilationException("Unexpected loop template end", "there is no loop template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::LOOP) {
@@ -497,8 +524,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     msgBuffer += " first";
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected loop template end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
@@ -574,8 +601,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = end - input;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);            
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);            
 
                 throw CompilationException("Unexpected separator", "did you forget to provide the component name before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index == remainingLength) {
@@ -586,8 +613,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } 
@@ -621,8 +648,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                         size_t errorIndex = (leftStart + index) - input - 1;
 
                         mem_lncol(input, errorIndex, &ln, &col);
-                        std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                            mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);         
+                        std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                            mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);         
 
                         throw CompilationException("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
                     }
@@ -676,8 +703,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t errorIndex = (selfStart) - input;
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected end of template", "did you forget to provide the component context after the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
@@ -692,7 +719,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
 
                 size_t componentPathLength;
-                std::unique_ptr<uint8_t, decltype(qfree)*> componentPath(
+                std::unique_ptr<uint8_t, decltype(free)*> componentPath(
                     componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), qfree);
 
                 size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + length;
@@ -734,8 +761,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);          
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
@@ -755,8 +782,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t errorIndex = start - input;
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected component template end", "there is no component template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
                 } else if(templateStack.top().type != TemplateType::COMPONENT) {
@@ -789,8 +816,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     msgBuffer += " first";
 
                     mem_lncol(input, errorIndex, &ln, &col);
-                    std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                     throw CompilationException("Unexpected component end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
                 }
@@ -849,8 +876,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 size_t errorIndex = (end + index) - input - 1;
 
                 mem_lncol(input, errorIndex, &ln, &col);
-                std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);    
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);    
 
                 throw CompilationException("Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
             } else if(index != 0) {
@@ -897,8 +924,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
         size_t errorIndex = templateStack.top().inputStartIndex;
 
         mem_lncol(input, errorIndex, &ln, &col);
-        std::unique_ptr<uint8_t, decltype(qfree)*> chunk(
-            mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), qfree);
+        std::unique_ptr<uint8_t, decltype(free)*> chunk(
+            mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
         std::string msgBuffer;
         msgBuffer.reserve(64);
@@ -965,7 +992,7 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
         pathBuilder += '/';
     pathBuilder.append(componentPath, componentPathLength);
 
-    const char* absolute = strdup(pathBuilder.c_str());
+    const char* absolute = qstrdup(pathBuilder.c_str());
 
     if(!absolute)
         throw MemoryException("Cannot allocate memory for component path", pathBuilder.size());

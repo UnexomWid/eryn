@@ -1,8 +1,9 @@
 #include "compilation.hxx"
 #include "../def/warnings.dxx"
+#include "../../lib/buffer.hxx"
 
 CompilationException::CompilationException(const CompilationException &e) {
-    message = strdup(e.message);
+    message = qstrdup(e.message);
 }
 
 CompilationException::CompilationException(CompilationException &&e) {
@@ -12,7 +13,7 @@ CompilationException::CompilationException(CompilationException &&e) {
 
 CompilationException::~CompilationException() {
     if(message != nullptr)
-        free((char*) message);
+        qfree((char*) message);
 }
 
 CompilationException::CompilationException(const char* msg, const char* description) {
@@ -20,7 +21,7 @@ CompilationException::CompilationException(const char* msg, const char* descript
     buffer += "(";
     buffer += description;
     buffer += ")";
-    message = strdup(buffer.c_str());
+    message = qstrdup(buffer.c_str());
 }
 
 CompilationException::CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
@@ -44,7 +45,7 @@ CompilationException::CompilationException(const char* msg, const char* descript
         buffer += "^\n";
     }
 
-    message = strdup(buffer.c_str());
+    message = qstrdup(buffer.c_str());
 }
 
 const char* CompilationException::what() const {
@@ -56,9 +57,9 @@ CompilationException& CompilationException::operator=(const CompilationException
         return *this;
 
     if(message != nullptr)
-        free((char*) message);
+        qfree((char*) message);
 
-    message = strdup(e.message);
+    message = qstrdup(e.message);
 
     return *this;
 }

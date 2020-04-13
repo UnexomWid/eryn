@@ -19,6 +19,16 @@
 using Global::Cache;
 using Global::Options;
 
+BinaryData render(BridgeData data, const char* path) {
+    LOG_INFO("===> Rendering '%s'", path);
+
+    if(!Cache::hasEntry(path))
+        throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
+
+    BinaryData entry = Cache::getEntry(path);
+    return renderBytes(data, entry.data, entry.size);
+}
+
 void renderFile(BridgeData data, const char* path, const char* outputPath) {
     LOG_INFO("===> Rendering file '%s'", path);
 
@@ -50,38 +60,25 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     qfree((uint8_t*) rendered.data);
 }
 
-void renderComponent(BridgeData data, uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
-    std::string path(reinterpret_cast<char*>(component), componentSize);
+void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
+    std::string path(reinterpret_cast<const char*>(component), componentSize);
 
     LOG_INFO("===> Rendering component '%s'", path.c_str());
 
-    FILE* input = fopen(path.c_str(), "rb");
+    if(!Cache::hasEntry(path))
+        throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
 
-    if(input == NULL)
-        throw RenderingException("Render error", "cannot open component file; did you forget to compile it?");
-
-    fseek(input, 0, SEEK_END);
-    long fileLength = ftell(input);
-    fseek(input, 0, SEEK_SET);
-
-    LOG_DEBUG("Component size is %ld bytes\n", fileLength);
-
-    size_t inputSize = (size_t) fileLength;
-    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
-
-    fread(inputBuffer.get(), 1, inputSize, input);
-    fclose(input);
-
-    renderBytes(data, inputBuffer.get(), inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+    BinaryData entry = Cache::getEntry(path);
+    renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
 
     LOG_DEBUG("===> Done\n");
 }
 
-BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize) {
+BinaryData renderBytes(BridgeData data, const uint8_t* input, const size_t inputSize) {
     return renderBytes(data, input, inputSize, nullptr, 0, nullptr, 0);
 }
 
-BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
+BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
@@ -101,7 +98,7 @@ BinaryData renderBytes(BridgeData data, uint8_t* input, size_t inputSize, uint8_
     return BinaryData(rendered, outputSize);
 }
 
-void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, uint8_t* content, size_t contentSize, uint8_t* parentContent, size_t parentContentSize) {
+void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
     size_t inputIndex  = 0;
     size_t nameLength  = 0;
     size_t valueLength = 0;
@@ -117,7 +114,7 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
 
         std::string assignment;         // Used to assign a value from the array to a variable.
 
-        LoopStackInfo(BridgeData data, uint8_t* iterator, size_t iteratorSize, uint8_t* array, size_t arraySize) : arrayIndex(0), arrayLength(getArrayLength(data, array, arraySize)) {
+        LoopStackInfo(BridgeData data, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), arrayLength(getArrayLength(data, array, arraySize)) {
             buildLoopAssignment(data, assignment, assignmentUpdateIndex, assignmentUnassignIndex, iterator, iteratorSize, array, arraySize);
             update();
         };
@@ -176,8 +173,8 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
             size_t leftLength;
             size_t rightLength;
 
-            uint8_t* left;
-            uint8_t* right;
+            const uint8_t* left;
+            const uint8_t* right;
 
             inputIndex -= valueLength;
 
@@ -240,8 +237,8 @@ void renderBytes(BridgeData data, uint8_t* input, size_t inputSize, std::unique_
             size_t leftLength;
             size_t rightLength;
 
-            uint8_t* left;
-            uint8_t* right;
+            const uint8_t* left;
+            const uint8_t* right;
 
             inputIndex -= valueLength;
 

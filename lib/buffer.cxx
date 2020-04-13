@@ -67,7 +67,7 @@ uint8_t* qrealloc(uint8_t* buffer, size_t size) {
     if(!ptr)
         throw MemoryException("Cannot reallocate memory", size);
 
-    LOG_MEM("Reallocated %p", ptr);
+    LOG_MEM("Reallocated %p -> %p", buffer, ptr);
 
     return ptr;
 }
@@ -76,7 +76,7 @@ uint8_t* qexpand(uint8_t* buffer, size_t &size) {
     return qrealloc(buffer, (size *= 2));
 }
 
-void qfree(uint8_t* buffer) {
+void qfree(void* buffer) {
     if(buffer != nullptr && buffer != 0)
         free(buffer);
 
@@ -87,6 +87,14 @@ void qfree(uint8_t* buffer) {
         if(allocatedAmount == 0)
             LOG_MEM("All allocated memory blocks have been freed");
     #endif
+}
+
+char* qstrdup(const char* str) {
+    size_t length = strlen(str) + 1;
+    char* ptr = reinterpret_cast<char*>(qmalloc(length));
+
+    memcpy(ptr, str, length);
+    return ptr;
 }
 
 MemoryException::MemoryException(const MemoryException &e) {
@@ -129,6 +137,16 @@ MemoryException& MemoryException::operator=(const MemoryException &e) {
     return *this;
 }
 
+BinaryData::BinaryData() : BinaryData(nullptr, 0) { }
 BinaryData::BinaryData(const uint8_t* d, const size_t s) : data(d), size(s) { }
+BinaryData::BinaryData(const BinaryData& binaryData) : data(binaryData.data), size(binaryData.size) { }
+BinaryData::BinaryData(const BinaryData&& binaryData) : data(binaryData.data), size(binaryData.size) { }
+
+BinaryData BinaryData::copy() {
+    uint8_t* dataCopy = qmalloc(size);
+    memcpy(dataCopy, data, size);
+
+    return BinaryData(dataCopy, size);
+}
 
 #undef LOG_MEM

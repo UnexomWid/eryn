@@ -26,6 +26,7 @@ file(GLOB SOURCE_FILES
     lib/**/*.h
     lib/**/*.c)
 
+add_definitions(-DDEBUG)
 add_definitions(-DLOG_MEMORY_ALLOCATIONS)
 add_definitions(-DNAPI_VERSION=3)
 

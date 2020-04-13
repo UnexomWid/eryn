@@ -1,8 +1,9 @@
 #include "rendering.hxx"
 #include "../def/warnings.dxx"
+#include "../../lib/buffer.hxx"
 
 RenderingException::RenderingException(const RenderingException &e) {
-    message = strdup(e.message);
+    message = qstrdup(e.message);
 }
 
 RenderingException::RenderingException(RenderingException &&e) {
@@ -12,7 +13,7 @@ RenderingException::RenderingException(RenderingException &&e) {
 
 RenderingException::~RenderingException() {
     if(message != nullptr)
-        free((char*) message);
+        qfree((char*) message);
 }
 
 RenderingException::RenderingException(const char* msg, const char* description) {
@@ -20,7 +21,7 @@ RenderingException::RenderingException(const char* msg, const char* description)
     buffer += " (";
     buffer += description;
     buffer += ")\n";
-    message = strdup(buffer.c_str());
+    message = qstrdup(buffer.c_str());
 }
 
 const char* RenderingException::what() const {
@@ -32,9 +33,9 @@ RenderingException& RenderingException::operator=(const RenderingException &e) {
         return *this;
 
     if(message != nullptr)
-        free((char*) message);
+        qfree((char*) message);
 
-    message = strdup(e.message);
+    message = qstrdup(e.message);
 
     return *this;
 }

@@ -12,8 +12,8 @@ std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<char*>(templateBytes), templateLength));
+void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
 
     if(result.IsUndefined() || result.IsNull())
         return;
@@ -90,8 +90,8 @@ void evalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength
     } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined");
 }
 
-bool evalConditionalTemplate(BridgeData data, uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<char*>(templateBytes), templateLength));
+bool evalConditionalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
 
     return (bool) result.ToBoolean();
 }
@@ -104,23 +104,23 @@ void unassign(BridgeData data, const std::string &assignment, size_t assignmentU
     data.RunScript(assignment.substr(0, assignmentUnassignIndex) + "=undefined");
 }
 
-size_t getArrayLength(BridgeData data, uint8_t* arrayBytes, size_t arraySize) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<char*>(arrayBytes), arraySize));
+size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySize) {
+    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
     if(!result.IsArray())
         throw RenderingException("Unsupported loop right operand", "must be Array");
     return result.As<Napi::Array>().Length();    
 }
 
-void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, uint8_t* iterator, size_t iteratorSize, uint8_t* array, size_t arraySize) {
-    data.RunScript("var " + std::string(reinterpret_cast<char*>(iterator), iteratorSize));
+void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {
+    data.RunScript("var " + std::string(reinterpret_cast<const char*>(iterator), iteratorSize));
     
     assignment.reserve(256);
-    assignment.append(reinterpret_cast<char*>(iterator), iteratorSize);
+    assignment.append(reinterpret_cast<const char*>(iterator), iteratorSize);
     assignment += "=";
 
     assignmentUnassignIndex = assignment.size() - 1;
 
-    assignment.append(reinterpret_cast<char*>(array), arraySize);
+    assignment.append(reinterpret_cast<const char*>(array), arraySize);
     assignment += "[";
 
     assignmentUpdateIndex = assignment.size();
@@ -144,10 +144,10 @@ BridgeBackup backupContext(BridgeData data) {
     }
 }
 
-void initContext(BridgeData data, uint8_t* context, size_t contextSize) {
+void initContext(BridgeData data, const uint8_t* context, size_t contextSize) {
     if(contextSize == 0)
         data.RunScript("var context=undefined");
-    else data.RunScript("var context=" + std::string(reinterpret_cast<char*>(context), contextSize));
+    else data.RunScript("var context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
 }
 
 void restoreContext(BridgeData data, BridgeBackup backup) {
