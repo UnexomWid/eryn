@@ -5,6 +5,7 @@
 
 #include "../../lib/bdp.hxx"
 #include "../../lib/mem_find.h"
+#include "../../lib/timer.hxx"
 
 #include "../global/cache.hxx"
 #include "../global/global.hxx"
@@ -22,11 +23,20 @@ using Global::Options;
 BinaryData render(BridgeData data, const char* path) {
     LOG_INFO("===> Rendering '%s'", path);
 
+    CHRONOMETER chrono = time_now();
+
     if(!Cache::hasEntry(path))
         throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
 
     BinaryData entry = Cache::getEntry(path);
-    return renderBytes(data, entry.data, entry.size);
+
+    #ifdef TIMING
+        BinaryData rendered = renderBytes(data, entry.data, entry.size);
+        LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+        return rendered;
+    #else
+        return renderBytes(data, entry.data, entry.size);
+    #endif
 }
 
 void renderFile(BridgeData data, const char* path, const char* outputPath) {
@@ -152,7 +162,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
-            LOG_DEBUG("--> Found plaintext");
+            LOG_DEBUG("--> Found plaintext %zu", inputIndex);
 
             while(outputSize + valueLength > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -182,7 +192,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             inputIndex += OSH_FORMAT;
 
             if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
-                inputIndex = conditionalEnd;
+                inputIndex += conditionalEnd;
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_END_MARKER) {
             LOG_DEBUG("--> Found conditional template end");
 
@@ -221,9 +231,12 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength));
 
             if(loopStack.top().arrayIndex >= loopStack.top().arrayLength) {
-                if(BDP::isLittleEndian()) {
-                    BDP::directBytesToLength(inputIndex, input + inputIndex, OSH_FORMAT);
-                } else BDP::bytesToLength(inputIndex, input + inputIndex, OSH_FORMAT);
+                size_t loopEnd;
+                if(BDP::isLittleEndian())
+                    BDP::directBytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+                else BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+
+                inputIndex += OSH_FORMAT + loopEnd;
 
                 loopStack.pop();
             } else {
@@ -233,21 +246,23 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
             LOG_DEBUG("--> Found loop template end");
 
-            size_t returnIndex;
-
-            if(BDP::isLittleEndian()) {
-                BDP::directBytesToLength(returnIndex, input + inputIndex, OSH_FORMAT);
-            } else BDP::bytesToLength(returnIndex, input + inputIndex, OSH_FORMAT);
-
-            inputIndex += OSH_FORMAT;
-
             if(loopStack.top().arrayIndex < loopStack.top().arrayLength) {
                 loopStack.top().invalidate();
                 loopStack.top().update();
 
                 evalAssignment(data, loopStack.top().assignment);
-                inputIndex = returnIndex;
+
+                size_t loopStart;
+
+                if(BDP::isLittleEndian())
+                    BDP::directBytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
+                else BDP::bytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
+
+                inputIndex += OSH_FORMAT;
+                inputIndex -= loopStart;
             } else {
+                inputIndex += OSH_FORMAT;
+
                 unassign(data, loopStack.top().assignment, loopStack.top().assignmentUnassignIndex);
                 loopStack.pop();
             }
@@ -284,9 +299,9 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             size_t contentLength;
 
-            if(BDP::isLittleEndian()) {
+            if(BDP::isLittleEndian())
                 BDP::directBytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
-            } else BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
+            else BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
 
             inputIndex += OSH_FORMAT;
 
@@ -301,6 +316,6 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             LOG_DEBUG("--> Found component template end");
 
             continue;
-        } else throw RenderingException("Not dupported", "this template type is not supported");
+        } else throw RenderingException("Not supported", "this template type is not supported");
     }
 }

@@ -106,9 +106,9 @@ void unassign(BridgeData data, const std::string &assignment, size_t assignmentU
 
 size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySize) {
     Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
-    if(!result.IsArray())
-        throw RenderingException("Unsupported loop right operand", "must be Array");
-    return result.As<Napi::Array>().Length();    
+    if(!result.IsArray() && !result.IsObject())
+        throw RenderingException("Unsupported loop right operand", "must be Array or Object");
+    return result.ToObject().GetPropertyNames().Length();   
 }
 
 void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {

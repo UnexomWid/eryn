@@ -2,6 +2,7 @@
 #include <node_api.h>
 
 #include "def/logging.dxx"
+#include "global/cache.hxx"
 #include "global/global.hxx"
 #include "global/options.hxx"
 #include "compiler/compiler.hxx"
@@ -107,6 +108,10 @@ void erynCompile(const Napi::CallbackInfo& info) {
 
     try {
         compile(wd, path);
+
+        FILE* f = fopen((path+ std::string(".txt")).c_str(), "wb");
+        fwrite(Global::Cache::getEntry(path).data, 1, Global::Cache::getEntry(path).size, f);
+        fclose(f);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

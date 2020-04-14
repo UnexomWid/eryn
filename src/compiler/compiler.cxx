@@ -45,7 +45,9 @@ void compile(const char* wd, const char* path) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    Cache::addEntry(path, compileBytes(inputBuffer.get(), inputSize, wd));
+    std::unique_ptr<char, decltype(qfree)*> wdDup(qstrdup(wd), qfree);
+
+    Cache::addEntry(path, compileBytes(inputBuffer.get(), inputSize, wdDup.get()));
 
     LOG_DEBUG("Wrote %zu bytes to output", Cache::getEntry(path).size);
 }
@@ -104,11 +106,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     };
 
     struct TemplateStackInfo {
-        TemplateType type;       // The template type.
-        size_t outputEndIndex;   // At which index the template ends in the output (for writing the index of the template end).
-        size_t inputStartIndex;  // At which index the template starts in the input (provides more information when an exception occurs).
+        TemplateType type;    // The template type.
+        size_t bodyIndex;     // The index at which the template body starts (for writing the body size).  
+        size_t templateIndex; // The index at which the template starts in the input (provides more information when an exception occurs).
 
-        TemplateStackInfo(TemplateType typ, size_t outEnd, size_t inStart) : type(typ), outputEndIndex(outEnd), inputStartIndex(inStart) { };
+        TemplateStackInfo(TemplateType typ, size_t start, size_t index) : type(typ), bodyIndex(start), templateIndex(index) { };
     };
 
     std::stack<TemplateStackInfo> templateStack;
@@ -196,9 +198,10 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, start, length);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
+
+                outputSize += OSH_FORMAT;
                 
                 templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex));
-                outputSize += OSH_FORMAT;
                 LOG_DEBUG("done\n");
             }
 
@@ -251,7 +254,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t chunkSize;
                     size_t errorIndex = start - input;
 
-                    mem_lncol(input, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(input, templateStack.top().templateIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -293,8 +296,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_END_MARKER, OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
 
                 if(BDP::isLittleEndian())
-                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
-                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n");
@@ -445,9 +448,10 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
             outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer, tempBufferSize);
             memset(output.get() + outputSize, 0, OSH_FORMAT);
+
+            outputSize += OSH_FORMAT;
                 
             templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex));
-            outputSize += OSH_FORMAT;
             free(tempBuffer);
 
             LOG_DEBUG("done\n");
@@ -501,7 +505,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t chunkSize;
                     size_t errorIndex = start - input;
 
-                    mem_lncol(input, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(input, templateStack.top().templateIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -543,12 +547,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
 
                 if(BDP::isLittleEndian()) {
-                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize + OSH_FORMAT, OSH_FORMAT);
-                    BDP::directLengthToBytes(output.get() + outputSize, templateStack.top().outputEndIndex + OSH_FORMAT, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex + OSH_FORMAT, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + outputSize, outputSize + OSH_FORMAT - templateStack.top().bodyIndex, OSH_FORMAT);
                 }
                 else {
-                    BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, outputSize + OSH_FORMAT, OSH_FORMAT);
-                    BDP::lengthToBytes(output.get() + outputSize, templateStack.top().outputEndIndex + OSH_FORMAT, OSH_FORMAT);
+                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex + OSH_FORMAT, OSH_FORMAT);
+                    BDP::lengthToBytes(output.get() + outputSize, outputSize + OSH_FORMAT - templateStack.top().bodyIndex, OSH_FORMAT);
                 }
 
                 outputSize += OSH_FORMAT;
@@ -793,7 +797,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                     size_t chunkSize;
                     size_t errorIndex = start - input;
 
-                    mem_lncol(input, templateStack.top().inputStartIndex, &ln, &col);
+                    mem_lncol(input, templateStack.top().templateIndex, &ln, &col);
 
                     std::string msgBuffer;
                     msgBuffer.reserve(64);
@@ -837,8 +841,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
                 
                 if(BDP::isLittleEndian())
-                    BDP::directLengthToBytes(output.get() + templateStack.top().outputEndIndex, backup - templateStack.top().outputEndIndex - OSH_FORMAT, OSH_FORMAT);
-                else BDP::lengthToBytes(output.get() + templateStack.top().outputEndIndex, backup - templateStack.top().outputEndIndex - OSH_FORMAT, OSH_FORMAT);
+                    BDP::directLengthToBytes(output.get() + templateStack.top().bodyIndex, backup - templateStack.top().bodyIndex - OSH_FORMAT, OSH_FORMAT);
+                else BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex, backup - templateStack.top().bodyIndex - OSH_FORMAT, OSH_FORMAT);
                 
                 templateStack.pop();
                 LOG_DEBUG("done\n");
@@ -921,7 +925,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
         size_t col;
         size_t chunkIndex;
         size_t chunkSize;
-        size_t errorIndex = templateStack.top().inputStartIndex;
+        size_t errorIndex = templateStack.top().bodyIndex;
 
         mem_lncol(input, errorIndex, &ln, &col);
         std::unique_ptr<uint8_t, decltype(free)*> chunk(
@@ -993,9 +997,6 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
     pathBuilder.append(componentPath, componentPathLength);
 
     const char* absolute = qstrdup(pathBuilder.c_str());
-
-    if(!absolute)
-        throw MemoryException("Cannot allocate memory for component path", pathBuilder.size());
 
     absoluteLength = pathBuilder.size();
     return (uint8_t*) absolute;
