@@ -103,8 +103,8 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
     size_t nameLength  = 0;
     size_t valueLength = 0;
 
-    std::unique_ptr<uint8_t, decltype(qfree)*> name(qmalloc(256u), qfree);
-    std::unique_ptr<uint8_t, decltype(qfree)*> value(qalloc(outputCapacity), qfree);
+    const uint8_t* name;
+    const uint8_t* value;
 
     struct LoopStackInfo {
         size_t arrayIndex;              // Used to iterate over the array.
@@ -126,7 +126,27 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
     std::stack<LoopStackInfo> loopStack;
 
     while(inputIndex < inputSize) {
-        inputIndex += BDP::readPair(Global::BDP832, input + inputIndex, (uint8_t*)name.get(), (uint64_t*)&nameLength, (uint8_t*)value.get(), (uint64_t*)&valueLength);
+        if(BDP::isLittleEndian()) {
+            BDP::directBytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+            name = input + inputIndex;
+            inputIndex += nameLength;
+
+            BDP::directBytesToLength(valueLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            value = input + inputIndex;
+            inputIndex += valueLength;
+        } else {
+            BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+            name = input + inputIndex;
+            input += nameLength;
+
+            BDP::bytesToLength(valueLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            value = input + inputIndex;
+            input += valueLength;
+        }
 
         uint8_t nameByte = *name;
         
@@ -140,17 +160,17 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 output.reset(newOutput);
             }
 
-            memcpy(output.get() + outputSize, value.get(), valueLength);
+            memcpy(output.get() + outputSize, value, valueLength);
             outputSize += valueLength;
         } else if(nameByte == *OSH_TEMPLATE_MARKER) {
             LOG_DEBUG("--> Found template");
 
-            if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value.get(), OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
+            if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value, OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
                 if(contentSize == 0u) {
                     if(Options::getThrowOnEmptyContent())
                         throw RenderingException("No content", "there is no content for this component");
                 } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
-            } else evalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity);
+            } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
             LOG_DEBUG("--> Found conditional template start");
 
@@ -161,7 +181,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             inputIndex += OSH_FORMAT;
 
-            if(!evalConditionalTemplate(data, value.get(), valueLength, output, outputSize, outputCapacity))
+            if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
                 inputIndex = conditionalEnd;
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_END_MARKER) {
             LOG_DEBUG("--> Found conditional template end");

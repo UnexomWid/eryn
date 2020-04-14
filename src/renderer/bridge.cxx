@@ -18,7 +18,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
     if(result.IsUndefined() || result.IsNull())
         return;
     else if(result.IsString()) {
-        LOG_DEBUG("Type: string");
+        LOG_DEBUG("    Type: string");
 
         std::string str = result.As<Napi::String>().Utf8Value();
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
@@ -32,7 +32,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsObject()) {
-        LOG_DEBUG("Type: object");
+        LOG_DEBUG("    Type: object");
 
         std::string str = stringify(data, result.As<Napi::Object>());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
@@ -46,7 +46,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsArray()) {
-        LOG_DEBUG("Type: array");
+        LOG_DEBUG("    Type: array");
 
         std::string str = stringify(data, result.ToObject());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
@@ -60,7 +60,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     } else if(result.IsNumber()) {
-        LOG_DEBUG("Type: number");
+        LOG_DEBUG("    Type: number");
 
         std::string str = result.ToString().Utf8Value();
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
@@ -74,7 +74,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
     }else if(result.IsArrayBuffer()) {
-        LOG_DEBUG("Type: array buffer");
+        LOG_DEBUG("    Type: array buffer");
 
         uint8_t* ptr = (uint8_t*) result.As<Napi::ArrayBuffer>().Data();
         size_t length = result.As<Napi::ArrayBuffer>().ByteLength();
