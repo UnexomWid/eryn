@@ -231,7 +231,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             while(*end == ' ' || *end == '\t')
                 --end;
 
-            if(start == end) { // Template conditional end.
+            if(start == end - Options::getTemplateConditionalEndLength() + 1) { // Template conditional end.
                 if(templateStack.empty()) {
                     size_t ln;
                     size_t col;
@@ -481,7 +481,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             while(*end == ' ' || *end == '\t')
                 --end;
 
-            if(start == end) { // Loop template end.
+            if(start == end - Options::getTemplateLoopEndLength() + 1) { // Loop template end.
                 if(templateStack.empty()) {
                     size_t ln;
                     size_t col;
@@ -773,7 +773,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             while(*end == ' ' || *end == '\t')
                 --end;
 
-            if(start == end) { // Template component end.
+            if(start == end - Options::getTemplateComponentEndLength() + 1) { // Template component end.
                 if(templateStack.empty()) {
                     size_t ln;
                     size_t col;

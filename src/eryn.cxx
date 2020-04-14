@@ -3,6 +3,7 @@
 
 #include "def/logging.dxx"
 #include "global/global.hxx"
+#include "global/options.hxx"
 #include "compiler/compiler.hxx"
 #include "renderer/renderer.hxx"
 
@@ -17,20 +18,89 @@ std::string jsonStringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-Napi::Value erynEval(const Napi::CallbackInfo& info) {
+void erynSetOptions(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    Napi::String expression = info[0].As<Napi::String>();
-    std::string context = jsonStringify(env, info[1].As<Napi::Object>());
-    env.RunScript("var context = " + context);
-    Napi::Value x = env.RunScript(expression);
-    return x;
-}
+    if(info.Length() != 1)
+        throw Napi::Error::New(env, "Invalid argument count (expected 1: Object)");
+    if(!info[0].IsObject())
+        throw Napi::Error::New(env, "Invalid arguments (expected: Object)");
 
-#include "global/cache.hxx"
+    Napi::Object options = info[0].As<Napi::Object>();
+    Napi::Array keys = options.GetPropertyNames();
+
+    for(uint32_t i = 0; i < keys.Length(); ++i) {
+        Napi::Value keyVal = keys[i];
+
+        if(!keyVal.IsString())
+            continue;
+
+        std::string key = keyVal.As<Napi::String>().Utf8Value();
+        Napi::Value value = options.Get(keys[i]);
+
+        if(key == "bypassCache") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setBypassCache(value.ToBoolean().Value());
+        } else if(key == "throwOnEmptyContent") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setThrowOnEmptyContent(value.ToBoolean().Value());
+        } else if(key == "templateStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "templateEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateEnd(value.ToString().Utf8Value().c_str());
+        } else if(key == "conditionalStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateConditionalStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "conditionalEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateConditionalEnd(value.ToString().Utf8Value().c_str());
+        } else if(key == "loopStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateLoopStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "loopEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateLoopEnd(value.ToString().Utf8Value().c_str());
+        } else if(key == "loopSeparator") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateLoopSeparator(value.ToString().Utf8Value().c_str());
+        } else if(key == "componentStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateComponent(value.ToString().Utf8Value().c_str());
+        } else if(key == "componentSeparator") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateComponentSeparator(value.ToString().Utf8Value().c_str());
+        } else if(key == "componentSelf") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateComponentSelf(value.ToString().Utf8Value().c_str());
+        } else if(key == "componentEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateComponentEnd(value.ToString().Utf8Value().c_str());
+        }
+    }
+}
 
 void erynCompile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
+
+    if(info.Length() != 2)
+        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, String)");
+    if(!info[0].IsString() || !info[1].IsString())
+        throw Napi::Error::New(env, "Invalid arguments (expected: String, String)");
 
     const char* wd = info[0].As<Napi::String>().Utf8Value().c_str();
     const char* path = info[1].As<Napi::String>().Utf8Value().c_str();
@@ -44,6 +114,11 @@ void erynCompile(const Napi::CallbackInfo& info) {
 
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
+
+    if(info.Length() != 2)
+        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, Object)");
+    if(!info[0].IsString() || !info[1].IsObject())
+        throw Napi::Error::New(env, "Invalid arguments (expected: String, Object)");
 
     const char* path = info[0].As<Napi::String>().Utf8Value().c_str();
     Napi::Object context = info[1].As<Napi::Object>();
@@ -66,16 +141,15 @@ void destroy(void* args) {
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
     LOG_DEBUG("Init...\n");
+
     Global::init();
 
     napi_add_env_cleanup_hook((napi_env) env, destroy, nullptr);
 
-    exports.Set(Napi::String::New(env, "eval"),
-                Napi::Function::New(env, erynEval));
-    exports.Set(Napi::String::New(env, "compile"),
-                Napi::Function::New(env, erynCompile));
-    exports.Set(Napi::String::New(env, "render"),
-                Napi::Function::New(env, erynRender));
+    exports["compile"] = Napi::Function::New(env, erynCompile);
+    exports["render"] = Napi::Function::New(env, erynRender);
+    exports["setOptions"] = Napi::Function::New(env, erynSetOptions);
+
     return exports;
 }
 

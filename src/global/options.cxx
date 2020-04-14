@@ -49,196 +49,196 @@ uint8_t* Global::Options::templateComponentEnd             = nullptr;
 uint8_t  Global::Options::templateComponentEndLength       = 0;
 
 void Global::Options::setBypassCache(bool value) {
-    bypassCache = value;
+    Global::Options::bypassCache = value;
 }
 
 void Global::Options::setThrowOnEmptyContent(bool value) {
-    throwOnEmptyContent = value;
+    Global::Options::throwOnEmptyContent = value;
 }
 
 void Global::Options::setTemplateStart(const char* value) {
-    if(templateStart != nullptr)
-        qfree(templateStart);
+    if(Global::Options::templateStart != nullptr)
+        qfree(Global::Options::templateStart);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateStart = qmalloc(length);
+    Global::Options::templateStart = qmalloc(length);
 
-    memcpy(templateStart, value, length);
+    memcpy(Global::Options::templateStart, value, length);
 
-    if(templateStartLookup != nullptr)
-        qfree(templateStartLookup);
+    if(Global::Options::templateStartLookup != nullptr)
+        qfree(Global::Options::templateStartLookup);
 
     if(length < HORSPOOL_THRESHOLD) {
-        templateStartLookup = qmalloc(length);
-        build_kmp_lookup(templateStartLookup, templateStart, length);
+        Global::Options::templateStartLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateStartLookup, Global::Options::templateStart, length);
     } else {
-        templateStartLookup = qmalloc(256u);
-        build_horspool_lookup(templateStartLookup, templateStart, length);
+        Global::Options::templateStartLookup = qmalloc(256u);
+        build_horspool_lookup(Global::Options::templateStartLookup, Global::Options::templateStart, length);
     }
 
     Global::Options::templateStartLength = length;
 }
 
 void Global::Options::setTemplateEnd(const char* value) {
-    if(templateEnd != nullptr)
-        qfree(templateEnd);
+    if(Global::Options::templateEnd != nullptr)
+        qfree(Global::Options::templateEnd);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateEnd = qmalloc(length);
+    Global::Options::templateEnd = qmalloc(length);
 
-    memcpy(templateEnd, value, length);
+    memcpy(Global::Options::templateEnd, value, length);
 
-    if(templateEndLookup != nullptr)
-        qfree(templateEndLookup);
+    if(Global::Options::templateEndLookup != nullptr)
+        qfree(Global::Options::templateEndLookup);
 
     if(length < HORSPOOL_THRESHOLD) {
-        templateEndLookup = qmalloc(length);
-        build_kmp_lookup(templateEndLookup, templateEnd, length);
+        Global::Options::templateEndLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateEndLookup, Global::Options::templateEnd, length);
     } else {
-        templateEndLookup = qmalloc(256u);
-        build_horspool_lookup(templateEndLookup, templateEnd, length);
+        Global::Options::templateEndLookup = qmalloc(256u);
+        build_horspool_lookup(Global::Options::templateEndLookup, Global::Options::templateEnd, length);
     }
 
     Global::Options::templateEndLength = length;
 }
 
 void Global::Options::setTemplateConditionalStart(const char* value) {
-    if(templateConditionalStart != nullptr)
-        qfree(templateConditionalStart);
+    if(Global::Options::templateConditionalStart != nullptr)
+        qfree(Global::Options::templateConditionalStart);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateConditionalStart = qmalloc(length);
+    Global::Options::templateConditionalStart = qmalloc(length);
 
-    memcpy(templateConditionalStart, value, length);
+    memcpy(Global::Options::templateConditionalStart, value, length);
 
     Global::Options::templateConditionalStartLength = length;
 }
 
 void Global::Options::setTemplateConditionalEnd(const char* value) {
-    if(templateConditionalEnd != nullptr)
-        qfree(templateConditionalEnd);
+    if(Global::Options::templateConditionalEnd != nullptr)
+        qfree(Global::Options::templateConditionalEnd);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateConditionalEnd = qmalloc(length);
+    Global::Options::templateConditionalEnd = qmalloc(length);
 
-    memcpy(templateConditionalEnd, value, length);
+    memcpy(Global::Options::templateConditionalEnd, value, length);
 
     Global::Options::templateConditionalEndLength = length;
 }
 
 void Global::Options::setTemplateLoopStart(const char* value) {
-    if(templateLoopStart != nullptr)
-        qfree(templateLoopStart);
+    if(Global::Options::templateLoopStart != nullptr)
+        qfree(Global::Options::templateLoopStart);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateLoopStart = qmalloc(length);
+    Global::Options::templateLoopStart = qmalloc(length);
 
-    memcpy(templateLoopStart, value, length);
+    memcpy(Global::Options::templateLoopStart, value, length);
 
     Global::Options::templateLoopStartLength = length;
 }
 
 void Global::Options::setTemplateLoopEnd(const char* value) {
-    if(templateLoopEnd != nullptr)
-        qfree(templateLoopEnd);
+    if(Global::Options::templateLoopEnd != nullptr)
+        qfree(Global::Options::templateLoopEnd);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateLoopEnd = qmalloc(length);
+    Global::Options::templateLoopEnd = qmalloc(length);
 
-    memcpy(templateLoopEnd, value, length);
+    memcpy(Global::Options::templateLoopEnd, value, length);
 
     Global::Options::templateLoopEndLength = length;
 }
 
 void Global::Options::setTemplateLoopSeparator(const char* value) {
-    if(templateLoopSeparator != nullptr)
-        qfree(templateLoopSeparator);
+    if(Global::Options::templateLoopSeparator != nullptr)
+        qfree(Global::Options::templateLoopSeparator);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateLoopSeparator = qmalloc(length);
+    Global::Options::templateLoopSeparator = qmalloc(length);
 
-    memcpy(templateLoopSeparator, value, length);
+    memcpy(Global::Options::templateLoopSeparator, value, length);
 
-    if(templateLoopSeparatorLookup != nullptr)
-        qfree(templateLoopSeparatorLookup);
+    if(Global::Options::templateLoopSeparatorLookup != nullptr)
+        qfree(Global::Options::templateLoopSeparatorLookup);
 
     if(length < HORSPOOL_THRESHOLD) {
-        templateLoopSeparatorLookup = qmalloc(length);
-        build_kmp_lookup(templateLoopSeparatorLookup, templateLoopSeparator, length);
+        Global::Options::templateLoopSeparatorLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateLoopSeparatorLookup, Global::Options::templateLoopSeparator, length);
     } else {
         templateLoopSeparatorLookup = qmalloc(256u);
-        build_horspool_lookup(templateLoopSeparatorLookup, templateLoopSeparator, length);
+        build_horspool_lookup(Global::Options::templateLoopSeparatorLookup, Global::Options::templateLoopSeparator, length);
     }
 
     Global::Options::templateLoopSeparatorLength = length;
 }
 
 void Global::Options::setTemplateComponent(const char* value) {
-    if(templateComponent != nullptr)
-        qfree(templateComponent);
+    if(Global::Options::templateComponent != nullptr)
+        qfree(Global::Options::templateComponent);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateComponent = qmalloc(length);
+    Global::Options::templateComponent = qmalloc(length);
 
-    memcpy(templateComponent, value, length);
+    memcpy(Global::Options::templateComponent, value, length);
 
     Global::Options::templateComponentLength = length;
 }
 
 void Global::Options::setTemplateComponentSeparator(const char* value) {
-    if(templateComponentSeparator != nullptr)
-        qfree(templateComponentSeparator);
+    if(Global::Options::templateComponentSeparator != nullptr)
+        qfree(Global::Options::templateComponentSeparator);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateComponentSeparator = qmalloc(length);
+    Global::Options::templateComponentSeparator = qmalloc(length);
 
-    memcpy(templateComponentSeparator, value, length);
+    memcpy(Global::Options::templateComponentSeparator, value, length);
 
-    if(templateComponentSeparatorLookup != nullptr)
-        qfree(templateComponentSeparatorLookup);
+    if(Global::Options::templateComponentSeparatorLookup != nullptr)
+        qfree(Global::Options::templateComponentSeparatorLookup);
 
     if(length < HORSPOOL_THRESHOLD) {
-        templateComponentSeparatorLookup = qmalloc(length);
-        build_kmp_lookup(templateComponentSeparatorLookup, templateComponentSeparator, length);
+        Global::Options::templateComponentSeparatorLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateComponentSeparatorLookup, Global::Options::templateComponentSeparator, length);
     } else {
-        templateComponentSeparatorLookup = qmalloc(256u);
-        build_horspool_lookup(templateComponentSeparatorLookup, templateComponentSeparator, length);
+        Global::Options::templateComponentSeparatorLookup = qmalloc(256u);
+        build_horspool_lookup(Global::Options::templateComponentSeparatorLookup, Global::Options::templateComponentSeparator, length);
     }
 
     Global::Options::templateComponentSeparatorLength = length;
 }
 
 void Global::Options::setTemplateComponentSelf(const char* value) {
-    if(templateComponentSelf != nullptr)
-        qfree(templateComponentSelf);
+    if(Global::Options::templateComponentSelf != nullptr)
+        qfree(Global::Options::templateComponentSelf);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateComponentSelf = qmalloc(length);
+    Global::Options::templateComponentSelf = qmalloc(length);
 
-    memcpy(templateComponentSelf, value, length);
+    memcpy(Global::Options::templateComponentSelf, value, length);
 
-    if(templateComponentSelfLookup != nullptr)
-        qfree(templateComponentSelfLookup);
+    if(Global::Options::templateComponentSelfLookup != nullptr)
+        qfree(Global::Options::templateComponentSelfLookup);
 
     if(length < HORSPOOL_THRESHOLD) {
-        templateComponentSelfLookup = qmalloc(length);
-        build_kmp_lookup(templateComponentSelfLookup, templateComponentSelf, length);
+        Global::Options::templateComponentSelfLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateComponentSelfLookup, Global::Options::templateComponentSelf, length);
     } else {
-        templateComponentSelfLookup = qmalloc(256u);
-        build_horspool_lookup(templateComponentSelfLookup, templateComponentSelf, length);
+        Global::Options::templateComponentSelfLookup = qmalloc(256u);
+        build_horspool_lookup(Global::Options::templateComponentSelfLookup, Global::Options::templateComponentSelf, length);
     }
 
     Global::Options::templateComponentSelfLength = length;
 }
 
 void Global::Options::setTemplateComponentEnd(const char* value) {
-    if(templateComponentEnd != nullptr)
-        qfree(templateComponentEnd);
+    if(Global::Options::templateComponentEnd != nullptr)
+        qfree(Global::Options::templateComponentEnd);
 
     uint8_t length = (uint8_t) strlen(value);
-    templateComponentEnd = qmalloc(length);
+    Global::Options::templateComponentEnd = qmalloc(length);
 
-    memcpy(templateComponentEnd, value, length);
+    memcpy(Global::Options::templateComponentEnd, value, length);
 
     Global::Options::templateComponentEndLength = length;
 }
