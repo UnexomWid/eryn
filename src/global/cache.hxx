@@ -14,13 +14,18 @@ namespace Global {
             static std::unordered_map<std::string, size_t> entries;
 
         public:
-            static void addEntry(std::string key, BinaryData value);
+            static void       addEntry(std::string key, BinaryData value);
             static BinaryData getEntry(std::string key);
-            static bool hasEntry(std::string key);
+            static size_t     getRawEntry(std::string key);
+            static bool       hasEntry(std::string key);
 
-            static void addEntry(const char* key, BinaryData value);
+            static void       addEntry(const char* key, BinaryData value);
             static BinaryData getEntry(const char* key);
-            static bool hasEntry(const char* key);
+            static size_t     getRawEntry(const char* key);
+            static bool       hasEntry(const char* key);
+
+            static const BinaryData& getData(size_t index);
+            static       void        setData(size_t index, const BinaryData &data);
 
             static void destroy();
     };

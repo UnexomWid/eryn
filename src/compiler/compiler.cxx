@@ -24,10 +24,34 @@ using Global::Cache;
 using Global::Options;
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
+size_t getDirectoryEndIndex(const char* path);
 
-void compile(const char* wd, const char* path) {
+void compile(const char* path) {
     LOG_INFO("===> Compiling file '%s'", path);
 
+    Cache::addEntry(path, compileFile(path));
+
+    LOG_DEBUG("===> Done\n");
+}
+
+void recompile(const char* path) {
+    if(!Cache::hasEntry(path))
+        compile(path);
+    else {
+        LOG_INFO("===> Compiling file '%s'", path);
+
+        BinaryData compiled = compileFile(path);
+        size_t index = Cache::getRawEntry(path);
+        
+        qfree((uint8_t*) Cache::getData(index).data);
+
+        Cache::setData(index, compiled);
+
+        LOG_DEBUG("===> Done\n");
+    }
+}
+
+BinaryData compileFile(const char* path) {
     FILE* input = fopen(path, "rb");
 
     if(input == NULL)
@@ -45,42 +69,9 @@ void compile(const char* wd, const char* path) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    std::unique_ptr<char, decltype(qfree)*> wdDup(qstrdup(wd), qfree);
+    std::unique_ptr<char, decltype(qfree)*> wd(qstrndup(path, getDirectoryEndIndex(path)), qfree);
 
-    Cache::addEntry(path, compileBytes(inputBuffer.get(), inputSize, wdDup.get()));
-
-    LOG_DEBUG("Wrote %zu bytes to output", Cache::getEntry(path).size);
-}
-
-void compileFile(const char* wd, const char* path, const char* outputPath) {
-    LOG_INFO("===> Compiling file '%s'", path);
-
-    FILE* input = fopen(path, "rb");
-
-    if(input == NULL)
-        throw CompilationException("Compiler error", "cannot open input file");
-
-    fseek(input, 0, SEEK_END);
-    long fileLength = ftell(input);
-    fseek(input, 0, SEEK_SET);
-
-    LOG_DEBUG("File size is %ld bytes\n", fileLength);
-
-    size_t inputSize = (size_t) fileLength;
-    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
-
-    fread(inputBuffer.get(), 1, inputSize, input);
-    fclose(input);
-
-    BinaryData compiled = compileBytes(inputBuffer.get(), inputSize, wd);
-
-    LOG_DEBUG("Wrote %zd bytes to output", compiled.size)
-
-    FILE* dest = fopen(outputPath, "wb");
-    fwrite(compiled.data, 1, compiled.size, dest);
-    fclose(dest);
-
-    qfree((uint8_t*) compiled.data);
+    return compileBytes(inputBuffer.get(), inputSize, wd.get());
 }
 
 BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
@@ -1000,4 +991,19 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
 
     absoluteLength = pathBuilder.size();
     return (uint8_t*) absolute;
+}
+
+size_t getDirectoryEndIndex(const char* path) {
+    size_t length = strlen(path);
+    size_t index = 0;
+    size_t endIndex = 0;
+
+    while(index < length) {
+        if(*path == '/' || *path == '\\')
+            endIndex = index;
+        ++index;
+        ++path;
+    }
+
+    return endIndex;
 }

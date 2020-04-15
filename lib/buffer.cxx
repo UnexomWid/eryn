@@ -97,6 +97,15 @@ char* qstrdup(const char* str) {
     return ptr;
 }
 
+char* qstrndup(const char* str, size_t size) {
+    char* ptr = reinterpret_cast<char*>(qmalloc(size + 1));
+
+    memcpy(ptr, str, size);
+    ptr[size] = '\0';
+    
+    return ptr;
+}
+
 MemoryException::MemoryException(const MemoryException &e) {
     message = strdup(e.message);
 }
@@ -138,7 +147,7 @@ MemoryException& MemoryException::operator=(const MemoryException &e) {
 }
 
 BinaryData::BinaryData() : BinaryData(nullptr, 0) { }
-BinaryData::BinaryData(const uint8_t* d, const size_t s) : data(d), size(s) { }
+BinaryData::BinaryData(const uint8_t* d, size_t s) : data(d), size(s) { }
 BinaryData::BinaryData(const BinaryData& binaryData) : data(binaryData.data), size(binaryData.size) { }
 BinaryData::BinaryData(const BinaryData&& binaryData) : data(binaryData.data), size(binaryData.size) { }
 
@@ -147,6 +156,15 @@ BinaryData BinaryData::copy() {
     memcpy(dataCopy, data, size);
 
     return BinaryData(dataCopy, size);
+}
+
+BinaryData& BinaryData::operator=(const BinaryData& binaryData) {
+    if(&binaryData == this)
+        return *this;
+    data = binaryData.data;
+    size = binaryData.size;
+
+    return *this;
 }
 
 #undef LOG_MEM

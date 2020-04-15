@@ -9,9 +9,11 @@
 
 #define COMPILER_ERROR_CHUNK_SIZE 20u
 
-void compile(const char* wd, const char* path);
+void compile(const char* path);
+void recompile(const char* path);
+
+BinaryData compileFile(const char* path);
 
 BinaryData compileBytes(uint8_t* inputBuffer, size_t inputSize, const char* wd);
-void compileFile(const char* wd, const char* path, const char* outputPath);
 
 #endif

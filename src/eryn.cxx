@@ -2,11 +2,15 @@
 #include <node_api.h>
 
 #include "def/logging.dxx"
+
 #include "global/cache.hxx"
 #include "global/global.hxx"
 #include "global/options.hxx"
+
 #include "compiler/compiler.hxx"
 #include "renderer/renderer.hxx"
+
+#include <memory>
 
 void bufferFinalizer(Napi::Env env, uint8_t* data) {
     qfree(data);
@@ -98,19 +102,19 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
 void erynCompile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 2)
-        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, String)");
-    if(!info[0].IsString() || !info[1].IsString())
-        throw Napi::Error::New(env, "Invalid arguments (expected: String, String)");
+    if(info.Length() != 1)
+        throw Napi::Error::New(env, "Invalid argument count (expected 1: String)");
+    if(!info[0].IsString())
+        throw Napi::Error::New(env, "Invalid arguments (expected: String)");
 
-    const char* wd = info[0].As<Napi::String>().Utf8Value().c_str();
-    const char* path = info[1].As<Napi::String>().Utf8Value().c_str();
+    std::unique_ptr<char, decltype(qfree)*> path(
+        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
 
     try {
-        compile(wd, path);
+        compile(path.get());
 
-        FILE* f = fopen((path+ std::string(".txt")).c_str(), "wb");
-        fwrite(Global::Cache::getEntry(path).data, 1, Global::Cache::getEntry(path).size, f);
+        FILE* f = fopen((path.get() + std::string(".txt")).c_str(), "wb");
+        fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
         fclose(f);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
@@ -125,13 +129,14 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     if(!info[0].IsString() || !info[1].IsObject())
         throw Napi::Error::New(env, "Invalid arguments (expected: String, Object)");
 
-    const char* path = info[0].As<Napi::String>().Utf8Value().c_str();
+    std::unique_ptr<char, decltype(qfree)*> path(
+        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
     Napi::Object context = info[1].As<Napi::Object>();
 
     env.RunScript("var context=" + jsonStringify(env, context));
 
     try {
-        BinaryData rendered = render(env, path);
+        BinaryData rendered = render(env, path.get());
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());

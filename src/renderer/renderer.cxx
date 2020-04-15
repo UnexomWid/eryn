@@ -13,6 +13,8 @@
 
 #include "../except/rendering.hxx"
 
+#include "../compiler/compiler.hxx"
+
 #include <stack>
 #include <cstdio>
 #include <memory>
@@ -25,18 +27,34 @@ BinaryData render(BridgeData data, const char* path) {
 
     CHRONOMETER chrono = time_now();
 
-    if(!Cache::hasEntry(path))
+    if(Options::getBypassCache()) {
+        std::unordered_set<std::string> recompiled;
+
+        recompile(path);
+        recompiled.insert(std::string(path));
+
+        BinaryData entry = Cache::getEntry(path);
+
+        #ifdef TIMING
+            BinaryData rendered = renderBytes(data, entry.data, entry.size, &recompiled);
+            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            return rendered;
+        #else
+            return renderBytes(data, entry.data, entry.size, &recompiled);
+        #endif
+    } else if(!Cache::hasEntry(path)) {
         throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
+    } else {
+        BinaryData entry = Cache::getEntry(path);
 
-    BinaryData entry = Cache::getEntry(path);
-
-    #ifdef TIMING
-        BinaryData rendered = renderBytes(data, entry.data, entry.size);
-        LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
-        return rendered;
-    #else
-        return renderBytes(data, entry.data, entry.size);
-    #endif
+        #ifdef TIMING
+            BinaryData rendered = renderBytes(data, entry.data, entry.size, nullptr);
+            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            return rendered;
+        #else
+            return renderBytes(data, entry.data, entry.size, nullptr);
+        #endif
+    }
 }
 
 void renderFile(BridgeData data, const char* path, const char* outputPath) {
@@ -59,7 +77,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize);
+    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize, nullptr);
 
     LOG_DEBUG("Wrote %zd bytes to output\n", rendered.size)
 
@@ -70,30 +88,35 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
     qfree((uint8_t*) rendered.data);
 }
 
-void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
+void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
     std::string path(reinterpret_cast<const char*>(component), componentSize);
 
     LOG_INFO("===> Rendering component '%s'", path.c_str());
 
-    if(!Cache::hasEntry(path))
+    if(Options::getBypassCache()) {
+        if(recompiled->find(path) == recompiled->end()) {
+            recompile(path.c_str());
+            recompiled->insert(std::string(path));
+        }
+    }else if(!Cache::hasEntry(path))
         throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
 
     BinaryData entry = Cache::getEntry(path);
-    renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+    renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
 
     LOG_DEBUG("===> Done\n");
 }
 
-BinaryData renderBytes(BridgeData data, const uint8_t* input, const size_t inputSize) {
-    return renderBytes(data, input, inputSize, nullptr, 0, nullptr, 0);
+BinaryData renderBytes(BridgeData data, const uint8_t* input, const size_t inputSize, std::unordered_set<std::string>* recompiled) {
+    return renderBytes(data, input, inputSize, nullptr, 0, nullptr, 0, recompiled);
 }
 
-BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
+BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
 
-    renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize);
+    renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
 
     // Bring the capacity to the actual size.
     if(outputSize != outputCapacity) {
@@ -108,7 +131,7 @@ BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, 
     return BinaryData(rendered, outputSize);
 }
 
-void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize) {
+void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
     size_t inputIndex  = 0;
     size_t nameLength  = 0;
     size_t valueLength = 0;
@@ -179,7 +202,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 if(contentSize == 0u) {
                     if(Options::getThrowOnEmptyContent())
                         throw RenderingException("No content", "there is no content for this component", value, valueLength);
-                } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
+                } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u, recompiled);
             } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
             LOG_DEBUG("--> Found conditional template start");
@@ -308,7 +331,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             BridgeBackup contextBackup = backupContext(data);
 
             initContext(data, right, rightLength);
-            renderComponent(data, left, leftLength, output, outputSize, outputCapacity, input + inputIndex, contentLength, content, contentSize);
+            renderComponent(data, left, leftLength, output, outputSize, outputCapacity, input + inputIndex, contentLength, content, contentSize, recompiled);
             restoreContext(data, contextBackup);
 
             inputIndex += contentLength;

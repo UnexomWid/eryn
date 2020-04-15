@@ -29,6 +29,12 @@ BinaryData Global::Cache::getEntry(std::string key) {
     return BinaryData();
 }
 
+size_t Global::Cache::getRawEntry(std::string key) {
+    if(Global::Cache::hasEntry(key))
+        return Global::Cache::entries[key];
+    return -1;
+}
+
 bool Global::Cache::hasEntry(std::string key) {
     return Global::Cache::entries.find(key) != Global::Cache::entries.end();
 }
@@ -41,8 +47,20 @@ BinaryData Global::Cache::getEntry(const char* key) {
     return Global::Cache::getEntry(std::string(key));
 }
 
+size_t Global::Cache::getRawEntry(const char* key) {
+    return Global::Cache::getRawEntry(std::string(key));
+}
+
 bool Global::Cache::hasEntry(const char* key) {
     return Global::Cache::hasEntry(std::string(key));
+}
+
+const BinaryData& Global::Cache::getData(size_t index) {
+    return data[index];
+}
+
+void Global::Cache::setData(size_t index, const BinaryData &value) {
+    data[index] = value;
 }
 
 void Global::Cache::destroy() {

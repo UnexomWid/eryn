@@ -160,5 +160,6 @@ void initContext(BridgeData data, const uint8_t* context, size_t contextSize) {
 }
 
 void restoreContext(BridgeData data, BridgeBackup backup) {
-    data.RunScript("context=" + stringify(data, backup.ToObject()));
+    if(!backup.IsUndefined() && !backup.IsNull())
+        data.RunScript("context=" + stringify(data, backup.ToObject()));
 }

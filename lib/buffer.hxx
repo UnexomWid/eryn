@@ -21,6 +21,8 @@ void qfree(void* buffer);
 
 /// Classic strdup. Uses qmalloc behind the scenes. You should free the memory with qfree.
 char* qstrdup(const char* str);
+/// Classic strndup. Assumes that the size is valid. Uses qmalloc behind the scenes. You should free the memory with qfree.
+char* qstrndup(const char* str, size_t size);
 
 /// Occurs when (re)allocating memory.
 class MemoryException : public std::exception {
@@ -37,17 +39,19 @@ class MemoryException : public std::exception {
         MemoryException& operator=(const MemoryException &e);
 };
 
-/// Simple struct for holding binary data.
+/// Simple struct for holding externally-managed binary data. This is NOT responsible for allocating or freeing memory.
 struct BinaryData {
     const uint8_t* data;
-    const size_t   size;
+    size_t size;
 
     BinaryData();
-    BinaryData(const uint8_t* d, const size_t s);
+    BinaryData(const uint8_t* d, size_t s);
     BinaryData(const BinaryData& binaryData);
     BinaryData(const BinaryData&& binaryData);
 
     BinaryData copy();
+
+    BinaryData& operator=(const BinaryData& binaryData);
 };
 
 #endif
