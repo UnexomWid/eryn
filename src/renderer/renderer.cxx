@@ -25,7 +25,9 @@ using Global::Options;
 BinaryData render(BridgeData data, const char* path) {
     LOG_INFO("===> Rendering '%s'", path);
 
-    CHRONOMETER chrono = time_now();
+    #ifdef TIMING
+        CHRONOMETER chrono = time_now();
+    #endif
 
     if(Options::getBypassCache()) {
         std::unordered_set<std::string> recompiled;
