@@ -87,7 +87,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
 
         memcpy(output.get() + outputSize, ptr, length);
         outputSize += length;
-    } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined");
+    } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined", templateBytes, templateLength);
 }
 
 bool evalConditionalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
@@ -106,9 +106,18 @@ void unassign(BridgeData data, const std::string &assignment, size_t assignmentU
 
 size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySize) {
     Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
-    if(!result.IsArray() && !result.IsObject())
-        throw RenderingException("Unsupported loop right operand", "must be Array or Object");
-    return result.ToObject().GetPropertyNames().Length();   
+
+    if(result.IsArray())
+        return result.As<Napi::Array>().Length();
+    if(!result.IsObject())
+        throw RenderingException("Unsupported loop right operand", "must be Array", arrayBytes, arraySize);
+
+    Napi::Array properties = result.ToObject().GetPropertyNames();
+
+    for(uint32_t i = 0; i < properties.Length(); ++i)
+        if(((Napi::Value) properties[i]).As<Napi::String>().Utf8Value() != std::to_string(i))
+            throw RenderingException("Unsupported loop right operand", "must be Array", arrayBytes, arraySize);
+    return properties.Length();
 }
 
 void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {

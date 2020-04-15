@@ -178,7 +178,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value, OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
                 if(contentSize == 0u) {
                     if(Options::getThrowOnEmptyContent())
-                        throw RenderingException("No content", "there is no content for this component");
+                        throw RenderingException("No content", "there is no content for this component", value, valueLength);
                 } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u);
             } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
@@ -316,6 +316,6 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             LOG_DEBUG("--> Found component template end");
 
             continue;
-        } else throw RenderingException("Not supported", "this template type is not supported");
+        } else throw RenderingException("Not supported", "this template type is not supported", name, nameLength);
     }
 }

@@ -10,7 +10,8 @@ class RenderingException : public std::exception {
     public:
         RenderingException(RenderingException &&e);
         RenderingException(const RenderingException &e);
-        RenderingException(const char* msg, const char* description);;
+        RenderingException(const char* msg, const char* description);
+        RenderingException(const char* msg, const char* description, const uint8_t* token, size_t tokenSize);
         ~RenderingException();
 
         const char* what() const override;

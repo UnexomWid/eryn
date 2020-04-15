@@ -18,9 +18,23 @@ RenderingException::~RenderingException() {
 
 RenderingException::RenderingException(const char* msg, const char* description) {
     std::string buffer(msg);
+
     buffer += " (";
     buffer += description;
     buffer += ")\n";
+
+    message = qstrdup(buffer.c_str());
+}
+
+RenderingException::RenderingException(const char* msg, const char* description, const uint8_t* token, size_t tokenSize) {
+    std::string buffer(msg);
+
+    buffer += " (";
+    buffer += description;
+    buffer += ")\n";
+    buffer += std::string(reinterpret_cast<const char*>(token), tokenSize);
+    buffer += "\n^\n";
+
     message = qstrdup(buffer.c_str());
 }
 
