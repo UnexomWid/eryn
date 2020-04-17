@@ -101,7 +101,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
         if(start != end) {
             LOG_DEBUG("--> Found plaintext at %zu", start - input);
 
-            while(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
                 output.reset(newOutput);
@@ -171,7 +171,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             if(start != end) { // Template conditional start.
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + 4 + length + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -268,7 +268,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = 0;
 
-                while(outputSize + 1 + OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -291,7 +291,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -422,7 +422,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
             BDP::writeValue(Global::BDP832, tempBuffer, leftStart, leftLength);
             BDP::writeValue(Global::BDP832, tempBuffer + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, start, length);
 
-            while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity) {
+            while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
                 output.reset(newOutput);
@@ -519,7 +519,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = 0;
 
-                if(outputSize + 1 + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + 4 + OSH_FORMAT + length > outputCapacity) {
+                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + OSH_FORMAT + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -548,7 +548,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = end - start;
 
-                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
+                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -714,7 +714,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 BDP::writeValue(Global::BDP832, tempBuffer.get(), componentPath.get(), componentPathLength);
                 BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, start, length);
 
-                while(outputSize + tempBufferSize + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -811,7 +811,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = 0;
 
-                while(outputSize + 1 + OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -836,7 +836,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
                 ++end;
                 length = end - start;
 
-                while(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
@@ -876,7 +876,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
 
                 length = end - start;
 
-                if(outputSize + 1 + OSH_TEMPLATE_MARKER_LENGTH + 4 + length > outputCapacity) {
+                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
