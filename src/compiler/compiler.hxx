@@ -10,7 +10,6 @@
 #define COMPILER_ERROR_CHUNK_SIZE 20u
 
 void compile(const char* path);
-void recompile(const char* path);
 
 BinaryData compileFile(const char* path);
 

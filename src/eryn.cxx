@@ -51,6 +51,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setThrowOnEmptyContent(value.ToBoolean().Value());
+        } else if(key == "throwOnMissingEntry") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setThrowOnMissingEntry(value.ToBoolean().Value());
         } else if(key == "templateStart") {
             if(!value.IsString())
                 continue;
@@ -113,9 +117,11 @@ void erynCompile(const Napi::CallbackInfo& info) {
     try {
         compile(path.get());
 
-        FILE* f = fopen((path.get() + std::string(".txt")).c_str(), "wb");
-        fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
-        fclose(f);
+        #ifdef DEBUG
+            FILE* f = fopen((path.get() + std::string(".osh")).c_str(), "wb");
+            fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
+            fclose(f);
+        #endif
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }
@@ -137,7 +143,8 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
 
     try {
         BinaryData rendered = render(env, path.get());
-        return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
+        return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

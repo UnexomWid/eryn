@@ -9,6 +9,7 @@
 
 bool Global::Options::bypassCache         = false;
 bool Global::Options::throwOnEmptyContent = true;
+bool Global::Options::throwOnMissingEntry = false;
 
 uint8_t* Global::Options::templateStart                    = nullptr;
 uint8_t  Global::Options::templateStartLength              = 0;
@@ -54,6 +55,10 @@ void Global::Options::setBypassCache(bool value) {
 
 void Global::Options::setThrowOnEmptyContent(bool value) {
     Global::Options::throwOnEmptyContent = value;
+}
+
+void Global::Options::setThrowOnMissingEntry(bool value) {
+    Global::Options::throwOnMissingEntry = value;
 }
 
 void Global::Options::setTemplateStart(const char* value) {
@@ -246,6 +251,7 @@ void Global::Options::setTemplateComponentEnd(const char* value) {
 void Global::Options::restoreDefaults() {
     Global::Options::setBypassCache(false);
     Global::Options::setThrowOnEmptyContent(true);
+    Global::Options::setThrowOnEmptyContent(false);
 
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
@@ -311,6 +317,10 @@ bool Global::Options::getBypassCache() {
 
 bool Global::Options::getThrowOnEmptyContent() {
     return throwOnEmptyContent;
+}
+
+bool Global::Options::getThrowOnMissingEntry() {
+    return throwOnMissingEntry;
 }
 
 const uint8_t* Global::Options::getTemplateStart() {

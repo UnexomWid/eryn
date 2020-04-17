@@ -32,7 +32,7 @@ BinaryData render(BridgeData data, const char* path) {
     if(Options::getBypassCache()) {
         std::unordered_set<std::string> recompiled;
 
-        recompile(path);
+        compile(path);
         recompiled.insert(std::string(path));
 
         BinaryData entry = Cache::getEntry(path);
@@ -45,7 +45,20 @@ BinaryData render(BridgeData data, const char* path) {
             return renderBytes(data, entry.data, entry.size, &recompiled);
         #endif
     } else if(!Cache::hasEntry(path)) {
-        throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
+        if(Options::getThrowOnMissingEntry())
+            throw RenderingException("Item does not exist in cache", "did you forget to compile this?");
+
+        compile(path);
+        
+        BinaryData entry = Cache::getEntry(path);
+
+        #ifdef TIMING
+            BinaryData rendered = renderBytes(data, entry.data, entry.size, nullptr);
+            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            return rendered;
+        #else
+            return renderBytes(data, entry.data, entry.size, nullptr);
+        #endif
     } else {
         BinaryData entry = Cache::getEntry(path);
 
@@ -97,11 +110,14 @@ void renderComponent(BridgeData data, const uint8_t* component, size_t component
 
     if(Options::getBypassCache()) {
         if(recompiled->find(path) == recompiled->end()) {
-            recompile(path.c_str());
+            compile(path.c_str());
             recompiled->insert(std::string(path));
         }
-    }else if(!Cache::hasEntry(path))
-        throw RenderingException("Item does not exist in cache", "did you forget to compile this file?");
+    } else if(!Cache::hasEntry(path)) {
+        if(Options::getThrowOnMissingEntry())
+            throw RenderingException("Item does not exist in cache", "did you forget to compile this?");
+        compile(path.c_str());
+    }
 
     BinaryData entry = Cache::getEntry(path);
     renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
@@ -187,7 +203,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
         if(nameByte == *OSH_PLAINTEXT_MARKER) {
-            LOG_DEBUG("--> Found plaintext %zu", inputIndex);
+            LOG_DEBUG("--> Found plaintext");
 
             while(outputSize + valueLength > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);

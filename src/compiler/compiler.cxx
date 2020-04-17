@@ -29,26 +29,17 @@ size_t getDirectoryEndIndex(const char* path);
 void compile(const char* path) {
     LOG_INFO("===> Compiling file '%s'", path);
 
-    Cache::addEntry(path, compileFile(path));
-
-    LOG_DEBUG("===> Done\n");
-}
-
-void recompile(const char* path) {
     if(!Cache::hasEntry(path))
-        compile(path);
+        Cache::addEntry(path, compileFile(path));
     else {
-        LOG_INFO("===> Compiling file '%s'", path);
-
         BinaryData compiled = compileFile(path);
         size_t index = Cache::getRawEntry(path);
         
         qfree((uint8_t*) Cache::getData(index).data);
-
         Cache::setData(index, compiled);
-
-        LOG_DEBUG("===> Done\n");
     }
+
+    LOG_DEBUG("===> Done\n");
 }
 
 BinaryData compileFile(const char* path) {
@@ -947,7 +938,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     if(end > start) {
         LOG_DEBUG("--> Found plaintext at %zu\n", start - input);
 
-        if(outputSize + 1 + OSH_PLAINTEXT_MARKER_LENGTH + 4 + length > outputCapacity) {
+        while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
             uint8_t* newOutput = qexpand(output.get(), outputCapacity);
             output.release();
             output.reset(newOutput);
