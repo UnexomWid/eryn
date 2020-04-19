@@ -127,6 +127,38 @@ void erynCompile(const Napi::CallbackInfo& info) {
     }
 }
 
+void erynCompileDir(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    if(info.Length() != 2)
+        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, Array)");
+    if(!info[0].IsString() || !info[1].IsArray())
+        throw Napi::Error::New(env, "Invalid arguments (expected: String, Array)");
+
+    std::unique_ptr<char, decltype(qfree)*> path(
+        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+
+    std::vector<std::string> filters;
+
+    Napi::Array filterArray = info[1].As<Napi::Array>();
+
+    uint32_t length = filterArray.Length();
+
+    for(uint32_t i = 0; i < length; ++i) {
+        Napi::Value item = filterArray[i];
+        if(!item.IsString())
+            throw Napi::Error::New(env, "Invalid filter array (expected array of strings)");
+
+        filters.push_back(item.As<Napi::String>().Utf8Value());
+    }
+
+    try {
+        compileDir(path.get(), filters);
+    } catch(std::exception &e) {
+        throw Napi::Error::New(env, e.what());
+    }
+}
+
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -164,6 +196,7 @@ Napi::Object init(Napi::Env env, Napi::Object exports) {
     napi_add_env_cleanup_hook((napi_env) env, destroy, nullptr);
 
     exports["compile"] = Napi::Function::New(env, erynCompile);
+    exports["compileDir"] = Napi::Function::New(env, erynCompileDir);
     exports["render"] = Napi::Function::New(env, erynRender);
     exports["setOptions"] = Napi::Function::New(env, erynSetOptions);
 

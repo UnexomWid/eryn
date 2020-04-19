@@ -20,6 +20,12 @@
 #include <cstdint>
 #include <cstdlib>
 
+#ifdef _MSC_VER
+    #include "../../include/dirent.h"
+#else
+    #include <dirent.h>
+#endif
+
 using Global::Cache;
 using Global::Options;
 
@@ -40,6 +46,99 @@ void compile(const char* path) {
     }
 
     LOG_DEBUG("===> Done\n");
+}
+
+void compileDir(const char* path, std::vector<std::string> filters) {
+    FilterInfo info;
+
+    for(size_t i = 0; i < filters.size(); ++i) {
+        const char* start = filters[i].c_str();
+        const char* end = start + filters[i].size() - 1;
+
+        bool inverted = false;
+
+        while((*start == ' ' || *start == '"') && start < end)
+            ++start;
+        while((*end == ' ' || *end == '"') && end > start)
+            --end;
+
+        if(start < end) {
+            if(*start == '!' || *start == '^') {
+                inverted = true;
+                ++start;
+            }
+
+            if(start < end) {
+                if(inverted) 
+                    info.addExclusion(start, end - start + 1);
+                else info.addFilter(start, end - start + 1);
+            }
+        }
+    }
+
+    compileDir(path, "", info);
+}
+
+void compileDir(const char* path, const char* rel, const FilterInfo& info) {
+    DIR* dir;
+    struct dirent* entry;
+
+    if((dir = opendir(path)) != nullptr) {
+        size_t absoluteLength = strlen(path);
+        size_t relLength = strlen(rel);
+
+        char absolute[COMPILER_PATH_MAX_LENGTH + 1];
+
+        strcpy(absolute, path);
+        absolute[absoluteLength] = COMPILER_PATH_SEPARATOR;
+        absolute[absoluteLength + 1] = '\0';
+
+        char* absoluteEnd = absolute + absoluteLength + 1;
+
+        while((entry = readdir(dir)) != nullptr) {
+            if(entry->d_type == DT_REG) {
+                strcpy(absoluteEnd, entry->d_name);
+
+                std::unique_ptr<char, decltype(qfree)*> relativePath(
+                    reinterpret_cast<char*>(qmalloc(relLength + entry->d_namlen + 1)), qfree);
+
+                if(relLength > 0)
+                    strcpy(relativePath.get(), rel);
+                strcpy(relativePath.get() + relLength, entry->d_name);
+
+                if(info.isFileFiltered(relativePath.get())) {
+                    try {
+                        compile(absolute);
+                    } catch(std::exception &e) {
+                        LOG_ERROR("Error: %s", e.what());
+                    }
+                }
+                else LOG_DEBUG("Ignoring: %s\n", relativePath.get());
+            } else if(entry->d_type == DT_DIR) {
+                if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+                    continue;
+
+                const size_t newRelLength = relLength + entry->d_namlen;
+                std::unique_ptr<char, decltype(qfree)*> newRel(
+                    reinterpret_cast<char*>(qmalloc(newRelLength + 2)), qfree);
+
+                if(relLength > 0)
+                    strcpy(newRel.get(), rel);
+                strcpy(newRel.get() + relLength, entry->d_name);
+
+                newRel.get()[newRelLength] = COMPILER_PATH_SEPARATOR;
+                newRel.get()[newRelLength + 1] = '\0';
+
+                if(info.isDirFiltered(newRel.get())) {
+                    LOG_INFO("Scanning: %s\n", newRel.get());
+
+                    strcpy(absoluteEnd, entry->d_name);
+                    compileDir(absolute, newRel.get(), info);
+                } else LOG_DEBUG("Ignoring: %s\n", newRel.get());
+            }
+        }
+        closedir(dir);
+    }
 }
 
 BinaryData compileFile(const char* path) {
