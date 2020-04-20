@@ -59,7 +59,7 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setIgnoreBlankPlaintext(value.ToBoolean().Value());
-        }else if(key == "templateStart") {
+        } else if(key == "templateStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateStart(value.ToString().Utf8Value().c_str());
@@ -175,10 +175,13 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
         qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
     Napi::Object context = info[1].As<Napi::Object>();
 
-    env.RunScript("var context=" + jsonStringify(env, context));
+    env.RunScript("let context=" + jsonStringify(env, context));
 
     try {
         BinaryData rendered = render(env, path.get());
+
+        env.RunScript("let context=undefined");
+
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
