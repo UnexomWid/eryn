@@ -19,6 +19,6 @@ void compileDir(const char* path, std::vector<std::string> filters);
 void compileDir(const char* path, const char* rel, const FilterInfo& info);
 
 BinaryData compileFile(const char* path);
-BinaryData compileBytes(uint8_t* inputBuffer, size_t inputSize, const char* wd);
+BinaryData compileBytes(uint8_t* inputBuffer, size_t inputSize, const char* wd, const char* path = "");
 
 #endif

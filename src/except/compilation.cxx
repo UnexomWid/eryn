@@ -16,18 +16,25 @@ CompilationException::~CompilationException() {
         qfree((char*) message);
 }
 
-CompilationException::CompilationException(const char* msg, const char* description) {
-    std::string buffer(msg);
-    buffer += "(";
+CompilationException::CompilationException(const char* file, const char* msg, const char* description) {
+    std::string buffer("Compilation error in '");
+
+    buffer += file;
+    buffer += "'\n";
+    buffer += msg;
+    buffer += " (";
     buffer += description;
     buffer += ")";
+
     message = qstrdup(buffer.c_str());
 }
 
-CompilationException::CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
-    std::string buffer(msg);
-    buffer.reserve(buffer.size() + 256);
+CompilationException::CompilationException(const char* file, const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
+    std::string buffer("Compilation error in '");
 
+    buffer += file;
+    buffer += "'\n";
+    buffer += msg;
     buffer += " at ";
     buffer += std::to_string(line);
     buffer += ":";

@@ -23,7 +23,7 @@ using Global::Cache;
 using Global::Options;
 
 BinaryData render(BridgeData data, const char* path) {
-    LOG_INFO("===> Rendering '%s'", path);
+    LOG_DEBUG("===> Rendering '%s'", path);
 
     #ifdef TIMING
         CHRONOMETER chrono = time_now();
@@ -73,7 +73,7 @@ BinaryData render(BridgeData data, const char* path) {
 }
 
 void renderFile(BridgeData data, const char* path, const char* outputPath) {
-    LOG_INFO("===> Rendering file '%s'", path);
+    LOG_DEBUG("===> Rendering file '%s'", path);
 
     FILE* input = fopen(path, "rb");
 
@@ -106,7 +106,7 @@ void renderFile(BridgeData data, const char* path, const char* outputPath) {
 void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
     std::string path(reinterpret_cast<const char*>(component), componentSize);
 
-    LOG_INFO("===> Rendering component '%s'", path.c_str());
+    LOG_DEBUG("===> Rendering component '%s'", path.c_str());
 
     if(Options::getBypassCache()) {
         if(recompiled->find(path) == recompiled->end()) {

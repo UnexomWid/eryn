@@ -13,7 +13,13 @@ std::string stringify(const Napi::Env& env, const Napi::Object& object) {
 }
 
 void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+    Napi::Value result;
+
+    try {
+        result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+    } catch(std::exception &e) {
+        throw RenderingException("Template error", e.what(), templateBytes, templateLength);
+    }
 
     if(result.IsUndefined() || result.IsNull())
         return;
@@ -91,7 +97,13 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
 }
 
 bool evalConditionalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+    Napi::Value result;
+
+    try {
+        result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+    } catch(std::exception &e) {
+        throw RenderingException("Conditional template error", e.what(), templateBytes, templateLength);
+    }
 
     return (bool) result.ToBoolean();
 }
@@ -105,7 +117,13 @@ void unassign(BridgeData data, const std::string &assignment, size_t assignmentU
 }
 
 size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySize) {
-    Napi::Value result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
+    Napi::Value result;
+
+    try {
+        result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
+    } catch(std::exception &e) {
+        throw RenderingException("Loop template error", e.what(), arrayBytes, arraySize);
+    }
 
     if(result.IsArray())
         return result.As<Napi::Array>().Length();
@@ -154,9 +172,13 @@ BridgeBackup backupContext(BridgeData data) {
 }
 
 void initContext(BridgeData data, const uint8_t* context, size_t contextSize) {
-    if(contextSize == 0)
-        data.RunScript("context=undefined");
-    else data.RunScript("context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
+    try {
+        if(contextSize == 0)
+            data.RunScript("context=undefined");
+        else data.RunScript("context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
+    } catch(std::exception &e) {
+        throw RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context, contextSize);
+    }
 }
 
 void restoreContext(BridgeData data, BridgeBackup backup) {

@@ -185,7 +185,7 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
-        throw Napi::Error::New(env, e.what());
+        throw Napi::Error::New(env, ((std::string("Rendering error in '") + path.get()) + "'\n") + e.what());
     }
 }
 

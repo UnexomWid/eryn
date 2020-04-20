@@ -10,8 +10,8 @@ class CompilationException : public std::exception {
     public:
         CompilationException(CompilationException &&e);
         CompilationException(const CompilationException &e);
-        CompilationException(const char* msg, const char* description);
-        CompilationException(const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize);
+        CompilationException(const char* file, const char* msg, const char* description);
+        CompilationException(const char* file, const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize);
         ~CompilationException();
 
         const char* what() const override;
