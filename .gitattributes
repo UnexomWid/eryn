@@ -4,3 +4,5 @@
 
 *.c linguist-language=C
 *.h linguist-language=C
+
+include/* linguist-vendored
