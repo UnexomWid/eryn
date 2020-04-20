@@ -55,7 +55,11 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setThrowOnMissingEntry(value.ToBoolean().Value());
-        } else if(key == "templateStart") {
+        } else if(key == "ignoreBlankPlaintext") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setIgnoreBlankPlaintext(value.ToBoolean().Value());
+        }else if(key == "templateStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateStart(value.ToString().Utf8Value().c_str());

@@ -7,9 +7,10 @@
 #include <cstring>
 #include <cstdio>
 
-bool Global::Options::bypassCache         = false;
-bool Global::Options::throwOnEmptyContent = true;
-bool Global::Options::throwOnMissingEntry = false;
+bool Global::Options::bypassCache          = false;
+bool Global::Options::throwOnEmptyContent  = false;
+bool Global::Options::throwOnMissingEntry  = false;
+bool Global::Options::ignoreBlankPlaintext = false;
 
 uint8_t* Global::Options::templateStart                    = nullptr;
 uint8_t  Global::Options::templateStartLength              = 0;
@@ -59,6 +60,10 @@ void Global::Options::setThrowOnEmptyContent(bool value) {
 
 void Global::Options::setThrowOnMissingEntry(bool value) {
     Global::Options::throwOnMissingEntry = value;
+}
+
+void Global::Options::setIgnoreBlankPlaintext(bool value) {
+    Global::Options::ignoreBlankPlaintext = value;
 }
 
 void Global::Options::setTemplateStart(const char* value) {
@@ -250,8 +255,9 @@ void Global::Options::setTemplateComponentEnd(const char* value) {
 
 void Global::Options::restoreDefaults() {
     Global::Options::setBypassCache(false);
-    Global::Options::setThrowOnEmptyContent(true);
     Global::Options::setThrowOnEmptyContent(false);
+    Global::Options::setThrowOnEmptyContent(false);
+    Global::Options::setIgnoreBlankPlaintext(false);
 
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
@@ -321,6 +327,10 @@ bool Global::Options::getThrowOnEmptyContent() {
 
 bool Global::Options::getThrowOnMissingEntry() {
     return throwOnMissingEntry;
+}
+
+bool Global::Options::getIgnoreBlankPlaintext() {
+    return ignoreBlankPlaintext;
 }
 
 const uint8_t* Global::Options::getTemplateStart() {

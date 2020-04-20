@@ -9,6 +9,7 @@ namespace Global {
             static bool bypassCache;
             static bool throwOnEmptyContent;
             static bool throwOnMissingEntry;
+            static bool ignoreBlankPlaintext;
 
             static uint8_t* templateStart;
             static uint8_t  templateStartLength;
@@ -52,6 +53,7 @@ namespace Global {
             static bool getBypassCache();
             static bool getThrowOnEmptyContent();
             static bool getThrowOnMissingEntry();
+            static bool getIgnoreBlankPlaintext();
 
             static const uint8_t* getTemplateStart();
             static       uint8_t  getTemplateStartLength();
@@ -94,6 +96,7 @@ namespace Global {
             static void setBypassCache(bool value);
             static void setThrowOnEmptyContent(bool value);
             static void setThrowOnMissingEntry(bool value);
+            static void setIgnoreBlankPlaintext(bool value);
 
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);

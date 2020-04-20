@@ -200,15 +200,29 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
         if(start != end) {
             LOG_DEBUG("--> Found plaintext at %zu", start - input);
 
-            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
-                output.release();
-                output.reset(newOutput);
-            }
+            bool skip = false;
 
-            LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
-            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
-            LOG_DEBUG("done\n");
+            if(Options::getIgnoreBlankPlaintext()) {
+                skip = true;
+                uint8_t* i = start;
+
+                while(skip && i != end) {
+                    if(*i != ' ' && *i != '\t' && *i != '\n' && *i != '\r')
+                        skip = false;
+                    ++i;
+                }
+            }
+            if(!skip) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    output.release();
+                    output.reset(newOutput);
+                }
+
+                LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+                LOG_DEBUG("done\n");
+            } else LOG_DEBUG("Skipping blank plaintext");
         }
         templateStartIndex = end - input;
 
@@ -1037,15 +1051,29 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd) {
     if(end > start) {
         LOG_DEBUG("--> Found plaintext at %zu\n", start - input);
 
-        while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
-            output.release();
-            output.reset(newOutput);
-        }
+        bool skip = false;
 
-        LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
-        outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
-        LOG_DEBUG("done\n")
+        if(Options::getIgnoreBlankPlaintext()) {
+            skip = true;
+            uint8_t* i = start;
+
+            while(skip && i != end) {
+                if(*i != ' ' && *i != '\t' && *i != '\n' && *i != '\r')
+                    skip = false;
+                ++i;
+            }
+        }
+        if(!skip) {
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                output.release();
+                output.reset(newOutput);
+            }
+
+            LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
+            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+            LOG_DEBUG("done\n");
+        } else LOG_DEBUG("Skipping blank plaintext");
     }
 
     // Bring the capacity to the actual size.
