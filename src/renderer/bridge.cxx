@@ -121,7 +121,7 @@ size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySi
 }
 
 void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {
-    data.RunScript("let " + std::string(reinterpret_cast<const char*>(iterator), iteratorSize));
+    data.RunScript("var " + std::string(reinterpret_cast<const char*>(iterator), iteratorSize));
     
     assignment.reserve(256);
     assignment.append(reinterpret_cast<const char*>(iterator), iteratorSize);
@@ -155,8 +155,8 @@ BridgeBackup backupContext(BridgeData data) {
 
 void initContext(BridgeData data, const uint8_t* context, size_t contextSize) {
     if(contextSize == 0)
-        data.RunScript("let context=undefined");
-    else data.RunScript("let context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
+        data.RunScript("context=undefined");
+    else data.RunScript("context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
 }
 
 void restoreContext(BridgeData data, BridgeBackup backup) {

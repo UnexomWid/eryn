@@ -175,12 +175,12 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
         qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
     Napi::Object context = info[1].As<Napi::Object>();
 
-    env.RunScript("let context=" + jsonStringify(env, context));
+    env.RunScript("var context=" + jsonStringify(env, context));
 
     try {
         BinaryData rendered = render(env, path.get());
 
-        env.RunScript("let context=undefined");
+        env.RunScript("context=undefined");
 
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
