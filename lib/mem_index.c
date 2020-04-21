@@ -1,11 +1,12 @@
 #include "mem_index.h"
 
+#include <string.h>
 #include <stdlib.h>
 
 void mem_lncol(const uint8_t* source, size_t index, size_t* ln, size_t* col) {
-    register size_t  l = 1;
-    register size_t  c = 1;
-    register uint8_t current;
+    size_t  l = 1;
+    size_t  c = 1;
+    uint8_t current;
 
     const uint8_t* limit = source + index;
 
@@ -24,9 +25,9 @@ void mem_lncol(const uint8_t* source, size_t index, size_t* ln, size_t* col) {
     *col = c;
 }
 
-uint8_t* mem_chunk(const uint8_t* source, register size_t index, size_t size, register size_t chunk, size_t* chunkIndex, size_t* chunkSize) {
-    register size_t startIndex;
-    register size_t endIndex;
+uint8_t* mem_chunk(const uint8_t* source, size_t index, size_t size, size_t chunk, size_t* chunkIndex, size_t* chunkSize) {
+    size_t startIndex;
+    size_t endIndex;
 
     if(index >= chunk)
         startIndex = index - chunk;
@@ -52,11 +53,11 @@ uint8_t* mem_chunk(const uint8_t* source, register size_t index, size_t size, re
     return data;
 }
 
-uint8_t* mem_lnchunk(const uint8_t* source, size_t index, size_t size, register size_t chunk, size_t* chunkIndex, size_t* chunkSize) {
-    register const uint8_t* start = source + index;
-    register const uint8_t* end = source + index;
+uint8_t* mem_lnchunk(const uint8_t* source, size_t index, size_t size, size_t chunk, size_t* chunkIndex, size_t* chunkSize) {
+    const uint8_t* start = source + index;
+    const uint8_t* end = source + index;
 
-    register const uint8_t* limit;
+    const uint8_t* limit;
 
     if(index > chunk)
         limit = source + index - chunk;

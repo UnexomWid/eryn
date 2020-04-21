@@ -2,7 +2,7 @@
 #define ERYN_WARNINGS_DXX_GUARD
 
 #ifdef _MSC_VER
-    #pragma warning(disable: 4996 5033)
+    #pragma warning(disable: 4996)
 #endif
 
 #endif
