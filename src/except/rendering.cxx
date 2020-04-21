@@ -38,7 +38,7 @@ RenderingException::RenderingException(const char* msg, const char* description,
     message = qstrdup(buffer.c_str());
 }
 
-const char* RenderingException::what() const {
+const char* RenderingException::what() const noexcept {
     return message;
 }
 
