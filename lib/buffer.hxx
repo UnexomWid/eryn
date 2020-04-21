@@ -17,7 +17,7 @@ uint8_t* qrealloc(uint8_t* buffer, size_t size);
 /// Classic realloc with double the buffer size. Throws an exception if it fails.
 uint8_t* qexpand(uint8_t* buffer, size_t &size);
 /// Classic free with checks.
-void qfree(void* buffer);
+void qfree(void* buffer) noexcept;
 
 /// Classic strdup. Uses qmalloc behind the scenes. You should free the memory with qfree.
 char* qstrdup(const char* str);
@@ -34,7 +34,7 @@ class MemoryException : public std::exception {
         MemoryException(const char* msg, size_t size);
         ~MemoryException();
 
-        const char* what() const override;
+        const char* what() const noexcept override;
 
         MemoryException& operator=(const MemoryException &e);
 };

@@ -2,12 +2,12 @@
 #define ERYN_LOGGING_DXX_GUARD
 
 #ifdef DEBUG
-    #define LOG_DEBUG(...) printf("\n[eryn] "##__VA_ARGS__);
+    #define LOG_DEBUG(...) printf("\n[eryn] " __VA_ARGS__);
 #else
     #define LOG_DEBUG(...)
 #endif
 
-#define LOG_INFO(...)  printf("\n[eryn] "##__VA_ARGS__);
-#define LOG_ERROR(...) fprintf(stderr, "\n"##__VA_ARGS__);
+#define LOG_INFO(...)  printf("\n[eryn] " __VA_ARGS__);
+#define LOG_ERROR(...) fprintf(stderr, "\n" __VA_ARGS__);
 
 #endif

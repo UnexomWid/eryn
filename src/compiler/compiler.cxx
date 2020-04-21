@@ -96,11 +96,12 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
         char* absoluteEnd = absolute + absoluteLength + 1;
 
         while((entry = readdir(dir)) != nullptr) {
+            size_t nameLength = strlen(entry->d_name);
             if(entry->d_type == DT_REG) {
                 strcpy(absoluteEnd, entry->d_name);
 
                 std::unique_ptr<char, decltype(qfree)*> relativePath(
-                    reinterpret_cast<char*>(qmalloc(relLength + entry->d_namlen + 1)), qfree);
+                    reinterpret_cast<char*>(qmalloc(relLength + nameLength + 1)), qfree);
 
                 if(relLength > 0)
                     strcpy(relativePath.get(), rel);
@@ -118,7 +119,7 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                 if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
 
-                const size_t newRelLength = relLength + entry->d_namlen;
+                const size_t newRelLength = relLength + nameLength;
                 std::unique_ptr<char, decltype(qfree)*> newRel(
                     reinterpret_cast<char*>(qmalloc(newRelLength + 2)), qfree);
 

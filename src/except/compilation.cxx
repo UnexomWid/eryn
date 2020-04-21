@@ -55,7 +55,7 @@ CompilationException::CompilationException(const char* file, const char* msg, co
     message = qstrdup(buffer.c_str());
 }
 
-const char* CompilationException::what() const {
+const char* CompilationException::what() const noexcept {
     return message;
 }
 

@@ -77,7 +77,7 @@ uint8_t* qexpand(uint8_t* buffer, size_t &size) {
     return qrealloc(buffer, (size *= 2));
 }
 
-void qfree(void* buffer) {
+void qfree(void* buffer) noexcept {
     if(buffer != nullptr && buffer != 0)
         free(buffer);
 
@@ -131,7 +131,7 @@ MemoryException::MemoryException(const char* msg, size_t index) {
     message = strdup(buffer.c_str());
 }
 
-const char* MemoryException::what() const {
+const char* MemoryException::what() const noexcept {
     return message;
 }
 
