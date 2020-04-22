@@ -29,7 +29,13 @@ const char* MAGIC_VALUE = "BDP";
 /// The magic BDP value length.
 const uint8_t MAGIC_VALUE_LENGTH = 3u;
 /// The default size of the buffer used to copy data from one stream to another.
-const uint64_t DEFAULT_BUFFER_SIZE = 16384u;
+const size_t DEFAULT_BUFFER_SIZE = 16384u;
+
+void checkByteSize(uint8_t byteSize) {
+    if constexpr(sizeof(size_t) < 8)
+        if(byteSize == 8)
+            throw std::runtime_error("Cannot process 64-bit BDP packages with this version of the library; use the 64-bit version instead");
+}
 
 BDP::Header::Header(uint8_t nlbs, uint8_t vlbs) : NAME_MAX_LENGTH(getMaxLength(nlbs)),
                                                   VALUE_MAX_LENGTH(getMaxLength(vlbs)),
@@ -43,6 +49,9 @@ BDP::Header* BDP::writeHeader(std::ostream &output, uint8_t nameLengthBitSize, u
         throw std::invalid_argument("nameLengthBitSize");
     if (valueLengthBitSize != 8u && valueLengthBitSize != 16u && valueLengthBitSize != 32u && valueLengthBitSize != 64u)
         throw std::invalid_argument("valueLengthBitSize");
+
+    checkByteSize(nameLengthBitSize / 8);
+    checkByteSize(valueLengthBitSize / 8);
 
     uint8_t lengthBitSizes = (((nameLengthBitSize) << 1u) | (valueLengthBitSize >> 3u));
 
@@ -58,6 +67,9 @@ BDP::Header* BDP::writeHeader(uint8_t* output, uint8_t nameLengthBitSize, uint8_
     if (valueLengthBitSize != 8u && valueLengthBitSize != 16u && valueLengthBitSize != 32u && valueLengthBitSize != 64u)
         throw std::invalid_argument("valueLengthBitSize");
 
+    checkByteSize(nameLengthBitSize / 8);
+    checkByteSize(valueLengthBitSize / 8);
+
     uint8_t lengthBitSizes = (((nameLengthBitSize) << 1u) | (valueLengthBitSize >> 3u));
 
     memcpy(output, MAGIC_VALUE, MAGIC_VALUE_LENGTH);
@@ -66,102 +78,104 @@ BDP::Header* BDP::writeHeader(uint8_t* output, uint8_t nameLengthBitSize, uint8_
     return new BDP::Header(nameLengthBitSize, valueLengthBitSize);
 }
 
-uint64_t BDP::writeName(const BDP::Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength) {
+size_t BDP::writeName(const BDP::Header* header, std::ostream &output, const uint8_t* name, size_t nameLength) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, nameLength);
 }
-uint64_t BDP::writeName(const BDP::Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength) {
+size_t BDP::writeName(const BDP::Header* header, uint8_t* output, const uint8_t* name, size_t nameLength) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, nameLength);
 }
-uint64_t BDP::writeName(const BDP::Header* header, std::ostream &output, std::istream &name) {
+size_t BDP::writeName(const BDP::Header* header, std::ostream &output, std::istream &name) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::writeName(const BDP::Header* header, std::ostream &output, std::istream &name, uint64_t bufferSize) {
+size_t BDP::writeName(const BDP::Header* header, std::ostream &output, std::istream &name, size_t bufferSize) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, bufferSize);
 }
-uint64_t BDP::writeName(const BDP::Header* header, uint8_t* output, std::istream &name) {
+size_t BDP::writeName(const BDP::Header* header, uint8_t* output, std::istream &name) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::writeName(const BDP::Header* header, uint8_t* output, std::istream &name, uint64_t bufferSize) {
+size_t BDP::writeName(const BDP::Header* header, uint8_t* output, std::istream &name, size_t bufferSize) {
     return writeData(header->NAME_MAX_LENGTH, header->NAME_LENGTH_BYTE_SIZE, output, name, bufferSize);
 }
 
-uint64_t BDP::writeValue(const BDP::Header* header, std::ostream &output, const uint8_t* value, uint64_t valueLength) {
+size_t BDP::writeValue(const BDP::Header* header, std::ostream &output, const uint8_t* value, size_t valueLength) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, valueLength);
 }
-uint64_t BDP::writeValue(const BDP::Header* header, uint8_t* output, const uint8_t* value, uint64_t valueLength) {
+size_t BDP::writeValue(const BDP::Header* header, uint8_t* output, const uint8_t* value, size_t valueLength) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, valueLength);
 }
-uint64_t BDP::writeValue(const BDP::Header* header, std::ostream &output, std::istream &value) {
+size_t BDP::writeValue(const BDP::Header* header, std::ostream &output, std::istream &value) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::writeValue(const BDP::Header* header, std::ostream &output, std::istream &value, uint64_t bufferSize) {
+size_t BDP::writeValue(const BDP::Header* header, std::ostream &output, std::istream &value, size_t bufferSize) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, bufferSize);
 }
-uint64_t BDP::writeValue(const BDP::Header* header, uint8_t* output, std::istream &value) {
+size_t BDP::writeValue(const BDP::Header* header, uint8_t* output, std::istream &value) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::writeValue(const BDP::Header* header, uint8_t* output, std::istream &value, uint64_t bufferSize) {
+size_t BDP::writeValue(const BDP::Header* header, uint8_t* output, std::istream &value, size_t bufferSize) {
     return writeData(header->VALUE_MAX_LENGTH, header->VALUE_LENGTH_BYTE_SIZE, output, value, bufferSize);
 }
 
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, const uint8_t* value, uint64_t valueLength) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, const uint8_t* value, size_t valueLength) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, const uint8_t* value, uint64_t valueLength) {
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, const uint8_t* value, size_t valueLength) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output + header->NAME_LENGTH_BYTE_SIZE + nameLength, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, std::istream &value) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, std::istream &value) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output, value);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, std::istream &value) {
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, std::istream &value) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output + header->NAME_LENGTH_BYTE_SIZE + nameLength, value);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, std::istream &value, uint64_t bufferSize) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, std::istream &value, size_t bufferSize) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output, value, bufferSize);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, std::istream &value, uint64_t bufferSize) {
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, std::istream &value, size_t bufferSize) {
     return writeName(header, output, name, nameLength) +
            writeValue(header, output + header->NAME_LENGTH_BYTE_SIZE + nameLength, value, bufferSize);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, const uint8_t* value, uint64_t valueLength) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, const uint8_t* value, size_t valueLength) {
     return writeName(header, output, name) +
            writeValue(header, output, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, const uint8_t* value, uint64_t valueLength) {
-    uint64_t count = writeName(header, output, name);
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, const uint8_t* value, size_t valueLength) {
+    size_t count = writeName(header, output, name);
     return count + writeValue(header, output + count, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, const uint8_t* value, uint64_t valueLength, uint64_t bufferSize) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, const uint8_t* value, size_t valueLength, size_t bufferSize) {
     return writeName(header, output, name, bufferSize) +
            writeValue(header, output, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, const uint8_t* value, uint64_t valueLength, uint64_t bufferSize) {
-    uint64_t count = writeName(header, output, name, bufferSize);
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, const uint8_t* value, size_t valueLength, size_t bufferSize) {
+    size_t count = writeName(header, output, name, bufferSize);
     return count + writeValue(header, output + count, value, valueLength);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, std::istream &value) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, std::istream &value) {
     return writeName(header, output, name) +
            writeValue(header, output, value);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, std::istream &value) {
-    uint64_t count = writeName(header, output, name);
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, std::istream &value) {
+    size_t count = writeName(header, output, name);
     return count + writeValue(header, output + count, value);
 }
-uint64_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, std::istream &value, uint64_t bufferSize) {
+size_t BDP::writePair(const BDP::Header* header, std::ostream &output, std::istream &name, std::istream &value, size_t bufferSize) {
     return writeName(header, output, name, bufferSize) +
            writeValue(header, output, value, bufferSize);
 }
-uint64_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, std::istream &value, uint64_t bufferSize) {
-    uint64_t count = writeName(header, output, name, bufferSize);
+size_t BDP::writePair(const BDP::Header* header, uint8_t* output, std::istream &name, std::istream &value, size_t bufferSize) {
+    size_t count = writeName(header, output, name, bufferSize);
     return count + writeValue(header, output + count, value, bufferSize);
 }
 
-uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream &output, const uint8_t* data, uint64_t dataLength) {
+size_t BDP::writeData(size_t maxLength, uint8_t lengthByteSize, std::ostream &output, const uint8_t* data, size_t dataLength) {
+    checkByteSize(lengthByteSize);
+
     if(isLittleEndian()) {
         output.write(reinterpret_cast<char*>(&dataLength), lengthByteSize);
     } else {
@@ -175,21 +189,25 @@ uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream
 
     return lengthByteSize + dataLength;
 }
-uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, uint8_t* output, const uint8_t* data, uint64_t dataLength) {
+size_t BDP::writeData(size_t maxLength, uint8_t lengthByteSize, uint8_t* output, const uint8_t* data, size_t dataLength) {
+    checkByteSize(lengthByteSize);
+
     if(isLittleEndian())
         directLengthToBytes(output, dataLength, lengthByteSize);
     else lengthToBytes(output, dataLength, lengthByteSize);
 
-    memcpy(output + lengthByteSize, data, dataLength);
+    memcpy(output + lengthByteSize, data, static_cast<size_t>(dataLength));
 
     return lengthByteSize + dataLength;
 }
-uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream &output, std::istream &data, uint64_t bufferSize) {
-    uint64_t inputLength = 0u;
-    uint64_t diff;
-    uint64_t nextLength;
+size_t BDP::writeData(size_t maxLength, uint8_t lengthByteSize, std::ostream &output, std::istream &data, size_t bufferSize) {
+    checkByteSize(lengthByteSize);
 
-    auto buffer = std::make_unique<char[]>(bufferSize);
+    size_t inputLength = 0u;
+    size_t diff;
+    size_t nextLength;
+
+    auto buffer = std::make_unique<char[]>(static_cast<size_t>(bufferSize));
 
     // Write a placeholder value, as the actual length is unknown yet.
     output.write(reinterpret_cast<char*>(&inputLength), lengthByteSize);
@@ -200,7 +218,7 @@ uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream
         nextLength = diff < bufferSize ? diff : bufferSize;
         data.read(buffer.get(), nextLength);
         output.write(buffer.get(), data.gcount());
-        inputLength += data.gcount();
+        inputLength += static_cast<size_t>(data.gcount());
     }
 
     std::streampos endPos = output.tellp();
@@ -220,11 +238,13 @@ uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream
 
     return lengthByteSize + inputLength;
 }
-uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, uint8_t* output, std::istream &data, uint64_t bufferSize) {
-    uint64_t inputLength = 0u;
-    uint64_t index = 0;
-    uint64_t diff;
-    uint64_t nextLength;
+size_t BDP::writeData(size_t maxLength, uint8_t lengthByteSize, uint8_t* output, std::istream &data, size_t bufferSize) {
+    checkByteSize(lengthByteSize);
+
+    size_t inputLength = 0u;
+    size_t index = 0;
+    size_t diff;
+    size_t nextLength;
 
     // Write a placeholder value, as the actual length is unknown.
     directLengthToBytes(output, inputLength, lengthByteSize);
@@ -235,8 +255,8 @@ uint64_t BDP::writeData(uint64_t maxLength, uint8_t lengthByteSize, uint8_t* out
         nextLength = diff < bufferSize ? diff : bufferSize;
         data.read((char*) (output + index), nextLength);
 
-        index += data.gcount();
-        inputLength += data.gcount();
+        index += static_cast<size_t>(data.gcount());
+        inputLength += static_cast<size_t>(data.gcount());
     }
 
     // Write the actual length.
@@ -276,10 +296,13 @@ BDP::Header* BDP::readHeader(std::istream &input) {
     if(valueLengthBitSize == 0)
         throw std::invalid_argument("input: Invalid package header");
 
+    checkByteSize(nameLengthBitSize / 8);
+    checkByteSize(valueLengthBitSize / 8);
+
     return new BDP::Header(nameLengthBitSize, valueLengthBitSize);
 }
 BDP::Header* BDP::readHeader(const uint8_t* input) {
-    uint64_t index = 0;
+    size_t index = 0;
 
     auto magic = std::make_unique<char[]>(MAGIC_VALUE_LENGTH + 1u);
     memcpy(magic.get(), input, MAGIC_VALUE_LENGTH);
@@ -311,88 +334,93 @@ BDP::Header* BDP::readHeader(const uint8_t* input) {
     if(valueLengthBitSize == 0)
         throw std::invalid_argument("input: Invalid package header");
 
+    checkByteSize(nameLengthBitSize / 8);
+    checkByteSize(valueLengthBitSize / 8);
+
     return new BDP::Header(nameLengthBitSize, valueLengthBitSize);
 }
 
-uint64_t BDP::readName(const BDP::Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength) {
+size_t BDP::readName(const BDP::Header* header, std::istream &input, uint8_t* name, size_t* nameLength) {
     return readData(header->NAME_LENGTH_BYTE_SIZE, input, name, nameLength);
 }
-uint64_t BDP::readName(const BDP::Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength) {
+size_t BDP::readName(const BDP::Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength) {
     return readData(header->NAME_LENGTH_BYTE_SIZE, input, name, nameLength);
 }
-uint64_t BDP::readName(const BDP::Header* header, std::istream &input, std::ostream &name) {
+size_t BDP::readName(const BDP::Header* header, std::istream &input, std::ostream &name) {
     return readData(header->NAME_LENGTH_BYTE_SIZE, input, name, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::readName(const BDP::Header* header, std::istream &input, std::ostream &name, uint64_t bufferSize) {
+size_t BDP::readName(const BDP::Header* header, std::istream &input, std::ostream &name, size_t bufferSize) {
     return readData(header->NAME_LENGTH_BYTE_SIZE, input, name, bufferSize);
 }
-uint64_t BDP::readName(const BDP::Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength) {
+size_t BDP::readName(const BDP::Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength) {
     return readData(header->NAME_LENGTH_BYTE_SIZE, input, name, nameLength);
 }
 
-uint64_t BDP::readValue(const BDP::Header* header, std::istream &input, uint8_t* value, uint64_t* valueLength) {
+size_t BDP::readValue(const BDP::Header* header, std::istream &input, uint8_t* value, size_t* valueLength) {
     return readData(header->VALUE_LENGTH_BYTE_SIZE, input, value, valueLength);
 }
-uint64_t BDP::readValue(const BDP::Header* header, const uint8_t* input, uint8_t* value, uint64_t* valueLength) {
+size_t BDP::readValue(const BDP::Header* header, const uint8_t* input, uint8_t* value, size_t* valueLength) {
     return readData(header->VALUE_LENGTH_BYTE_SIZE, input, value, valueLength);
 }
-uint64_t BDP::readValue(const BDP::Header* header, std::istream &input, std::ostream &value) {
+size_t BDP::readValue(const BDP::Header* header, std::istream &input, std::ostream &value) {
     return readData(header->VALUE_LENGTH_BYTE_SIZE, input, value, DEFAULT_BUFFER_SIZE);
 }
-uint64_t BDP::readValue(const BDP::Header* header, std::istream &input, std::ostream &value, uint64_t bufferSize) {
+size_t BDP::readValue(const BDP::Header* header, std::istream &input, std::ostream &value, size_t bufferSize) {
     return readData(header->VALUE_LENGTH_BYTE_SIZE, input, value, bufferSize);
 }
-uint64_t BDP::readValue(const BDP::Header* header, const uint8_t* input, std::ostream &value, uint64_t* valueLength) {
+size_t BDP::readValue(const BDP::Header* header, const uint8_t* input, std::ostream &value, size_t* valueLength) {
     return readData(header->VALUE_LENGTH_BYTE_SIZE, input, value, valueLength);
 }
 
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, size_t* nameLength, uint8_t* value, size_t* valueLength) {
     return readName(header, input, name, nameLength) +
            readValue(header, input, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength) {
+size_t BDP::readPair(const BDP::Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength, uint8_t* value, size_t* valueLength) {
     return readName(header, input, name, nameLength) +
            readValue(header, input + header->NAME_LENGTH_BYTE_SIZE + *nameLength, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, std::ostream &value) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, size_t* nameLength, std::ostream &value) {
     return readName(header, input, name, nameLength) +
            readValue(header, input, value);
 }
-uint64_t BDP::readPair(const BDP::Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength) {
+size_t BDP::readPair(const BDP::Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength, std::ostream &value, size_t* valueLength) {
     return readName(header, input, name, nameLength) +
            readValue(header, input + header->NAME_LENGTH_BYTE_SIZE + *nameLength, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t bufferSize) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, uint8_t* name, size_t* nameLength, std::ostream &value, size_t bufferSize) {
     return readName(header, input, name, nameLength) +
            readValue(header, input, value, bufferSize);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, uint8_t* value, uint64_t* valueLength) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, uint8_t* value, size_t* valueLength) {
     return readName(header, input, name) +
            readValue(header, input, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength) {
-    uint64_t count = readName(header, input, name, nameLength);
+size_t BDP::readPair(const BDP::Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength, uint8_t* value, size_t* valueLength) {
+    size_t count = readName(header, input, name, nameLength);
     return count + readValue(header, input + count, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, uint8_t* value, uint64_t* valueLength, uint64_t bufferSize) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, uint8_t* value, size_t* valueLength, size_t bufferSize) {
     return readName(header, input, name, bufferSize) +
            readValue(header, input, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, std::ostream &value) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, std::ostream &value) {
     return readName(header, input, name) +
            readValue(header, input, value);
 }
-uint64_t BDP::readPair(const BDP::Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength) {
-    uint64_t count = readName(header, input, name, nameLength);
+size_t BDP::readPair(const BDP::Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength, std::ostream &value, size_t* valueLength) {
+    size_t count = readName(header, input, name, nameLength);
     return count + readValue(header, input + count, value, valueLength);
 }
-uint64_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, std::ostream &value, uint64_t bufferSize) {
+size_t BDP::readPair(const BDP::Header* header, std::istream &input, std::ostream &name, std::ostream &value, size_t bufferSize) {
     return readName(header, input, name, bufferSize) +
            readValue(header, input, value, bufferSize);
 }
 
-uint64_t BDP::readData(uint8_t lengthByteSize, std::istream &input, uint8_t* &output, uint64_t* outputLength) {
-    uint64_t length = 0u;
+size_t BDP::readData(uint8_t lengthByteSize, std::istream &input, uint8_t* &output, size_t* outputLength) {
+    checkByteSize(lengthByteSize);
+
+    size_t length = 0u;
 
     if(isLittleEndian()) {
         input.read(reinterpret_cast<char*>(&length), lengthByteSize);
@@ -410,22 +438,26 @@ uint64_t BDP::readData(uint8_t lengthByteSize, std::istream &input, uint8_t* &ou
 
     return lengthByteSize + length;
 }
-uint64_t BDP::readData(uint8_t lengthByteSize, const uint8_t* input, uint8_t* &output, uint64_t* outputLength) {
-    uint64_t length = 0u;
+size_t BDP::readData(uint8_t lengthByteSize, const uint8_t* input, uint8_t* &output, size_t* outputLength) {
+    checkByteSize(lengthByteSize);
+
+    size_t length = 0u;
 
     if(isLittleEndian())
         directBytesToLength(length, input, lengthByteSize);
     else bytesToLength(length, input, lengthByteSize);
 
-    memcpy(output, input + lengthByteSize, length);
+    memcpy(output, input + lengthByteSize, static_cast<size_t>(length));
 
     if(outputLength != nullptr)
         *outputLength = length;
 
     return lengthByteSize + length;
 }
-uint64_t BDP::readData(uint8_t lengthByteSize, std::istream &input, std::ostream &output, uint64_t bufferSize) {
-    uint64_t length = 0u;
+size_t BDP::readData(uint8_t lengthByteSize, std::istream &input, std::ostream &output, size_t bufferSize) {
+    checkByteSize(lengthByteSize);
+
+    size_t length = 0u;
 
     if(isLittleEndian()) {
         input.read(reinterpret_cast<char*>(&length), lengthByteSize);
@@ -436,20 +468,22 @@ uint64_t BDP::readData(uint8_t lengthByteSize, std::istream &input, std::ostream
         bytesToLength(length, outputLengthBytes.get(), lengthByteSize);
     }
 
-    auto buffer = std::make_unique<char[]>(bufferSize);
-    uint64_t nextLength;
+    auto buffer = std::make_unique<char[]>(static_cast<size_t>(bufferSize));
+    size_t nextLength;
 
     while(length > 0u && !input.eof()) {
         nextLength = length < bufferSize ? length : bufferSize;
         input.read(buffer.get(), nextLength);
         output.write(buffer.get(), input.gcount());
-        length -= input.gcount();
+        length -= static_cast<size_t>(input.gcount());
     }
 
     return lengthByteSize + length;
 }
-uint64_t BDP::readData(uint8_t lengthByteSize, const uint8_t* input, std::ostream &output, uint64_t* outputLength) {
-    uint64_t length = 0u;
+size_t BDP::readData(uint8_t lengthByteSize, const uint8_t* input, std::ostream &output, size_t* outputLength) {
+    checkByteSize(lengthByteSize);
+
+    size_t length = 0u;
 
     if(isLittleEndian())
         directBytesToLength(length, input, lengthByteSize);
@@ -463,7 +497,7 @@ uint64_t BDP::readData(uint8_t lengthByteSize, const uint8_t* input, std::ostrea
     return lengthByteSize + length;
 }
 
-uint64_t BDP::getMaxLength(uint8_t lengthBitSize) {
+size_t BDP::getMaxLength(uint8_t lengthBitSize) {
     if(lengthBitSize == 8u)
         return (uint8_t) - 1;
     if(lengthBitSize == 16u)
@@ -471,7 +505,7 @@ uint64_t BDP::getMaxLength(uint8_t lengthBitSize) {
     if(lengthBitSize == 32u)
         return (uint32_t) - 1;
     if(lengthBitSize == 64u)
-        return (uint64_t) - 1;
+        return (size_t) - 1;
 
     throw std::invalid_argument("lengthBitSize");
 }
@@ -484,19 +518,19 @@ bool BDP::isLittleEndian() {
     return check.bytes[0] == 0x04;
 }
 
-void BDP::lengthToBytes(uint8_t* destination, uint64_t source, uint8_t count) {
+void BDP::lengthToBytes(uint8_t* destination, size_t source, uint8_t count) {
     for (uint8_t i = 0; i < count; ++i)
         destination[i] = (uint8_t) (source >> (8u * (count - i - 1u)));
 }
 
-void BDP::bytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count) {
+void BDP::bytesToLength(size_t &destination, const uint8_t* source, uint8_t count) {
     destination = 0u;
     for (uint8_t i = 0; i < count; ++i)
-        destination |= (((uint64_t) source[i]) << (8u * (count - i - 1u)));
+        destination |= (((size_t) source[i]) << (8u * (count - i - 1u)));
 }
 
 // The most common cases are 4 and 1, so order the if statements in their favor.
-void BDP::directLengthToBytes(uint8_t* destination, uint64_t source, uint8_t count) {
+void BDP::directLengthToBytes(uint8_t* destination, size_t source, uint8_t count) {
     if(count == 4u)
         *reinterpret_cast<uint32_t*>(destination) = *reinterpret_cast<uint32_t*>(&source);
     else if(count == 1u)
@@ -506,12 +540,12 @@ void BDP::directLengthToBytes(uint8_t* destination, uint64_t source, uint8_t cou
     else *reinterpret_cast<uint16_t*>(destination) = *reinterpret_cast<uint16_t*>(&source);
 }
 
-void BDP::directBytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count) {
+void BDP::directBytesToLength(size_t &destination, const uint8_t* source, uint8_t count) {
     if(count == 4u)
         destination = *reinterpret_cast<const uint32_t*>(source);
     else if(count == 1u)
         destination = *source;
     else if(count == 8u)
-        destination = *reinterpret_cast<const uint64_t*>(source);
+        destination = static_cast<size_t>(*reinterpret_cast<const uint64_t*>(source));
     else destination = *reinterpret_cast<const uint16_t*>(source);
 }

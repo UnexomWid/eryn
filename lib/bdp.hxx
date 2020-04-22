@@ -42,9 +42,9 @@ namespace BDP {
         Header(uint8_t nlbs, uint8_t vlbs);
 
         /// The maximum name length.
-        const uint64_t NAME_MAX_LENGTH;
+        const size_t NAME_MAX_LENGTH;
         /// The maximum value length.
-        const uint64_t VALUE_MAX_LENGTH;
+        const size_t VALUE_MAX_LENGTH;
 
         /// The bit size of the name length.
         const uint8_t NAME_LENGTH_BIT_SIZE;
@@ -103,7 +103,7 @@ namespace BDP {
      * to be readable. Writing two consecutive names is not advised, as it
      * will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength);
+    size_t writeName(const Header* header, std::ostream &output, const uint8_t* name, size_t nameLength);
     /**
      * Writes a byte array representing a name to another byte array.
      *
@@ -119,7 +119,7 @@ namespace BDP {
      * to be readable. Writing two consecutive names is not advised, as it
      * will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength);
+    size_t writeName(const Header* header, uint8_t* output, const uint8_t* name, size_t nameLength);
     /**
      * Writes a stream representing a name to an output stream.
      *
@@ -136,7 +136,7 @@ namespace BDP {
      * for the package to be readable. Writing two consecutive names is not advised,
      * as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, std::ostream &output, std::istream &name);
+    size_t writeName(const Header* header, std::ostream &output, std::istream &name);
     /**
      * Writes a stream representing a name to an output stream, using a
      * specified buffer size.
@@ -155,7 +155,7 @@ namespace BDP {
      * for the package to be readable. Writing two consecutive names is not advised,
      * as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, std::ostream &output, std::istream &name, uint64_t bufferSize);
+    size_t writeName(const Header* header, std::ostream &output, std::istream &name, size_t bufferSize);
     /**
      * Writes a stream representing a name to a byte array.
      *
@@ -172,7 +172,7 @@ namespace BDP {
      * for the package to be readable. Writing two consecutive names is not advised,
      * as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, uint8_t* output, std::istream &name);
+    size_t writeName(const Header* header, uint8_t* output, std::istream &name);
     /**
      * Writes a stream representing a name to a byte array, using a
      * specified buffer size.
@@ -191,7 +191,7 @@ namespace BDP {
      * for the package to be readable. Writing two consecutive names is not advised,
      * as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeName(const Header* header, uint8_t* output, std::istream &name, uint64_t bufferSize);
+    size_t writeName(const Header* header, uint8_t* output, std::istream &name, size_t bufferSize);
 
     /**
      * Writes a byte array representing a value to an output stream.
@@ -208,7 +208,7 @@ namespace BDP {
      * to be readable. Writing two consecutive values is not advised, as it
      * will, most likely, render the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, std::ostream &output, const uint8_t* value, uint64_t valueLength);
+    size_t writeValue(const Header* header, std::ostream &output, const uint8_t* value, size_t valueLength);
     /**
      * Writes a byte array representing a value to another byte array.
      *
@@ -224,7 +224,7 @@ namespace BDP {
      * to be readable. Writing two consecutive values is not advised, as it
      * will, most likely, render the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, uint8_t* output, const uint8_t* value, uint64_t valueLength);
+    size_t writeValue(const Header* header, uint8_t* output, const uint8_t* value, size_t valueLength);
     /**
      * Writes a stream representing a value to an output stream.
      *
@@ -239,7 +239,7 @@ namespace BDP {
      * size will be used. The output stream should be a BDP package. Writing two consecutive
      * values is not advised, as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, std::ostream &output, std::istream &value);
+    size_t writeValue(const Header* header, std::ostream &output, std::istream &value);
     /**
      * Writes a stream representing a value to an output stream, using a specified
      * buffer size.
@@ -257,7 +257,7 @@ namespace BDP {
      * Writing two consecutive values is not advised, as it will, most likely, render
      * the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, std::ostream &output, std::istream &value, uint64_t bufferSize);
+    size_t writeValue(const Header* header, std::ostream &output, std::istream &value, size_t bufferSize);
     /**
      * Writes a stream representing a value to a byte array.
      *
@@ -272,7 +272,7 @@ namespace BDP {
      * size will be used. The output stream should be a BDP package. Writing two consecutive
      * values is not advised, as it will, most likely, render the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, uint8_t* output, std::istream &value);
+    size_t writeValue(const Header* header, uint8_t* output, std::istream &value);
     /**
      * Writes a stream representing a value to a byte array, using a specified
      * buffer size.
@@ -290,7 +290,7 @@ namespace BDP {
      * Writing two consecutive values is not advised, as it will, most likely, render
      * the package partially unreadable.
      */
-    uint64_t writeValue(const Header* header, uint8_t* output, std::istream &value, uint64_t bufferSize);
+    size_t writeValue(const Header* header, uint8_t* output, std::istream &value, size_t bufferSize);
 
     /**
      * Writes a pair of a byte array representing a name, and a byte array representing
@@ -307,7 +307,7 @@ namespace BDP {
      *
      * @note The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, const uint8_t* value, uint64_t valueLength);
+    size_t writePair(const Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, const uint8_t* value, size_t valueLength);
     /**
      * Writes a pair of a byte array representing a name, and a byte array representing
      * a value, to another byte array.
@@ -323,7 +323,7 @@ namespace BDP {
      *
      * @note The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, const uint8_t* value, uint64_t valueLength);
+    size_t writePair(const Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, const uint8_t* value, size_t valueLength);
     /**
      * Writes a pair of a byte array representing a name, and a stream representing
      * a value, to an output stream.
@@ -340,7 +340,7 @@ namespace BDP {
      * or the maximum value length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, std::istream &value);
+    size_t writePair(const Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, std::istream &value);
     /**
      * Writes a pair of a byte array representing a name, and a stream representing
      * a value, to another byte array.
@@ -357,7 +357,7 @@ namespace BDP {
      * or the maximum value length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, std::istream &value);
+    size_t writePair(const Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, std::istream &value);
     /**
      * Writes a pair of a byte array representing a name, and a stream representing
      * a value, to an output stream, using a specified buffer size.
@@ -375,7 +375,7 @@ namespace BDP {
      * or the maximum value length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, const uint8_t* name, uint64_t nameLength, std::istream &value, uint64_t bufferSize);
+    size_t writePair(const Header* header, std::ostream &output, const uint8_t* name, size_t nameLength, std::istream &value, size_t bufferSize);
     /**
      * Writes a pair of a byte array representing a name, and a stream representing
      * a value, to another byte array, using a specified buffer size.
@@ -393,7 +393,7 @@ namespace BDP {
      * or the maximum value length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, const uint8_t* name, uint64_t nameLength, std::istream &value, uint64_t bufferSize);
+    size_t writePair(const Header* header, uint8_t* output, const uint8_t* name, size_t nameLength, std::istream &value, size_t bufferSize);
     /**
      * Writes a pair of a stream representing a name, and a byte array representing
      * a value, to an output stream.
@@ -410,7 +410,7 @@ namespace BDP {
      * or the maximum name length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, std::istream &name, const uint8_t* value, uint64_t valueLength);
+    size_t writePair(const Header* header, std::ostream &output, std::istream &name, const uint8_t* value, size_t valueLength);
     /**
      * Writes a pair of a stream representing a name, and a byte array representing
      * a value, to another byte array.
@@ -427,7 +427,7 @@ namespace BDP {
      * or the maximum name length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, std::istream &name, const uint8_t* value, uint64_t valueLength);
+    size_t writePair(const Header* header, uint8_t* output, std::istream &name, const uint8_t* value, size_t valueLength);
     /**
      * Writes a pair of a stream representing a name, and a byte array representing
      * a value, to an output stream, using a specified buffer size.
@@ -445,7 +445,7 @@ namespace BDP {
      * or the maximum name length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, std::istream &name, const uint8_t* value, uint64_t valueLength, uint64_t bufferSize);
+    size_t writePair(const Header* header, std::ostream &output, std::istream &name, const uint8_t* value, size_t valueLength, size_t bufferSize);
     /**
      * Writes a pair of a stream representing a name, and a byte array representing
      * a value, to another byte array, using a specified buffer size.
@@ -463,7 +463,7 @@ namespace BDP {
      * or the maximum name length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, std::istream &name, const uint8_t* value, uint64_t valueLength, uint64_t bufferSize);
+    size_t writePair(const Header* header, uint8_t* output, std::istream &name, const uint8_t* value, size_t valueLength, size_t bufferSize);
     /**
      * Writes a pair of a stream representing a name, and a stream representing
      * a value, to an output stream.
@@ -479,7 +479,7 @@ namespace BDP {
      * or the maximum name/value length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, std::istream &name, std::istream &value);
+    size_t writePair(const Header* header, std::ostream &output, std::istream &name, std::istream &value);
     /**
      * Writes a pair of a stream representing a name, and a stream representing
      * a value, to a byte array.
@@ -495,7 +495,7 @@ namespace BDP {
      * or the maximum name/value length, defined in the package header, is reached. The
      * default buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, std::istream &name, std::istream &value);
+    size_t writePair(const Header* header, uint8_t* output, std::istream &name, std::istream &value);
     /**
      * Writes a pair of a stream representing a name, and a stream representing
      * a value, to an output stream, using a specified buffer size.
@@ -512,7 +512,7 @@ namespace BDP {
      * or the maximum name/value length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, std::ostream &output, std::istream &name, std::istream &value, uint64_t bufferSize);
+    size_t writePair(const Header* header, std::ostream &output, std::istream &name, std::istream &value, size_t bufferSize);
     /**
      * Writes a pair of a stream representing a name, and a stream representing
      * a value, to a byte array, using a specified buffer size.
@@ -529,7 +529,7 @@ namespace BDP {
      * or the maximum name/value length, defined in the package header, is reached. The
      * specified buffer size will be used. The output stream should be a BDP package.
      */
-    uint64_t writePair(const Header* header, uint8_t* output, std::istream &name, std::istream &value, uint64_t bufferSize);
+    size_t writePair(const Header* header, uint8_t* output, std::istream &name, std::istream &value, size_t bufferSize);
 
     /**
      * Writes a byte array representing data to an output stream.
@@ -552,7 +552,7 @@ namespace BDP {
      * corresponding to the length bit size of the type of data you are writing,
      * which is specified in the package header.
      */
-    uint64_t writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream &output, const uint8_t *data, uint64_t dataLength);
+    size_t writeData(size_t maxLength, uint8_t lengthByteSize, std::ostream &output, const uint8_t *data, size_t dataLength);
     /**
      * Writes a byte array representing data to another byte array.
      *
@@ -574,7 +574,7 @@ namespace BDP {
      * corresponding to the length bit size of the type of data you are writing,
      * which is specified in the package header.
      */
-    uint64_t writeData(uint64_t maxLength, uint8_t lengthByteSize, uint8_t* output, const uint8_t *data, uint64_t dataLength);
+    size_t writeData(size_t maxLength, uint8_t lengthByteSize, uint8_t* output, const uint8_t *data, size_t dataLength);
     /**
      * Writes a stream representing data to an output stream, using a specified
      * buffer size.
@@ -597,7 +597,7 @@ namespace BDP {
      * corresponding to the length bit size of the type of data you are writing,
      * which is specified in the package header.
      */
-    uint64_t writeData(uint64_t maxLength, uint8_t lengthByteSize, std::ostream &output, std::istream &data, uint64_t bufferSize);
+    size_t writeData(size_t maxLength, uint8_t lengthByteSize, std::ostream &output, std::istream &data, size_t bufferSize);
     /**
      * Writes a stream representing data to a byte array, using a specified
      * buffer size.
@@ -620,7 +620,7 @@ namespace BDP {
      * corresponding to the length bit size of the type of data you are writing,
      * which is specified in the package header.
      */
-    uint64_t writeData(uint64_t maxLength, uint8_t lengthByteSize, uint8_t* output, std::istream &data, uint64_t bufferSize);
+    size_t writeData(size_t maxLength, uint8_t lengthByteSize, uint8_t* output, std::istream &data, size_t bufferSize);
 
     /**
      * Reads a package header from a stream.
@@ -659,7 +659,7 @@ namespace BDP {
      * a value should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readName(const Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength);
+    size_t readName(const Header* header, std::istream &input, uint8_t* name, size_t* nameLength);
     /**
      * Reads a name from a byte array and writes it to another byte array.
      *
@@ -674,7 +674,7 @@ namespace BDP {
      * a value should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readName(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength);
+    size_t readName(const Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength);
     /**
      * Reads a name from an input stream and writes it to a stream.
      *
@@ -688,7 +688,7 @@ namespace BDP {
      * package. After reading the name, a value should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readName(const Header* header, std::istream &input, std::ostream &name);
+    size_t readName(const Header* header, std::istream &input, std::ostream &name);
     /**
      * Reads a name from an input stream and writes it to a stream, using a specified
      * buffer size.
@@ -704,7 +704,7 @@ namespace BDP {
      * package. After reading the name, a value should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readName(const Header* header, std::istream &input, std::ostream &name, uint64_t bufferSize);
+    size_t readName(const Header* header, std::istream &input, std::ostream &name, size_t bufferSize);
     /**
      * Reads a name from a byte array and writes it to a stream.
      *
@@ -719,7 +719,7 @@ namespace BDP {
      * package. After reading the name, a value should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readName(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength);
+    size_t readName(const Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength);
 
     /**
      * Reads a value from an input stream and writes it to a byte array.
@@ -735,7 +735,7 @@ namespace BDP {
      * a name should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readValue(const Header* header, std::istream &input, uint8_t* value, uint64_t* valueLength);
+    size_t readValue(const Header* header, std::istream &input, uint8_t* value, size_t* valueLength);
     /**
      * Reads a value from a byte array and writes it to another byte array.
      *
@@ -750,7 +750,7 @@ namespace BDP {
      * a name should be read next from the stream, in order for the package
      * to be read as intended.
      */
-    uint64_t readValue(const Header* header, const uint8_t* input, uint8_t* value, uint64_t* valueLength);
+    size_t readValue(const Header* header, const uint8_t* input, uint8_t* value, size_t* valueLength);
     /**
      * Reads a value from an input stream and writes it to a stream.
      *
@@ -764,7 +764,7 @@ namespace BDP {
      * package. After reading the value, a name should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readValue(const Header* header, std::istream &input, std::ostream &value);
+    size_t readValue(const Header* header, std::istream &input, std::ostream &value);
     /**
      * Reads a value from an input stream and writes it to a stream, using a specified
      * buffer size.
@@ -780,7 +780,7 @@ namespace BDP {
      * package. After reading the value, a name should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readValue(const Header* header, std::istream &input, std::ostream &value, uint64_t bufferSize);
+    size_t readValue(const Header* header, std::istream &input, std::ostream &value, size_t bufferSize);
     /**
      * Reads a value from a byte array and writes it to a stream.
      *
@@ -795,7 +795,7 @@ namespace BDP {
      * package. After reading the value, a name should be read next from the stream,
      * in order for the package to be read as intended.
      */
-    uint64_t readValue(const Header* header, const uint8_t* input, std::ostream &value, uint64_t* valueLength);
+    size_t readValue(const Header* header, const uint8_t* input, std::ostream &value, size_t* valueLength);
 
     /**
      * Reads a name and a value from an input stream and writes them to a pair of byte
@@ -812,7 +812,7 @@ namespace BDP {
      *
      * @note The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
+    size_t readPair(const Header* header, std::istream &input, uint8_t* name, size_t* nameLength, uint8_t* value, size_t* valueLength);
     /**
      * Reads a name and a value from a byte array, and writes them to a pair of byte
      * arrays.
@@ -828,7 +828,7 @@ namespace BDP {
      *
      * @note The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
+    size_t readPair(const Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength, uint8_t* value, size_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a byte array and
      * a stream.
@@ -843,7 +843,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, std::ostream &value);
+    size_t readPair(const Header* header, std::istream &input, uint8_t* name, size_t* nameLength, std::ostream &value);
     /**
      * Reads a name and a value from a byte array and writes them to a pair of a byte array and
      * a stream.
@@ -859,7 +859,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, const uint8_t* input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
+    size_t readPair(const Header* header, const uint8_t* input, uint8_t* name, size_t* nameLength, std::ostream &value, size_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a byte array and
      * a stream, using a specified buffer size.
@@ -875,7 +875,7 @@ namespace BDP {
      *
      * @note The specified buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, uint8_t* name, uint64_t* nameLength, std::ostream &value, uint64_t bufferSize);
+    size_t readPair(const Header* header, std::istream &input, uint8_t* name, size_t* nameLength, std::ostream &value, size_t bufferSize);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a stream and
      * a byte array.
@@ -890,7 +890,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, std::ostream &name, uint8_t* value, uint64_t* valueLength);
+    size_t readPair(const Header* header, std::istream &input, std::ostream &name, uint8_t* value, size_t* valueLength);
     /**
      * Reads a name and a value from a byte array and writes them to a pair of a stream and
      * a byte array.
@@ -906,7 +906,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, uint8_t* value, uint64_t* valueLength);
+    size_t readPair(const Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength, uint8_t* value, size_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of a stream and a
      * byte array, using a specified buffer size.
@@ -922,7 +922,7 @@ namespace BDP {
      *
      * @note The specified buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, std::ostream &name, uint8_t* value, uint64_t* valueLength, uint64_t bufferSize);
+    size_t readPair(const Header* header, std::istream &input, std::ostream &name, uint8_t* value, size_t* valueLength, size_t bufferSize);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of streams.
      *
@@ -935,7 +935,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, std::ostream &name, std::ostream &value);
+    size_t readPair(const Header* header, std::istream &input, std::ostream &name, std::ostream &value);
     /**
      * Reads a name and a value from a byte array and writes them to a pair of streams.
      *
@@ -950,7 +950,7 @@ namespace BDP {
      *
      * @note The default buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, const uint8_t* input, std::ostream &name, uint64_t* nameLength, std::ostream &value, uint64_t* valueLength);
+    size_t readPair(const Header* header, const uint8_t* input, std::ostream &name, size_t* nameLength, std::ostream &value, size_t* valueLength);
     /**
      * Reads a name and a value from an input stream and writes them to a pair of streams, using
      * a specified buffer size.
@@ -965,7 +965,7 @@ namespace BDP {
      *
      * @note The specified buffer size will be used. The input stream should be a BDP package.
      */
-    uint64_t readPair(const Header* header, std::istream &input, std::ostream &name, std::ostream &value, uint64_t bufferSize);
+    size_t readPair(const Header* header, std::istream &input, std::ostream &name, std::ostream &value, size_t bufferSize);
 
     /**
      * Reads data from an input stream and writes it to a byte array.
@@ -987,7 +987,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, std::istream &input, uint8_t *&output, uint64_t* outputLength);
+    size_t readData(uint8_t lengthByteSize, std::istream &input, uint8_t *&output, size_t* outputLength);
     /**
      * Reads data from a byte array and writes it to a byte array.
      *
@@ -1008,7 +1008,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, const uint8_t* input, uint8_t *&output, uint64_t* outputLength);
+    size_t readData(uint8_t lengthByteSize, const uint8_t* input, uint8_t *&output, size_t* outputLength);
     /**
      * Reads data from an input stream and writes it to a strean, using a specified
      * buffer size.
@@ -1030,7 +1030,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, std::istream &input, std::ostream &output, uint64_t bufferSize);
+    size_t readData(uint8_t lengthByteSize, std::istream &input, std::ostream &output, size_t bufferSize);
     /**
      * Reads data from a byte array and writes it to a stream, using a specified
      * buffer size.
@@ -1052,7 +1052,7 @@ namespace BDP {
      * bit size of the type of data you are writing, which is specified in the package
      * header.
     */
-    uint64_t readData(uint8_t lengthByteSize, const uint8_t* input, std::ostream &output,uint64_t* outputLength);
+    size_t readData(uint8_t lengthByteSize, const uint8_t* input, std::ostream &output,size_t* outputLength);
 
     /**
      * Returns the maximum value that can be stored with a specified amount of bits.
@@ -1063,7 +1063,7 @@ namespace BDP {
      *
      * @note The valid bit sizes are 8, 16, 32 and 64.
      */
-    uint64_t getMaxLength(uint8_t lengthBitSize);
+    size_t getMaxLength(uint8_t lengthBitSize);
 
     /**
      * Checks whether or not the endianness of the platform is little-endian.
@@ -1079,7 +1079,7 @@ namespace BDP {
      * @param[in] source The value to convert.
      * @param[in] count The number of bytes to convert the value to.
      */
-    void lengthToBytes(uint8_t* destination, uint64_t source, uint8_t count);
+    void lengthToBytes(uint8_t* destination, size_t source, uint8_t count);
 
     /**
      * Converts a byte array to an unsigned integer.
@@ -1088,7 +1088,7 @@ namespace BDP {
      * @param[in] source The byte array to convert.
      * @param[in] count The number of bytes to convert to an unsigned integer.
      */
-    void bytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count);
+    void bytesToLength(size_t &destination, const uint8_t* source, uint8_t count);
 
     /**
      * Directly converts an unsigned integer to a byte array.
@@ -1097,7 +1097,7 @@ namespace BDP {
      * @param[in] source The value to convert.
      * @param[in] count The number of bytes to convert the value to.
      */
-    void directLengthToBytes(uint8_t* destination, uint64_t source, uint8_t count);
+    void directLengthToBytes(uint8_t* destination, size_t source, uint8_t count);
 
     /**
      * Directly converts a byte array to an unsigned integer.
@@ -1106,7 +1106,7 @@ namespace BDP {
      * @param[in] source The byte array to convert.
      * @param[in] count The number of bytes to convert to an unsigned integer.
      */
-    void directBytesToLength(uint64_t &destination, const uint8_t* source, uint8_t count);
+    void directBytesToLength(size_t &destination, const uint8_t* source, uint8_t count);
 }
 
 #endif

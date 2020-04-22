@@ -10,13 +10,13 @@ You can install eryn just like any other npm package.
 npm i eryn
 ```
 
-If a prebuild is already available for your platform, you can jump straight to Quick examples. If not, read below.
+If a prebuild is already available for your platform, you can jump straight to [quick examples](#Quick-examples). If not, read below.
 
 ## Compiling
 
-You'll need to install a C/C++ compiler, as well as CMake.
+You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
-The package will be compiled when you install it through npm. If you're missing either a compiler or CMake, an error will be shown. Make sure you have both, and try again.
+The package will be compiled when you install it through npm. If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again.
 
 To manually compile the package, run:
 
@@ -202,8 +202,39 @@ Hello, {{context.test}}!
 This is a self closing component with no content!
 ```
 
-This will give the exact same output.
+This will give the exact same result.
 
 # Documentation
 
 For the complete documentation, and some more examples, check the wiki.
+
+# Releases
+
+>Note: versions with the suffix **R** are considered stable releases, while those with the suffix **D** are considered unstable.
+
+None.
+
+# License
+
+**eryn** was created by UnexomWid. It is licensed under the MIT license.
+
+This project uses first-party and third-party dependencies. They are listed below, along with their licenses.
+
+# Dependencies
+
+## NPM Packages
+
+- [nodejs/**node-addon-api**](https://github.com/nodejs/node-addon-api) - wrapper classes for N-API ([MIT License](https://github.com/nodejs/node-addon-api/blob/master/LICENSE.md))
+- [cmake-js/**cmake-js**](https://github.com/cmake-js/cmake-js) - native addon build tool based on CMake ([MIT License](https://github.com/cmake-js/cmake-js/blob/master/LICENSE))
+- [juliangruber/**prebuildify-load**](https://github.com/juliangruber/prebuildify-load) - build tool and bindings loader for native modules ([MIT License](https://github.com/juliangruber/prebuildify-load/blob/master/LICENSE))
+
+## First-Party
+
+- [UnexomWid/**bdp**] - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
+- [UndexomWid/**timerh**] - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
+
+## Third-Party
+
+There's currently only one third-party dependency:
+
+- [tronkko/**dirent**](https://github.com/tronkko/dirent) - dirent port for Windows ([MIT License](https://github.com/UnexomWid/eryn/blob/master/include/dirent.LICENSE))

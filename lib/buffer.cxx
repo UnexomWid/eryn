@@ -16,7 +16,7 @@
 #endif
 
 #ifdef _MSC_VER
-    #pragma warning(disable: 4996)
+    #pragma warning(disable: 4996 4293)
 #endif
 
 /// Brings the size to the closest power of 2 >= size.
