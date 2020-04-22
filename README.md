@@ -14,7 +14,7 @@ If a prebuild is already available for your platform, you can jump straight to Q
 
 ## Compiling
 
-You'll need to install C/C++ compiler, as well as CMake.
+You'll need to install a C/C++ compiler, as well as CMake.
 
 The package will be compiled when you install it through npm. If you're missing either a compiler or CMake, an error will be shown. Make sure you have both, and try again.
 
@@ -24,10 +24,11 @@ To manually compile the package, run:
 npx cmake-js compile
 ```
 
-...or you can globally install cmake-js to be able to run it directly.
+...or globally install cmake-js to be able to run it directly.
 
 ```shell
 npm i -g cmake-js
+
 cmake-js compile
 ```
 
@@ -49,7 +50,7 @@ This is a basic loop:
 Current number: [|num|]
 [|end@|]
 
-There's also support for components!
+There is also support for components!
 [|% comp.eryn : {message: "Hello"} |]
 This is some content for the component!
 It can use the component context: [|context.message|]
@@ -172,7 +173,7 @@ This is a basic loop:
 Current number: {{num}}
 {{endfor}}
 
-There's also support for components!
+There is also support for components!
 {{component comp.eryn with {message: "Hello"} }}
 This is some content for the component!
 It can use the component context: {{context.message}}
@@ -203,4 +204,6 @@ This is a self closing component with no content!
 
 This will give the exact same output.
 
-For the complete documentation and more examples, check the wiki.
+# Documentation
+
+For the complete documentation, and some more examples, check the wiki.
