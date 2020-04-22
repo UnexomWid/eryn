@@ -1021,7 +1021,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
         size_t col;
         size_t chunkIndex;
         size_t chunkSize;
-        size_t errorIndex = templateStack.top().bodyIndex;
+        size_t errorIndex = templateStack.top().templateIndex;
 
         mem_lncol(input, errorIndex, &ln, &col);
         std::unique_ptr<uint8_t, decltype(free)*> chunk(

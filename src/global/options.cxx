@@ -263,10 +263,10 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateEnd("|]");
 
     Global::Options::setTemplateConditionalStart("?");
-    Global::Options::setTemplateConditionalEnd("!");
+    Global::Options::setTemplateConditionalEnd("end?");
 
     Global::Options::setTemplateLoopStart("@");
-    Global::Options::setTemplateLoopEnd("#");
+    Global::Options::setTemplateLoopEnd("end@");
     Global::Options::setTemplateLoopSeparator(":");
 
     Global::Options::setTemplateComponent("%");
