@@ -27,7 +27,7 @@
 #include <string>
 #include <cstddef>
 
-#define CHRONOMETER std::chrono::high_resolution_clock::time_point
+typedef std::chrono::high_resolution_clock::time_point CHRONOMETER;
 
 // Gets the current time.
 CHRONOMETER time_now();

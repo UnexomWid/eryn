@@ -50,6 +50,7 @@ Here's a basic example.
 var path = require("path");
 var eryn = require("eryn");
 
+// Pass the absolute path to the file. Relative paths might not work (see the wiki).
 var data = eryn.render(path.join(__dirname, "test.eryn"), {
     firstName: "Tyler",
     lastName: "Bounty",
@@ -168,7 +169,7 @@ eryn.render(...);
 > Note: you can call the **setOptions** function as many times as you want.
 > Changes will take effect immediately.
 
-The files can now be written with this syntax. Here's how the first file would look:
+The files can now be written using this syntax. Here's how the first file would look:
 
 **test.eryn**
 
