@@ -8,15 +8,15 @@
     "rebuild": "node build.js"
   },
   "dependencies": {
-    "cmake-js": "^6.1.0",
-    "cross-spawn": "^7.0.2",
-    "minimist": "^1.2.5",
-    "npm-run-path": "^4.0.1",
-    "prebuildify-load": "^2.0.0"
+    
   },
   "author": "UnexomWid",
   "license": "MIT",
   "devDependencies": {
-    "node-addon-api": "github:nodejs/node-addon-api"
+    "node-addon-api": "github:nodejs/node-addon-api",
+    "cmake-js": "^6.1.0",
+    "cross-spawn": "^7.0.2",
+    "minimist": "^1.2.5",
+    "npm-run-path": "^4.0.1"
   }
 }

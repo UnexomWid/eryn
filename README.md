@@ -16,7 +16,9 @@ If a prebuild is already available for your platform, you can jump straight to [
 
 You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
-The package will be compiled when you install it through npm, if a prebuild is not available. If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again. If you want to manually compile the package, see below.
+The package will be compiled when you install it through npm, if a prebuild is not available. Please note that the `devDependencies` listed in [package.json](https://github.com/UnexomWid/eryn/blob/master/package.json) are required for building the package.
+
+If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again. If you want to manually compile the package, see below.
 
 To manually compile the package, run:
 
@@ -41,6 +43,20 @@ cmake-js compile
 ## Quick examples
 
 Here's a basic example.
+
+**test.js**
+
+```js
+var path = require("path");
+var eryn = require("eryn");
+
+var data = eryn.render(path.join(__dirname, "test.eryn"), {
+    firstName: "Tyler",
+    lastName: "Bounty",
+    greeting: "Hey there",
+    numbers: [10, 20, 30, 40]
+});
+```
 
 **test.eryn**
 
@@ -85,21 +101,7 @@ Hello, [|context.test|]!
 This is a self closing component with no content!
 ```
 
-**test.js**
-
-```js
-var path = require("path");
-var eryn = require("eryn");
-
-var data = eryn.render(path.join(__dirname, "test.eryn"), {
-    firstName: "Tyler",
-    lastName: "Bounty",
-    greeting: "Hey there",
-    numbers: [10, 20, 30, 40]
-});
-```
-
-The **data** variable will be a byte buffer, containing:
+The **render** function will return a byte buffer, containing:
 
 ```
 Welcome, Tyler Bounty!
@@ -163,7 +165,10 @@ eryn.setOptions({
 eryn.render(...);
 ```
 
-The previous files can now be written like this:
+> Note: you can call the **setOptions** function as many times as you want.
+> Changes will take effect immediately.
+
+The files can now be written with this syntax. Here's how the first file would look:
 
 **test.eryn**
 
@@ -189,26 +194,9 @@ And self-closing components too!
 {{component comp2.eryn with {test: "world"} self}}
 ```
 
-**comp.eryn**
-
-```js
-This is a component!
-
-It has context which is automatically stringified: {{context}}
-...and works as usual: {{context.message}}
-
-And also some content:
-{{content}}
-```
-
-**comp2.eryn**
-
-```js
-Hello, {{context.test}}!
-This is a self closing component with no content!
-```
-
 This will give the exact same result.
+
+> Note: you have to change the syntax in all files.
 
 # Documentation
 
@@ -222,23 +210,26 @@ None.
 
 # License
 
-**eryn** was created by UnexomWid. It is licensed under the MIT license.
+**eryn** was created by UnexomWid. It is licensed under the [MIT license](https://github.com/UnexomWid/eryn).
 
 This project uses first-party and third-party dependencies. They are listed below, along with their licenses.
 
 # Dependencies
 
-## NPM Packages
+## NPM Packages (dev)
 
 - [nodejs/**node-addon-api**](https://github.com/nodejs/node-addon-api) - wrapper classes for N-API ([MIT License](https://github.com/nodejs/node-addon-api/blob/master/LICENSE.md))
 - [cmake-js/**cmake-js**](https://github.com/cmake-js/cmake-js) - native addon build tool based on CMake ([MIT License](https://github.com/cmake-js/cmake-js/blob/master/LICENSE))
+- [moxystudio/**cross-spawn**](https://github.com/moxystudio/node-cross-spawn) - cross-platform alternative for spawn ([MIT License](https://github.com/moxystudio/node-cross-spawn/blob/master/LICENSE))
+- [substack/**minimist**](https://github.com/substack/minimist) - argument parser ([MIT License](https://github.com/substack/minimist/blob/master/LICENSE))
+- [sindresorhus/**npm-run-path**](https://github.com/sindresorhus/npm-run-path) - PATH for locally installed binaries ([MIT License](https://github.com/sindresorhus/npm-run-path/blob/master/license))
 
-## First-Party C/C++
+## First-Party (C/C++)
 
 - [UnexomWid/**bdp**](https://github.com/UnexomWid/bdp) - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
 - [UndexomWid/**timerh**](https://github.com/UnexomWid/timerh) - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
 
-## Third-Party C/C++
+## Third-Party (C/C++)
 
 There's currently only one third-party dependency:
 
