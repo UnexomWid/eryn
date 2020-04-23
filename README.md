@@ -50,7 +50,7 @@ Here's a basic example.
 var path = require("path");
 var eryn = require("eryn");
 
-// Pass the absolute path to the file. Relative paths might not work (see the wiki).
+// Pass the absolute path to the file. Relative paths might not be safe (see the wiki).
 var data = eryn.render(path.join(__dirname, "test.eryn"), {
     firstName: "Tyler",
     lastName: "Bounty",
@@ -198,6 +198,8 @@ And self-closing components too!
 This will give the exact same result.
 
 > Note: you have to change the syntax in all files.
+>
+> Also: change the syntax wisely. Otherwise, you might run into some problems. See the wiki for more information.
 
 # Documentation
 
@@ -211,7 +213,7 @@ None.
 
 # License
 
-**eryn** was created by UnexomWid. It is licensed under the [MIT license](https://github.com/UnexomWid/eryn).
+**eryn** was created by UnexomWid. It is licensed under the [MIT license](https://github.com/UnexomWid/eryn/blob/master/LICENSE).
 
 This project uses first-party and third-party dependencies. They are listed below, along with their licenses.
 
