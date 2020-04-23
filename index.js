@@ -1,3 +1,3 @@
-var binding = require("prebuildify-load")(__dirname);
+var binding = require('./build-load')(__dirname);
 
 module.exports = binding;

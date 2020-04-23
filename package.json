@@ -4,7 +4,7 @@
   "description": "Server-side native template processor",
   "main": "index.js",
   "scripts": {
-    "install": "prebuildify-load || node build.js",
+    "install": "node build-check.js || npm run rebuild",
     "rebuild": "node build.js"
   },
   "dependencies": {
