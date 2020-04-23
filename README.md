@@ -16,15 +16,21 @@ If a prebuild is already available for your platform, you can jump straight to [
 
 You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
-The package will be compiled when you install it through npm. If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again.
+The package will be compiled when you install it through npm, if a prebuild is not available. If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again. If you want to manually compile the package, see below.
 
 To manually compile the package, run:
+
+```shell
+npm run rebuild
+```
+
+...or directly run [cmake-js](https://github.com/cmake-js/cmake-js):
 
 ```shell
 npx cmake-js compile
 ```
 
-...or globally install cmake-js to be able to run it directly.
+...or globally install cmake-js to be able to run it anywhere:
 
 ```shell
 npm i -g cmake-js
@@ -226,14 +232,13 @@ This project uses first-party and third-party dependencies. They are listed belo
 
 - [nodejs/**node-addon-api**](https://github.com/nodejs/node-addon-api) - wrapper classes for N-API ([MIT License](https://github.com/nodejs/node-addon-api/blob/master/LICENSE.md))
 - [cmake-js/**cmake-js**](https://github.com/cmake-js/cmake-js) - native addon build tool based on CMake ([MIT License](https://github.com/cmake-js/cmake-js/blob/master/LICENSE))
-- [juliangruber/**prebuildify-load**](https://github.com/juliangruber/prebuildify-load) - build tool and bindings loader for native modules ([MIT License](https://github.com/juliangruber/prebuildify-load/blob/master/LICENSE))
 
-## First-Party
+## First-Party C/C++
 
-- [UnexomWid/**bdp**] - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
-- [UndexomWid/**timerh**] - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
+- [UnexomWid/**bdp**](https://github.com/UnexomWid/bdp) - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
+- [UndexomWid/**timerh**](https://github.com/UnexomWid/timerh) - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
 
-## Third-Party
+## Third-Party C/C++
 
 There's currently only one third-party dependency:
 
