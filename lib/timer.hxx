@@ -2,7 +2,7 @@
  * TimerH (https://github.com/UnexomWid/timerh)
  *
  * This project is licensed under the MIT license.
- * Copyright (c) 2018-2019 UnexomWid (https://uw.exom.dev)
+ * Copyright (c) 2018-2020 UnexomWid (https://uw.exom.dev)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -25,32 +25,32 @@
 
 #include <chrono>
 #include <string>
+#include <cstddef>
 
 #define CHRONOMETER std::chrono::high_resolution_clock::time_point
-#define ULL unsigned long long
 
 // Gets the current time.
 CHRONOMETER time_now();
 
 // Gets the execution time in hours.
-ULL get_exec_time_h(CHRONOMETER start);
+uint64_t get_exec_time_h(CHRONOMETER start);
 // Gets the execution time in minutes.
-ULL get_exec_time_m(CHRONOMETER start);
+uint64_t get_exec_time_m(CHRONOMETER start);
 // Gets the execution time in seconds.
-ULL get_exec_time_s(CHRONOMETER start);
+uint64_t get_exec_time_s(CHRONOMETER start);
 // Gets the execution time in milliseconds.
-ULL get_exec_time_ms(CHRONOMETER start);
+uint64_t get_exec_time_ms(CHRONOMETER start);
 // Gets the execution time in microseconds.
-ULL get_exec_time_mis(CHRONOMETER start);
+uint64_t get_exec_time_mis(CHRONOMETER start);
 // Gets the execution time in nanoseconds.
-ULL get_exec_time_ns(CHRONOMETER start);
+uint64_t get_exec_time_ns(CHRONOMETER start);
 
 // Formats a number representing milliseconds as a string.
-std::string format_time_ms(ULL milliseconds);
+std::string format_time_ms(uint64_t milliseconds);
 // Formats a number representing microseconds as a string.
-std::string format_time_mis(ULL microseconds);
+std::string format_time_mis(uint64_t microseconds);
 // Formats a number representing nanoseconds as a string.
-std::string format_time_ns(ULL nanoseconds);
+std::string format_time_ns(uint64_t nanoseconds);
 
 // Gets the formatted execution time with the precision of a millisecond.
 std::string getf_exec_time_ms(CHRONOMETER start);

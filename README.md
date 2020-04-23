@@ -226,11 +226,9 @@ This project uses first-party and third-party dependencies. They are listed belo
 
 ## First-Party (C/C++)
 
-- [UnexomWid/**bdp**](https://github.com/UnexomWid/bdp) - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
+- [UnexomWid/**BDP**](https://github.com/UnexomWid/bdp) - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
 - [UndexomWid/**timerh**](https://github.com/UnexomWid/timerh) - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
 
 ## Third-Party (C/C++)
-
-There's currently only one third-party dependency:
 
 - [tronkko/**dirent**](https://github.com/tronkko/dirent) - dirent port for Windows ([MIT License](https://github.com/UnexomWid/eryn/blob/master/include/dirent.LICENSE))
