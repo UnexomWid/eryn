@@ -143,7 +143,7 @@ You can use this buffer however you want (e.g. write it to a file, use it as-is,
 
 ## Changing the syntax
 
-If you don't like the default syntax, you can change it by calling the setOptions function before rendering the file. Here's an example:
+If you don't like the default syntax, you can change it by calling the `setOptions` function before rendering the file. Here's an example:
 
 ```js
 eryn.setOptions({
@@ -166,7 +166,7 @@ eryn.setOptions({
 eryn.render(...);
 ```
 
-> Note: you can call the **setOptions** function as many times as you want.
+> Note: you can call the `setOptions` function as many times as you want.
 > Changes will take effect immediately.
 
 The files can now be written using this syntax. Here's how the first file would look:
@@ -203,7 +203,7 @@ This will give the exact same result.
 
 # Documentation
 
-For the complete documentation, and some more examples, check the wiki.
+For the complete documentation, and some more examples, check [the wiki](https://github.com/UnexomWid/eryn/wiki).
 
 # Releases
 
