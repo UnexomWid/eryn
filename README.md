@@ -44,6 +44,8 @@ cmake-js compile
 
 Here's a basic example.
 
+> Note: if you don't like the syntax, see below [Changing the syntax](#Changing-the-syntax).
+
 **test.js**
 
 ```js
