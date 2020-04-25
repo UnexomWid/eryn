@@ -201,7 +201,7 @@ This will give the exact same result.
 
 > Note: you have to change the syntax in all files.
 >
-> Also: change the syntax wisely. Otherwise, you might run into some problems. See the wiki for more information.
+> Also: change the syntax wisely. Otherwise, you might run into some problems (see [here](https://github.com/UnexomWid/eryn/wiki/Options#remarks)).
 
 # Documentation
 
