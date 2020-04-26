@@ -18,7 +18,9 @@ You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
 The package will be compiled when you install it through npm, if a prebuild is not available. Please note that the `devDependencies` listed in [package.json](https://github.com/UnexomWid/eryn/blob/master/package.json) are required for building the package.
 
-If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again. If you want to manually compile the package, see below.
+If you're missing either a compiler or [CMake](https://cmake.org), an error will be shown. Make sure you have both, and try again.
+
+For more details, see [the wiki](https://github.com/UnexomWid/eryn/wiki/Getting-started#compiling-the-package).
 
 To manually compile the package, run:
 
