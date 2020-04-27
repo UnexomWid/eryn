@@ -79,7 +79,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
 
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
-    }else if(result.IsArrayBuffer()) {
+    } else if(result.IsArrayBuffer()) {
         LOG_DEBUG("    Type: array buffer");
 
         uint8_t* ptr = (uint8_t*) result.As<Napi::ArrayBuffer>().Data();
