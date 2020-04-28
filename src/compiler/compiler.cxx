@@ -288,7 +288,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 std::unique_ptr<uint8_t, decltype(free)*> chunk(
                     mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
-                CompilationException exception(path, "Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
+                throw CompilationException(path, "Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
             LOG_DEBUG("Found template end at %zu", end + index - input);
