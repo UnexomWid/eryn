@@ -191,8 +191,6 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
 
         env.RunScript("context=undefined");
 
-        LOG_DEBUG("get===========================================================");
-
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
