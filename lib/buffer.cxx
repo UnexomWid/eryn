@@ -8,11 +8,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifdef LOG_MEMORY_ALLOCATIONS
-    #define LOG_MEM(...) printf("\n[memory] "##__VA_ARGS__);
+#if defined(LOG_MEMORY_OPERATIONS) || defined (LOG_MEMORY_FULLY_FREED)
+    #define LOG_MEM(...) printf("[memory] " __VA_ARGS__);
     size_t allocatedAmount = 0;
-#else
-    #define LOG_MEM(...)
 #endif
 
 #ifdef _MSC_VER
@@ -40,8 +38,11 @@ uint8_t* qalloc(size_t &size) {
     if(!ptr)
         throw MemoryException("Cannot allocate memory", size);
 
-    #ifdef LOG_MEMORY_ALLOCATIONS
-        LOG_MEM("Allocated %p", ptr);
+    #ifdef LOG_MEMORY_OPERATIONS
+        LOG_MEM("Allocated %p\n", ptr);
+    #endif
+
+    #if defined(LOG_MEMORY_OPERATIONS) || defined(LOG_MEMORY_FULLY_FREED)
         ++allocatedAmount;
     #endif
 
@@ -54,8 +55,11 @@ uint8_t* qmalloc(size_t size) {
     if(!ptr)
         throw MemoryException("Cannot allocate memory", size);
 
-    #ifdef LOG_MEMORY_ALLOCATIONS
-        LOG_MEM("Allocated %p", ptr);
+    #ifdef LOG_MEMORY_OPERATIONS
+        LOG_MEM("Allocated %p\n", ptr);
+    #endif
+
+    #if defined(LOG_MEMORY_OPERATIONS) || defined(LOG_MEMORY_FULLY_FREED)
         ++allocatedAmount;
     #endif
 
@@ -68,7 +72,9 @@ uint8_t* qrealloc(uint8_t* buffer, size_t size) {
     if(!ptr)
         throw MemoryException("Cannot reallocate memory", size);
 
-    LOG_MEM("Reallocated %p -> %p", buffer, ptr);
+    #ifdef LOG_MEMORY_OPERATIONS
+        LOG_MEM("Reallocated %p -> %p\n", buffer, ptr);
+    #endif
 
     return ptr;
 }
@@ -81,12 +87,17 @@ void qfree(void* buffer) noexcept {
     if(buffer != nullptr && buffer != 0)
         free(buffer);
 
-    #ifdef LOG_MEMORY_ALLOCATIONS
+    #if defined(LOG_MEMORY_OPERATIONS) || defined(LOG_MEMORY_FULLY_FREED)
         --allocatedAmount;
+    #endif
 
-        LOG_MEM("Freed %p (%zu remaining)", buffer, allocatedAmount);
+    #ifdef LOG_MEMORY_OPERATIONS
+        LOG_MEM("Freed %p (%zu remaining)\n", buffer, allocatedAmount);
+    #endif
+
+    #ifdef LOG_MEMORY_FULLY_FREED
         if(allocatedAmount == 0)
-            LOG_MEM("All allocated memory blocks have been freed");
+            LOG_MEM("All allocated memory blocks have been freed\n");
     #endif
 }
 
@@ -168,4 +179,6 @@ BinaryData& BinaryData::operator=(const BinaryData& binaryData) {
     return *this;
 }
 
-#undef LOG_MEM
+#if defined(LOG_MEMORY_OPERATIONS) || defined (LOG_MEMORY_FULLY_FREED)
+    #undef LOG_MEM
+#endif

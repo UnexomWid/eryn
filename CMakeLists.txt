@@ -26,9 +26,10 @@ file(GLOB SOURCE_FILES
     lib/**/*.h
     lib/**/*.c)
 
-add_definitions(-DDEBUG)
+#add_definitions(-DDEBUG)
 add_definitions(-DTIMING)
-#add_definitions(-DLOG_MEMORY_ALLOCATIONS)
+#add_definitions(-DLOG_MEMORY_OPERATIONS)
+add_definitions(-DLOG_MEMORY_FULLY_FREED)
 add_definitions(-DNAPI_VERSION=3)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
