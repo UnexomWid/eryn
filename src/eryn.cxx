@@ -13,6 +13,7 @@
 #include <memory>
 
 void bufferFinalizer(Napi::Env env, uint8_t* data) {
+    LOG_DEBUG("Finalizing buffer %p", data);
     qfree(data);
 }
 
@@ -59,6 +60,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setIgnoreBlankPlaintext(value.ToBoolean().Value());
+        } else if(key == "logRenderTime") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setLogRenderTime(value.ToBoolean().Value());
         } else if(key == "templateEscape") {
             if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
                 continue;
@@ -185,6 +190,8 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
         BinaryData rendered = render(env, path.get());
 
         env.RunScript("context=undefined");
+
+        LOG_DEBUG("get===========================================================");
 
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);

@@ -11,6 +11,7 @@ bool Global::Options::bypassCache          = false;
 bool Global::Options::throwOnEmptyContent  = false;
 bool Global::Options::throwOnMissingEntry  = false;
 bool Global::Options::ignoreBlankPlaintext = false;
+bool Global::Options::logRenderTime = false;
 
 uint8_t  Global::Options::templateEscape                   = 0;
 
@@ -66,6 +67,10 @@ void Global::Options::setThrowOnMissingEntry(bool value) {
 
 void Global::Options::setIgnoreBlankPlaintext(bool value) {
     Global::Options::ignoreBlankPlaintext = value;
+}
+
+void Global::Options::setLogRenderTime(bool value) {
+    Global::Options::logRenderTime = value;
 }
 
 void Global::Options::setTemplateEscape(char value) {
@@ -264,6 +269,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setThrowOnEmptyContent(false);
     Global::Options::setThrowOnEmptyContent(false);
     Global::Options::setIgnoreBlankPlaintext(false);
+    Global::Options::setLogRenderTime(false);
 
     Global::Options::setTemplateEscape('\\');
 
@@ -339,6 +345,10 @@ bool Global::Options::getThrowOnMissingEntry() {
 
 bool Global::Options::getIgnoreBlankPlaintext() {
     return Global::Options::ignoreBlankPlaintext;
+}
+
+bool Global::Options::getLogRenderTime() {
+    return Global::Options::logRenderTime;
 }
 
 uint8_t Global::Options::getTemplateEscape() {

@@ -10,6 +10,7 @@ namespace Global {
             static bool throwOnEmptyContent;
             static bool throwOnMissingEntry;
             static bool ignoreBlankPlaintext;
+            static bool logRenderTime;
 
             static uint8_t  templateEscape;
 
@@ -56,6 +57,7 @@ namespace Global {
             static bool getThrowOnEmptyContent();
             static bool getThrowOnMissingEntry();
             static bool getIgnoreBlankPlaintext();
+            static bool getLogRenderTime();
 
             static       uint8_t  getTemplateEscape();
 
@@ -101,6 +103,7 @@ namespace Global {
             static void setThrowOnEmptyContent(bool value);
             static void setThrowOnMissingEntry(bool value);
             static void setIgnoreBlankPlaintext(bool value);
+            static void setLogRenderTime(bool value);
 
             static void setTemplateEscape(char value);
 

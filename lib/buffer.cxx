@@ -9,7 +9,7 @@
 #include <cstring>
 
 #if defined(LOG_MEMORY_OPERATIONS) || defined (LOG_MEMORY_FULLY_FREED)
-    #define LOG_MEM(...) printf("[memory] " __VA_ARGS__);
+    #define LOG_MEM(...) printf("\n[memory] " __VA_ARGS__);
     size_t allocatedAmount = 0;
 #endif
 
@@ -84,21 +84,24 @@ uint8_t* qexpand(uint8_t* buffer, size_t &size) {
 }
 
 void qfree(void* buffer) noexcept {
-    if(buffer != nullptr && buffer != 0)
+    if(buffer != nullptr && buffer != 0) {
         free(buffer);
 
-    #if defined(LOG_MEMORY_OPERATIONS) || defined(LOG_MEMORY_FULLY_FREED)
-        --allocatedAmount;
-    #endif
+        #if defined(LOG_MEMORY_OPERATIONS) || defined(LOG_MEMORY_FULLY_FREED)
+            --allocatedAmount;
+        #endif
 
-    #ifdef LOG_MEMORY_OPERATIONS
-        LOG_MEM("Freed %p (%zu remaining)\n", buffer, allocatedAmount);
-    #endif
+        #ifdef LOG_MEMORY_OPERATIONS
+            LOG_MEM("Freed %p (%zu remaining)\n", buffer, allocatedAmount);
+        #endif
 
-    #ifdef LOG_MEMORY_FULLY_FREED
-        if(allocatedAmount == 0)
-            LOG_MEM("All allocated memory blocks have been freed\n");
-    #endif
+        #ifdef LOG_MEMORY_FULLY_FREED
+            if(allocatedAmount == 0)
+                LOG_MEM("All allocated memory blocks have been freed\n");
+        #endif
+
+        buffer = nullptr;
+    }
 }
 
 char* qstrdup(const char* str) {

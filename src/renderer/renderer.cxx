@@ -25,9 +25,7 @@ using Global::Options;
 BinaryData render(BridgeData data, const char* path) {
     LOG_DEBUG("===> Rendering '%s'", path);
 
-    #ifdef TIMING
-        CHRONOMETER chrono = time_now();
-    #endif
+    CHRONOMETER chrono = time_now();
 
     if(Options::getBypassCache()) {
         std::unordered_set<std::string> recompiled;
@@ -37,13 +35,11 @@ BinaryData render(BridgeData data, const char* path) {
 
         BinaryData entry = Cache::getEntry(path);
 
-        #ifdef TIMING
+        if(Options::getLogRenderTime()) {
             BinaryData rendered = renderBytes(data, entry.data, entry.size, &recompiled);
-            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            LOG_INFO("Rendered in %s\n", getf_exec_time_mis(chrono).c_str());
             return rendered;
-        #else
-            return renderBytes(data, entry.data, entry.size, &recompiled);
-        #endif
+        } else return renderBytes(data, entry.data, entry.size, &recompiled);
     } else if(!Cache::hasEntry(path)) {
         if(Options::getThrowOnMissingEntry())
             throw RenderingException("Item does not exist in cache", "did you forget to compile this?");
@@ -52,23 +48,19 @@ BinaryData render(BridgeData data, const char* path) {
         
         BinaryData entry = Cache::getEntry(path);
 
-        #ifdef TIMING
+        if(Options::getLogRenderTime()) {
             BinaryData rendered = renderBytes(data, entry.data, entry.size, nullptr);
-            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            LOG_INFO("Rendered in %s\n", getf_exec_time_mis(chrono).c_str());
             return rendered;
-        #else
-            return renderBytes(data, entry.data, entry.size, nullptr);
-        #endif
+        } else return renderBytes(data, entry.data, entry.size, nullptr);
     } else {
         BinaryData entry = Cache::getEntry(path);
 
-        #ifdef TIMING
+        if(Options::getLogRenderTime()) {
             BinaryData rendered = renderBytes(data, entry.data, entry.size, nullptr);
-            LOG_INFO("Rendered in %s", getf_exec_time_ns(chrono).c_str());
+            LOG_INFO("Rendered in %s", getf_exec_time_mis(chrono).c_str());
             return rendered;
-        #else
-            return renderBytes(data, entry.data, entry.size, nullptr);
-        #endif
+        } else return renderBytes(data, entry.data, entry.size, nullptr);
     }
 }
 

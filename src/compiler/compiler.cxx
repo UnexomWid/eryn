@@ -31,7 +31,7 @@ using Global::Options;
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
 size_t getDirectoryEndIndex(const char* path);
-bool isBlank(char c);
+bool isBlank(uint8_t c);
 
 void compile(const char* path) {
     LOG_DEBUG("===> Compiling file '%s'", path);
@@ -50,6 +50,8 @@ void compile(const char* path) {
 }
 
 void compileDir(const char* path, std::vector<std::string> filters) {
+    LOG_DEBUG("===> Compiling directory '%s'", path);
+
     FilterInfo info;
 
     for(size_t i = 0; i < filters.size(); ++i) {
@@ -78,6 +80,8 @@ void compileDir(const char* path, std::vector<std::string> filters) {
     }
 
     compileDir(path, "", info);
+
+    LOG_DEBUG("===> Done\n");
 }
 
 void compileDir(const char* path, const char* rel, const FilterInfo& info) {
@@ -132,7 +136,7 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                 newRel.get()[newRelLength + 1] = '\0';
 
                 if(info.isDirFiltered(newRel.get())) {
-                    LOG_INFO("Scanning: %s\n", newRel.get());
+                    LOG_DEBUG("Scanning: %s\n", newRel.get());
 
                     strcpy(absoluteEnd, entry->d_name);
                     compileDir(absolute, newRel.get(), info);
@@ -203,7 +207,6 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             LOG_DEBUG("--> Found plaintext at %zu", start - input);
 
             bool skip = false;
-
             if(Options::getIgnoreBlankPlaintext()) {
                 skip = true;
                 uint8_t* i = start;
@@ -214,6 +217,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     ++i;
                 }
             }
+
             if(!skip) {
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -299,7 +303,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -308,7 +312,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     start = escapes[i] + 1;
                 }
 
-                memcpy(buffer.get() + index, start, end - start);
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -554,7 +559,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
             // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
                 
-            std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length), qfree);
+            std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
             index = 0;
 
             for(size_t i = 0; i < escapes.size(); ++i) {
@@ -563,7 +568,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 start = escapes[i] + 1;
             }
 
-            memcpy(buffer.get() + index, start, end - start);
+            if(length > 0)
+                memcpy(buffer.get() + index, start, end - start);
 
             while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_START_MARKER_LENGTH > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -861,7 +867,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -870,7 +876,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     start = escapes[i] + 1;
                 }
 
-                memcpy(buffer.get() + index, start, end - start);
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -1061,7 +1068,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -1070,7 +1077,8 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     start = escapes[i] + 1;
                 }
 
-                memcpy(buffer.get() + index, start, end - start);
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
 
                 if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -1207,6 +1215,6 @@ size_t getDirectoryEndIndex(const char* path) {
     return endIndex;
 }
 
-bool isBlank(char c) {
+bool isBlank(uint8_t c) {
     return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }

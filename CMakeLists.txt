@@ -27,7 +27,6 @@ file(GLOB SOURCE_FILES
     lib/**/*.c)
 
 #add_definitions(-DDEBUG)
-add_definitions(-DTIMING)
 #add_definitions(-DLOG_MEMORY_OPERATIONS)
 add_definitions(-DLOG_MEMORY_FULLY_FREED)
 add_definitions(-DNAPI_VERSION=3)
