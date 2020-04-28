@@ -59,6 +59,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setIgnoreBlankPlaintext(value.ToBoolean().Value());
+        } else if(key == "templateEscape") {
+            if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
+                continue;
+            Global::Options::setTemplateEscape(*value.ToString().Utf8Value().c_str());
         } else if(key == "templateStart") {
             if(!value.IsString())
                 continue;

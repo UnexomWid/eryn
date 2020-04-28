@@ -124,7 +124,7 @@ MemoryException::~MemoryException() {
 MemoryException::MemoryException(const char* msg, size_t index) {
     std::string buffer(msg);
 
-    buffer += "(";
+    buffer += " (";
     buffer += std::to_string(index);
     buffer += " bytes)";
 

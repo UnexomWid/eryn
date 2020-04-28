@@ -11,6 +11,8 @@ namespace Global {
             static bool throwOnMissingEntry;
             static bool ignoreBlankPlaintext;
 
+            static uint8_t  templateEscape;
+
             static uint8_t* templateStart;
             static uint8_t  templateStartLength;
             static uint8_t* templateStartLookup;
@@ -55,6 +57,8 @@ namespace Global {
             static bool getThrowOnMissingEntry();
             static bool getIgnoreBlankPlaintext();
 
+            static       uint8_t  getTemplateEscape();
+
             static const uint8_t* getTemplateStart();
             static       uint8_t  getTemplateStartLength();
             static const uint8_t* getTemplateStartLookup();
@@ -97,6 +101,8 @@ namespace Global {
             static void setThrowOnEmptyContent(bool value);
             static void setThrowOnMissingEntry(bool value);
             static void setIgnoreBlankPlaintext(bool value);
+
+            static void setTemplateEscape(char value);
 
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);

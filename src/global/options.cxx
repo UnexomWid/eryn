@@ -12,6 +12,8 @@ bool Global::Options::throwOnEmptyContent  = false;
 bool Global::Options::throwOnMissingEntry  = false;
 bool Global::Options::ignoreBlankPlaintext = false;
 
+uint8_t  Global::Options::templateEscape                   = 0;
+
 uint8_t* Global::Options::templateStart                    = nullptr;
 uint8_t  Global::Options::templateStartLength              = 0;
 uint8_t* Global::Options::templateStartLookup              = nullptr;
@@ -64,6 +66,10 @@ void Global::Options::setThrowOnMissingEntry(bool value) {
 
 void Global::Options::setIgnoreBlankPlaintext(bool value) {
     Global::Options::ignoreBlankPlaintext = value;
+}
+
+void Global::Options::setTemplateEscape(char value) {
+    Global::Options::templateEscape = (uint8_t) value;
 }
 
 void Global::Options::setTemplateStart(const char* value) {
@@ -259,6 +265,8 @@ void Global::Options::restoreDefaults() {
     Global::Options::setThrowOnEmptyContent(false);
     Global::Options::setIgnoreBlankPlaintext(false);
 
+    Global::Options::setTemplateEscape('\\');
+
     Global::Options::setTemplateStart("[|");
     Global::Options::setTemplateEnd("|]");
 
@@ -318,19 +326,23 @@ void Global::Options::destroy() {
 }
 
 bool Global::Options::getBypassCache() {
-    return bypassCache;
+    return Global::Options::bypassCache;
 }
 
 bool Global::Options::getThrowOnEmptyContent() {
-    return throwOnEmptyContent;
+    return Global::Options::throwOnEmptyContent;
 }
 
 bool Global::Options::getThrowOnMissingEntry() {
-    return throwOnMissingEntry;
+    return Global::Options::throwOnMissingEntry;
 }
 
 bool Global::Options::getIgnoreBlankPlaintext() {
-    return ignoreBlankPlaintext;
+    return Global::Options::ignoreBlankPlaintext;
+}
+
+uint8_t Global::Options::getTemplateEscape() {
+    return Global::Options::templateEscape;
 }
 
 const uint8_t* Global::Options::getTemplateStart() {
