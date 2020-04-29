@@ -215,6 +215,10 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 None.
 
+# TODO
+
+- Replace the global static variables with environment-dependent data
+
 # License
 
 **eryn** was created by UnexomWid. It is licensed under the [MIT license](https://github.com/UnexomWid/eryn/blob/master/LICENSE).
