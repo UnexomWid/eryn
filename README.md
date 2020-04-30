@@ -215,6 +215,18 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 None.
 
+# Contributing
+
+You can contribute by reporting bugs and requesting features on the [issue page](https://github.com/UnexomWid/eryn/issues).
+
+## Pull Requests
+
+I don't think I'll accept any of them yet, as the engine is still in its early stages and the code might change in the future.
+
+However, when I release a stable version, I'll also release documentation for the code and I might start reviewing PRs.
+
+Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/issues).
+
 # TODO
 
 - Replace the global static variables with environment-dependent data
