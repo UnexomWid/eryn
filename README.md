@@ -34,7 +34,7 @@ npm run rebuild
 npx cmake-js compile
 ```
 
-...or globally install cmake-js to be able to run it anywhere:
+...or globally install [cmake-js](https://github.com/cmake-js/cmake-js) to be able to run it anywhere:
 
 ```shell
 npm i -g cmake-js
