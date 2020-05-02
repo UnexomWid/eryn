@@ -169,27 +169,15 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
     std::stack<LoopStackInfo> loopStack;
 
     while(inputIndex < inputSize) {
-        if(BDP::isLittleEndian()) {
-            BDP::directBytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->NAME_LENGTH_BYTE_SIZE;
-            name = input + inputIndex;
-            inputIndex += nameLength;
+        BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
+        inputIndex += Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+        name = input + inputIndex;
+        inputIndex += nameLength;
 
-            BDP::directBytesToLength(valueLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            value = input + inputIndex;
-            inputIndex += valueLength;
-        } else {
-            BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->NAME_LENGTH_BYTE_SIZE;
-            name = input + inputIndex;
-            input += nameLength;
-
-            BDP::bytesToLength(valueLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            value = input + inputIndex;
-            input += valueLength;
-        }
+        BDP::bytesToLength(valueLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+        inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+        value = input + inputIndex;
+        inputIndex += valueLength;
 
         uint8_t nameByte = *name;
         
@@ -218,9 +206,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             LOG_DEBUG("--> Found conditional template start");
 
             size_t conditionalEnd;
-            if(BDP::isLittleEndian())
-                BDP::directBytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
-            else BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+            BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
 
             inputIndex += OSH_FORMAT;
 
@@ -241,17 +227,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             inputIndex -= valueLength;
 
-            if(BDP::isLittleEndian()) {
-                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                BDP::directBytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
-
-                BDP::directBytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                right = input + inputIndex;
-                inputIndex += rightLength;
-            } else {
-                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
                 BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
                 inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
 
@@ -259,18 +235,14 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
                 right = input + inputIndex;
                 inputIndex += rightLength;
-            }
 
             loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength));
 
             if(loopStack.top().arrayIndex >= loopStack.top().arrayLength) {
                 size_t loopEnd;
-                if(BDP::isLittleEndian())
-                    BDP::directBytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
-                else BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+                BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
 
                 inputIndex += OSH_FORMAT + loopEnd;
-
                 loopStack.pop();
             } else {
                 inputIndex += OSH_FORMAT;
@@ -287,9 +259,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 size_t loopStart;
 
-                if(BDP::isLittleEndian())
-                    BDP::directBytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
-                else BDP::bytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
+                BDP::bytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
 
                 inputIndex += OSH_FORMAT;
                 inputIndex -= loopStart;
@@ -310,31 +280,18 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             inputIndex -= valueLength;
 
-            if(BDP::isLittleEndian()) {
-                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                BDP::directBytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
 
-                BDP::directBytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                right = input + inputIndex;
-                inputIndex += rightLength;
-            } else {
-                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
-
-                BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                right = input + inputIndex;
-                inputIndex += rightLength;
-            }
+            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            right = input + inputIndex;
+            inputIndex += rightLength;
 
             size_t contentLength;
 
-            if(BDP::isLittleEndian())
-                BDP::directBytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
-            else BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
+            BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
 
             inputIndex += OSH_FORMAT;
 
