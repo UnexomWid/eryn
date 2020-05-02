@@ -217,9 +217,7 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 # Releases
 
->Note: versions with the suffix **R** are considered stable releases, while those with the suffix **D** are considered unstable.
-
-None.
+[0.1.0](https://github.com/UnexomWid/eryn/releases/tag/0.1.0) - May 2nd, 2020
 
 # Contributing
 
