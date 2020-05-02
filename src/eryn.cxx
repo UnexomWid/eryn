@@ -129,12 +129,6 @@ void erynCompile(const Napi::CallbackInfo& info) {
 
     try {
         compile(path.get());
-
-        #ifdef DEBUG
-            FILE* f = fopen((path.get() + std::string(".osh")).c_str(), "wb");
-            fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
-            fclose(f);
-        #endif
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

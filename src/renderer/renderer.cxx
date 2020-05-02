@@ -64,37 +64,6 @@ BinaryData render(BridgeData data, const char* path) {
     }
 }
 
-void renderFile(BridgeData data, const char* path, const char* outputPath) {
-    LOG_DEBUG("===> Rendering file '%s'", path);
-
-    FILE* input = fopen(path, "rb");
-
-    if(input == NULL)
-        throw RenderingException("Render error", "cannot open input file");
-
-    fseek(input, 0, SEEK_END);
-    long fileLength = ftell(input);
-    fseek(input, 0, SEEK_SET);
-
-    LOG_DEBUG("File size is %ld bytes\n", fileLength);
-
-    size_t inputSize = (size_t) fileLength;
-    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
-
-    fread(inputBuffer.get(), 1, inputSize, input);
-    fclose(input);
-
-    BinaryData rendered = renderBytes(data, inputBuffer.get(), inputSize, nullptr);
-
-    LOG_DEBUG("Wrote %zd bytes to output\n", rendered.size)
-
-    FILE* dest = fopen(outputPath, "wb");
-    fwrite(rendered.data, 1, rendered.size, dest);
-    fclose(dest);
-
-    qfree((uint8_t*) rendered.data);
-}
-
 void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
     std::string path(reinterpret_cast<const char*>(component), componentSize);
 
