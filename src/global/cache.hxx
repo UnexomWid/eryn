@@ -4,6 +4,7 @@
 #include "../../lib/buffer.hxx"
 
 #include <vector>
+#include <string>
 #include <cstdint>
 #include <unordered_map>
 
