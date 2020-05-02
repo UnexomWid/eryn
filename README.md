@@ -4,7 +4,7 @@
 
 # About
 
-**eryn** is a native template processor for NodeJS. It was built to be used for server-side rendering.
+**eryn** is a native template engine for NodeJS. It was built with high performance in mind, such that it can be used for fast server-side rendering.
 
 # Getting started
 
