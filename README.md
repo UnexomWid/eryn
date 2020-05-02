@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/logo.png" alt="eryn">
+</p>
+
 # About
 
 **eryn** is a native template processor for NodeJS. It was built to be used for server-side rendering.
