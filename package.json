@@ -1,7 +1,7 @@
 {
   "name": "eryn",
   "version": "0.1.0",
-  "description": "Server-side native template processor",
+  "description": "Native template engine",
   "main": "index.js",
   "scripts": {
     "install": "node build-check.js || npm run rebuild",

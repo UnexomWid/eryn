@@ -2,9 +2,11 @@
   <img src="public/logo.png" alt="eryn">
 </p>
 
-# About
+# About <a href="https://cmake.org/cmake/help/v3.0/release/3.0.0.html"><img align="right" src="https://img.shields.io/badge/CMake-3.0-CCCCCD?logo=CMake" alt="CMake 3.0" /></a><a href="https://en.wikipedia.org/wiki/C%2B%2B17"><img align="right" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=C%2B%2B" alt="C++ 17" /></a>
 
-**eryn** is a native template engine for NodeJS. It was built with high performance in mind, such that it can be used for fast server-side rendering.
+**eryn** is a native template engine for [NodeJS](https://nodejs.org).
+
+It was built with high performance in mind, such that it can be used for fast server-side rendering.
 
 # Getting started
 
@@ -235,7 +237,7 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - Replace the global static variables with environment-dependent data
 
-# License
+# License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
 **eryn** was created by UnexomWid. It is licensed under the [MIT license](https://github.com/UnexomWid/eryn/blob/master/LICENSE).
 
