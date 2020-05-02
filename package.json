@@ -2,6 +2,11 @@
   "name": "eryn",
   "version": "0.1.0",
   "description": "Native template engine",
+  "keywords": [
+    "template-engine",
+    "native",
+    "server-side-rendering"
+  ],
   "main": "index.js",
   "scripts": {
     "install": "node build-check.js || npm run rebuild",
@@ -10,8 +15,11 @@
   "dependencies": {
     
   },
-  "author": "UnexomWid",
+  "author": "UnexomWid <uw@exom.dev> (https://uw.exom.dev)",
   "license": "MIT",
+  "repository": "github:UnexomWid/eryn",
+  "homepage": "https://github.com/UnexomWid/eryn",
+  "bugs": "https://github.com/UnexomWid/eryn/issues",
   "devDependencies": {
     "node-addon-api": "github:nodejs/node-addon-api",
     "cmake-js": "^6.1.0",
