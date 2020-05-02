@@ -552,6 +552,6 @@ void BDP::bytesToValue(size_t& destination, const uint8_t* source, uint8_t count
     else if(count == 1u)
         destination = *source;
     else if(count == 8u)
-        destination = *reinterpret_cast<const uint64_t*>(source);
+        destination = *reinterpret_cast<const size_t*>(source);
     else destination = *reinterpret_cast<const uint16_t*>(source);
 }
