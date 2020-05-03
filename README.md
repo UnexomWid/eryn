@@ -50,6 +50,12 @@ npm i -g cmake-js
 cmake-js compile
 ```
 
+## Scripts
+
+- **install** - installs the package and compiles it if no (pre)build is available
+- **rebuild** - compiles the package
+- **check** - checks if a build or prebuild is available (if not, exits with code `1`)
+
 ## Quick examples
 
 Here's a basic example.
