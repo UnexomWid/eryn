@@ -16,11 +16,13 @@ You can install eryn just like any other npm package.
 npm i eryn
 ```
 
+> Note: this packages includes TypeScript declarations.
+
+If a prebuild is already available for your platform, you can jump straight to [quick examples](#Quick-examples). If not, see below [compiling the package](#Compiling-the-Package).
+
 The list of prebuilds can be found [here](https://github.com/UnexomWid/eryn/wiki/Getting-Started#prebuilds).
 
-If a prebuild is already available for your platform, you can jump straight to [quick examples](#Quick-examples). If not, read below.
-
-## Compiling
+## Compiling the Package
 
 You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
