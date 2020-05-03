@@ -16,6 +16,8 @@ You can install eryn just like any other npm package.
 npm i eryn
 ```
 
+The list of prebuilds can be found [here](https://github.com/UnexomWid/eryn/wiki/Getting-Started#prebuilds).
+
 If a prebuild is already available for your platform, you can jump straight to [quick examples](#Quick-examples). If not, read below.
 
 ## Compiling
@@ -234,6 +236,10 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 # TODO
 
 - Replace the global static variables with environment-dependent data
+
+- Add support for reversed loop templates ([#1](https://github.com/UnexomWid/eryn/issues/1))
+
+- Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
