@@ -11,47 +11,53 @@ bool Global::Options::bypassCache          = false;
 bool Global::Options::throwOnEmptyContent  = false;
 bool Global::Options::throwOnMissingEntry  = false;
 bool Global::Options::ignoreBlankPlaintext = false;
-bool Global::Options::logRenderTime = false;
+bool Global::Options::logRenderTime        = false;
 
-uint8_t  Global::Options::templateEscape                   = 0;
+uint8_t  Global::Options::templateEscape = 0;
 
-uint8_t* Global::Options::templateStart                    = nullptr;
-uint8_t  Global::Options::templateStartLength              = 0;
-uint8_t* Global::Options::templateStartLookup              = nullptr;
+uint8_t* Global::Options::templateStart                          = nullptr;
+uint8_t  Global::Options::templateStartLength                    = 0;
+uint8_t* Global::Options::templateStartLookup                    = nullptr;
 
-uint8_t* Global::Options::templateEnd                      = nullptr;
-uint8_t  Global::Options::templateEndLength                = 0;
-uint8_t* Global::Options::templateEndLookup                = nullptr;
+uint8_t* Global::Options::templateEnd                            = nullptr;
+uint8_t  Global::Options::templateEndLength                      = 0;
+uint8_t* Global::Options::templateEndLookup                      = nullptr;
 
-uint8_t* Global::Options::templateConditionalStart         = nullptr;
-uint8_t  Global::Options::templateConditionalStartLength   = 0;
+uint8_t* Global::Options::templateConditionalStart               = nullptr;
+uint8_t  Global::Options::templateConditionalStartLength         = 0;
 
-uint8_t* Global::Options::templateConditionalEnd           = nullptr;
-uint8_t  Global::Options::templateConditionalEndLength     = 0;
+uint8_t* Global::Options::templateConditionalEnd                 = nullptr;
+uint8_t  Global::Options::templateConditionalEndLength           = 0;
 
-uint8_t* Global::Options::templateLoopStart                = nullptr;
-uint8_t  Global::Options::templateLoopStartLength          = 0;
+uint8_t* Global::Options::templateInvertedConditionalStart       = nullptr;
+uint8_t  Global::Options::templateInvertedConditionalStartLength = 0;
 
-uint8_t* Global::Options::templateLoopEnd                  = nullptr;
-uint8_t  Global::Options::templateLoopEndLength            = 0;
+uint8_t* Global::Options::templateInvertedConditionalEnd         = nullptr;
+uint8_t  Global::Options::templateInvertedConditionalEndLength   = 0;
 
-uint8_t* Global::Options::templateLoopSeparator            = nullptr;
-uint8_t  Global::Options::templateLoopSeparatorLength      = 0;
-uint8_t* Global::Options::templateLoopSeparatorLookup      = nullptr;
+uint8_t* Global::Options::templateLoopStart                      = nullptr;
+uint8_t  Global::Options::templateLoopStartLength                = 0;
 
-uint8_t* Global::Options::templateComponent                = nullptr;
-uint8_t  Global::Options::templateComponentLength          = 0;
+uint8_t* Global::Options::templateLoopEnd                        = nullptr;
+uint8_t  Global::Options::templateLoopEndLength                  = 0;
 
-uint8_t* Global::Options::templateComponentSeparator       = nullptr;
-uint8_t  Global::Options::templateComponentSeparatorLength = 0;
-uint8_t* Global::Options::templateComponentSeparatorLookup = nullptr;
+uint8_t* Global::Options::templateLoopSeparator                  = nullptr;
+uint8_t  Global::Options::templateLoopSeparatorLength            = 0;
+uint8_t* Global::Options::templateLoopSeparatorLookup            = nullptr;
 
-uint8_t* Global::Options::templateComponentSelf            = nullptr;
-uint8_t  Global::Options::templateComponentSelfLength      = 0;
-uint8_t* Global::Options::templateComponentSelfLookup      = nullptr;
+uint8_t* Global::Options::templateComponent                      = nullptr;
+uint8_t  Global::Options::templateComponentLength                = 0;
 
-uint8_t* Global::Options::templateComponentEnd             = nullptr;
-uint8_t  Global::Options::templateComponentEndLength       = 0;
+uint8_t* Global::Options::templateComponentSeparator             = nullptr;
+uint8_t  Global::Options::templateComponentSeparatorLength       = 0;
+uint8_t* Global::Options::templateComponentSeparatorLookup       = nullptr;
+
+uint8_t* Global::Options::templateComponentSelf                  = nullptr;
+uint8_t  Global::Options::templateComponentSelfLength            = 0;
+uint8_t* Global::Options::templateComponentSelfLookup            = nullptr;
+
+uint8_t* Global::Options::templateComponentEnd                   = nullptr;
+uint8_t  Global::Options::templateComponentEndLength             = 0;
 
 void Global::Options::setBypassCache(bool value) {
     Global::Options::bypassCache = value;
@@ -145,6 +151,30 @@ void Global::Options::setTemplateConditionalEnd(const char* value) {
     memcpy(Global::Options::templateConditionalEnd, value, length);
 
     Global::Options::templateConditionalEndLength = length;
+}
+
+void Global::Options::setTemplateInvertedConditionalStart(const char* value) {
+    if(Global::Options::templateInvertedConditionalStart != nullptr)
+        qfree(Global::Options::templateInvertedConditionalStart);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateInvertedConditionalStart = qmalloc(length);
+
+    memcpy(Global::Options::templateInvertedConditionalStart, value, length);
+
+    Global::Options::templateInvertedConditionalStartLength = length;
+}
+
+void Global::Options::setTemplateInvertedConditionalEnd(const char* value) {
+    if(Global::Options::templateInvertedConditionalEnd != nullptr)
+        qfree(Global::Options::templateInvertedConditionalEnd);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateInvertedConditionalEnd = qmalloc(length);
+
+    memcpy(Global::Options::templateInvertedConditionalEnd, value, length);
+
+    Global::Options::templateInvertedConditionalEndLength = length;
 }
 
 void Global::Options::setTemplateLoopStart(const char* value) {
@@ -279,6 +309,9 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateConditionalStart("?");
     Global::Options::setTemplateConditionalEnd("end?");
 
+    Global::Options::setTemplateInvertedConditionalStart("!");
+    Global::Options::setTemplateInvertedConditionalEnd("end!");
+
     Global::Options::setTemplateLoopStart("@");
     Global::Options::setTemplateLoopEnd("end@");
     Global::Options::setTemplateLoopSeparator(":");
@@ -304,6 +337,11 @@ void Global::Options::destroy() {
         qfree(templateConditionalStart);
     if(templateConditionalEnd != nullptr)
         qfree(templateConditionalEnd);
+
+    if(templateInvertedConditionalStart != nullptr)
+        qfree(templateInvertedConditionalStart);
+    if(templateInvertedConditionalEnd != nullptr)
+        qfree(templateInvertedConditionalEnd);
 
     if(templateLoopStart != nullptr)
         qfree(templateLoopStart);
@@ -393,6 +431,22 @@ const uint8_t* Global::Options::getTemplateConditionalEnd() {
 
 uint8_t Global::Options::getTemplateConditionalEndLength() {
     return Global::Options::templateConditionalEndLength;
+}
+
+const uint8_t* Global::Options::getTemplateInvertedConditionalStart() {
+    return Global::Options::templateInvertedConditionalStart;
+}
+
+uint8_t Global::Options::getTemplateInvertedConditionalStartLength() {
+    return Global::Options::templateInvertedConditionalStartLength;
+}
+
+const uint8_t* Global::Options::getTemplateInvertedConditionalEnd() {
+    return Global::Options::templateInvertedConditionalEnd;
+}
+
+uint8_t Global::Options::getTemplateInvertedConditionalEndLength() {
+    return Global::Options::templateInvertedConditionalEndLength;
 }
 
 const uint8_t* Global::Options::getTemplateLoopStart() {

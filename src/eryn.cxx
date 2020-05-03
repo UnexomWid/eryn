@@ -84,6 +84,14 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateConditionalEnd(value.ToString().Utf8Value().c_str());
+        } else if(key == "invertedConditionalStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateInvertedConditionalStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "invertedConditionalEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateInvertedConditionalEnd(value.ToString().Utf8Value().c_str());
         } else if(key == "loopStart") {
             if(!value.IsString())
                 continue;
@@ -129,6 +137,12 @@ void erynCompile(const Napi::CallbackInfo& info) {
 
     try {
         compile(path.get());
+
+        #ifdef DUMP_OSH_FILES_ON_COMPILE
+            FILE* f = fopen((path.get() + std::string(".osh")).c_str(), "wb");
+            fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
+            fclose(f);
+        #endif
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

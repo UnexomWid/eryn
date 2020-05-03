@@ -185,6 +185,20 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             LOG_DEBUG("--> Found conditional template end");
 
             continue;
+        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER) {
+            LOG_DEBUG("--> Found inverted conditional template start");
+
+            size_t conditionalEnd;
+            BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+
+            inputIndex += OSH_FORMAT;
+
+            if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
+                inputIndex += conditionalEnd;
+        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER) {
+            LOG_DEBUG("--> Found inverted conditional template end");
+
+            continue;
         } else if(nameByte == *OSH_TEMPLATE_LOOP_START_MARKER) {
             LOG_DEBUG("--> Found loop template start");
 

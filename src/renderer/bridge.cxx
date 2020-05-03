@@ -104,8 +104,8 @@ bool evalConditionalTemplate(BridgeData data, const uint8_t* templateBytes, size
     } catch(std::exception &e) {
         throw RenderingException("Conditional template error", e.what(), templateBytes, templateLength);
     }
-
-    return (bool) result.ToBoolean();
+    
+    return result.ToBoolean().Value();
 }
 
 void evalAssignment(BridgeData data, const std::string &assignment) {

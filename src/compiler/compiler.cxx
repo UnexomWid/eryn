@@ -188,6 +188,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
     enum class TemplateType {
         CONDITIONAL,
+        INVERTED_CONDITIONAL,
         LOOP,
         COMPONENT
     };
@@ -388,6 +389,9 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     msgBuffer += "close the ";          
 
                     switch(templateStack.top().type) {
+                        case TemplateType::INVERTED_CONDITIONAL:
+                            msgBuffer += "inverted conditional";
+                            break;
                         case TemplateType::LOOP:
                             msgBuffer += "loop";
                             break;
@@ -439,6 +443,210 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
                 throw CompilationException(path, "Expected template end", "conditional template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+        } else if(membcmp(end, Options::getTemplateInvertedConditionalStart(), Options::getTemplateInvertedConditionalStartLength())) {
+            LOG_DEBUG("Detected inverted conditional template start");
+
+            end += Options::getTemplateInvertedConditionalStartLength();
+
+            while(isBlank(*end))
+                ++end;
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+
+            std::vector<uint8_t*> escapes;
+
+            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+
+                escapes.push_back(end + index - 1);
+                remainingLength -= index + 1;
+                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            }
+
+            templateEndIndex = end + index - input;
+
+            if(index == remainingLength) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            if(index == 0) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = end - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
+
+                throw CompilationException(path, "Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = end + index - 1;
+            while(isBlank(*end))
+                --end;
+            ++end;
+
+            if(start != end) {
+                length = end - start;
+
+                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+                
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+                index = 0;
+
+                for(size_t i = 0; i < escapes.size(); ++i) {
+                    memcpy(buffer.get() + index, start, escapes[i] - start);
+                    index += escapes[i] - start;
+                    start = escapes[i] + 1;
+                }
+
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() + OSH_FORMAT > outputCapacity) {
+                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    output.release();
+                    output.reset(newOutput);
+                }
+
+                LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), length - escapes.size());
+                memset(output.get() + outputSize, 0, OSH_FORMAT);
+
+                outputSize += OSH_FORMAT;
+                
+                templateStack.push(TemplateStackInfo(TemplateType::INVERTED_CONDITIONAL, outputSize, templateStartIndex));
+                LOG_DEBUG("done\n");
+            }
+
+            end = start;
+        } else if(membcmp(end, Options::getTemplateInvertedConditionalEnd(), Options::getTemplateInvertedConditionalEndLength())) {
+            LOG_DEBUG("Detected inverted conditional template end");
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - input;
+
+            if(index == remainingLength) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = end + index - 1;
+            while(isBlank(*end))
+                --end;
+
+            if(start == end - Options::getTemplateInvertedConditionalEndLength() + 1) {
+                if(templateStack.empty()) {
+                    size_t ln;
+                    size_t col;
+                    size_t chunkIndex;
+                    size_t chunkSize;
+                    size_t errorIndex = start - input;
+
+                    mem_lncol(input, errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                    throw CompilationException(path, "Unexpected inverted conditional end", "there is no inverted conditional template to close; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                } else if(templateStack.top().type != TemplateType::INVERTED_CONDITIONAL) {
+                    size_t ln;
+                    size_t col;
+                    size_t chunkIndex;
+                    size_t chunkSize;
+                    size_t errorIndex = start - input;
+
+                    mem_lncol(input, templateStack.top().templateIndex, &ln, &col);
+
+                    std::string msgBuffer;
+                    msgBuffer.reserve(64);
+
+                    msgBuffer += "close the ";          
+
+                    switch(templateStack.top().type) {
+                        case TemplateType::CONDITIONAL:
+                            msgBuffer += "conditional";
+                            break;
+                        case TemplateType::LOOP:
+                            msgBuffer += "loop";
+                            break;
+                        case TemplateType::COMPONENT:
+                            msgBuffer += "component";
+                            break;
+                    }
+
+                    msgBuffer += " template at ";
+                    msgBuffer += std::to_string(ln);
+                    msgBuffer += ":";
+                    msgBuffer += std::to_string(col);
+                    msgBuffer += " first";
+
+                    mem_lncol(input, errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                    throw CompilationException(path, "Unexpected inverted conditional end", msgBuffer.c_str(), ln, col, chunk.get(), chunkIndex, chunkSize);
+                }
+
+                ++end;
+                length = 0;
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    output.release();
+                    output.reset(newOutput);
+                }
+
+                LOG_DEBUG("Writing inverted conditional template end as BDP832 pair %zu -> %zu...", start - input, end - input);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER_LENGTH, start, length);
+
+                BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
+                
+                templateStack.pop();
+                LOG_DEBUG("done\n");
+
+                end = start;
+            } else {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = start + Options::getTemplateInvertedConditionalEndLength() - input;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Expected template end", "inverted conditional template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
         } else if(membcmp(end, Options::getTemplateLoopStart(), Options::getTemplateLoopStartLength())) {
             LOG_DEBUG("Detected loop template start");
@@ -658,6 +866,9 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     switch(templateStack.top().type) {
                         case TemplateType::CONDITIONAL:
                             msgBuffer += " conditional ";
+                            break;
+                        case TemplateType::INVERTED_CONDITIONAL:
+                            msgBuffer += "inverted conditional";
                             break;
                         case TemplateType::COMPONENT:
                             msgBuffer += " component ";
@@ -966,6 +1177,9 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                         case TemplateType::CONDITIONAL:
                             msgBuffer += " conditional ";
                             break;
+                        case TemplateType::INVERTED_CONDITIONAL:
+                            msgBuffer += "inverted conditional";
+                            break;
                         case TemplateType::LOOP:
                             msgBuffer += " loop ";
                             break;
@@ -1113,6 +1327,9 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
         switch(templateStack.top().type) {
             case TemplateType::CONDITIONAL:
                 msgBuffer += " conditional ";
+                break;
+            case TemplateType::INVERTED_CONDITIONAL:
+                msgBuffer += " inverted conditional ";
                 break;
             case TemplateType::LOOP:
                 msgBuffer += " loop ";
