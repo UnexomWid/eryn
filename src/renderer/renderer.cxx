@@ -98,7 +98,7 @@ BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, 
     renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
 
     // Bring the capacity to the actual size.
-    if(outputSize != outputCapacity) {
+    if(outputSize > 0 && outputSize != outputCapacity) {
         uint8_t* newBuffer = qrealloc(output.get(), outputSize);
         output.release();
         output.reset(newBuffer);
