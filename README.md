@@ -122,7 +122,7 @@ Hello, [|context.test|]!
 This is a self closing component with no content!
 ```
 
-The **render** function will return a byte buffer, containing:
+The **render** function will return a `buffer`, containing:
 
 ```
 Welcome, Tyler Bounty!
@@ -252,6 +252,8 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 - ~~Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))~~ [[771c5d5](https://github.com/UnexomWid/eryn/commit/771c5d5b3363949df7afd827a68d0fba6995f80e)]
 
 - Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))
+
+- Support for `Buffer in templates
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
