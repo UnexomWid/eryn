@@ -225,7 +225,9 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 You can contribute by reporting bugs and requesting features on the [issue page](https://github.com/UnexomWid/eryn/issues).
 
-## Pull Requests
+However, please see [known issues](https://github.com/UnexomWid/eryn/wiki/Known-Issues) before reporting bugs.
+
+#### Pull Requests
 
 I don't think I'll accept any of them yet, as the engine is still in its early stages and the code might change in the future.
 
