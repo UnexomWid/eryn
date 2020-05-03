@@ -13,7 +13,7 @@ It was built with high performance in mind, such that it can be used for fast se
 You can install eryn just like any other npm package.
 
 ```shell
-npm i eryn
+npm i eryn --save
 ```
 
 > Note: this packages includes a declaration file for TypeScript.
