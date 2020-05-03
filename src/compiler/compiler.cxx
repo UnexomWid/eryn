@@ -390,7 +390,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                     switch(templateStack.top().type) {
                         case TemplateType::INVERTED_CONDITIONAL:
-                            msgBuffer += "inverted conditional";
+                            msgBuffer += " inverted conditional ";
                             break;
                         case TemplateType::LOOP:
                             msgBuffer += "loop";
@@ -868,7 +868,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                             msgBuffer += " conditional ";
                             break;
                         case TemplateType::INVERTED_CONDITIONAL:
-                            msgBuffer += "inverted conditional";
+                            msgBuffer += " inverted conditional ";
                             break;
                         case TemplateType::COMPONENT:
                             msgBuffer += " component ";
@@ -1178,7 +1178,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                             msgBuffer += " conditional ";
                             break;
                         case TemplateType::INVERTED_CONDITIONAL:
-                            msgBuffer += "inverted conditional";
+                            msgBuffer += " inverted conditional ";
                             break;
                         case TemplateType::LOOP:
                             msgBuffer += " loop ";
