@@ -10,7 +10,8 @@
   "main": "index.js",
   "scripts": {
     "install": "node build-check.js || npm run rebuild",
-    "rebuild": "node build.js"
+    "rebuild": "node build.js",
+    "check": "node build-check.js"
   },
   "dependencies": {
     
