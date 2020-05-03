@@ -16,7 +16,7 @@ You can install eryn just like any other npm package.
 npm i eryn
 ```
 
-> Note: this packages includes TypeScript declarations.
+> Note: this packages includes a declaration file for TypeScript.
 
 If a prebuild is already available for your platform, you can jump straight to [quick examples](#Quick-examples). If not, see below [compiling the package](#Compiling-the-Package).
 
