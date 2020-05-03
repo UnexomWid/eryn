@@ -247,7 +247,8 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - Add support for reversed loop templates ([#1](https://github.com/UnexomWid/eryn/issues/1))
 
-- Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))
+- ~~Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))~~ [[
+771c5d5](https://github.com/UnexomWid/eryn/commit/771c5d5b3363949df7afd827a68d0fba6995f80e)]
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
