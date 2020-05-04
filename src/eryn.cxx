@@ -27,11 +27,6 @@ std::string jsonStringify(const Napi::Env& env, const Napi::Object& object) {
 void erynSetOptions(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 1)
-        throw Napi::Error::New(env, "Invalid argument count (expected 1: Object)");
-    if(!info[0].IsObject())
-        throw Napi::Error::New(env, "Invalid arguments (expected: Object)");
-
     Napi::Object options = info[0].As<Napi::Object>();
     Napi::Array keys = options.GetPropertyNames();
 
@@ -127,11 +122,6 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
 void erynCompile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 1)
-        throw Napi::Error::New(env, "Invalid argument count (expected 1: String)");
-    if(!info[0].IsString())
-        throw Napi::Error::New(env, "Invalid arguments (expected: String)");
-
     std::unique_ptr<char, decltype(qfree)*> path(
         qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
 
@@ -151,18 +141,12 @@ void erynCompile(const Napi::CallbackInfo& info) {
 void erynCompileDir(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 2)
-        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, Array)");
-    if(!info[0].IsString() || !info[1].IsArray())
-        throw Napi::Error::New(env, "Invalid arguments (expected: String, Array)");
-
     std::unique_ptr<char, decltype(qfree)*> path(
         qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
 
     std::vector<std::string> filters;
-
     Napi::Array filterArray = info[1].As<Napi::Array>();
-
+    
     uint32_t length = filterArray.Length();
 
     for(uint32_t i = 0; i < length; ++i) {
@@ -183,21 +167,11 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if(info.Length() != 2)
-        throw Napi::Error::New(env, "Invalid argument count (expected 2: String, Object)");
-    if(!info[0].IsString() || !info[1].IsObject())
-        throw Napi::Error::New(env, "Invalid arguments (expected: String, Object)");
-
     std::unique_ptr<char, decltype(qfree)*> path(
         qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
-    Napi::Object context = info[1].As<Napi::Object>();
-
-    env.RunScript("var context=" + jsonStringify(env, context));
 
     try {
-        BinaryData rendered = render(env, path.get());
-
-        env.RunScript("context=undefined");
+        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Function>()), path.get());
 
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);

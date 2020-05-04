@@ -8,6 +8,8 @@
 
 It was built with high performance in mind, such that it can be used for fast server-side rendering.
 
+**This is a pre-release and, as such, is not considered stable or ready for production.**
+
 # Getting started
 
 You can install eryn just like any other npm package.
@@ -254,6 +256,8 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 - Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))
 
 - Support for `Buffer in templates
+
+- Store the context locally
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 

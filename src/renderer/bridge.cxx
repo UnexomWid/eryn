@@ -12,11 +12,11 @@ std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
     Napi::Value result;
 
     try {
-        result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context }));
     } catch(std::exception &e) {
         throw RenderingException("Template error", e.what(), templateBytes, templateLength);
     }
@@ -40,7 +40,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
     } else if(result.IsObject()) {
         LOG_DEBUG("    Type: object");
 
-        std::string str = stringify(data, result.As<Napi::Object>());
+        std::string str = stringify(data.env, result.As<Napi::Object>());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
@@ -54,7 +54,7 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
     } else if(result.IsArray()) {
         LOG_DEBUG("    Type: array");
 
-        std::string str = stringify(data, result.ToObject());
+        std::string str = stringify(data.env, result.ToObject());
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
@@ -79,11 +79,11 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
 
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
-    } else if(result.IsArrayBuffer()) {
-        LOG_DEBUG("    Type: array buffer");
+    } else if(result.IsBuffer()) {
+        LOG_DEBUG("    Type: buffer");
 
-        uint8_t* ptr = (uint8_t*) result.As<Napi::ArrayBuffer>().Data();
-        size_t length = result.As<Napi::ArrayBuffer>().ByteLength();
+        uint8_t* ptr = reinterpret_cast<uint8_t*>(result.As<Napi::Buffer<char>>().Data());
+        size_t length = result.As<Napi::Buffer<char>>().Length();
 
         while(outputSize + length > outputCapacity) {
             uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -96,31 +96,31 @@ void evalTemplate(BridgeData data, const uint8_t* templateBytes, size_t template
     } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined", templateBytes, templateLength);
 }
 
-bool evalConditionalTemplate(BridgeData data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
     Napi::Value result;
 
     try {
-        result = data.RunScript(std::string(reinterpret_cast<const char*>(templateBytes), templateLength));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context }));
     } catch(std::exception &e) {
         throw RenderingException("Conditional template error", e.what(), templateBytes, templateLength);
     }
-    
+
     return result.ToBoolean().Value();
 }
 
-void evalAssignment(BridgeData data, const std::string &assignment) {
-    data.RunScript(assignment);
+void evalAssignment(BridgeData& data, const std::string &assignment) {
+    data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context }));
 }
 
-void unassign(BridgeData data, const std::string &assignment, size_t assignmentUnassignIndex) {
-    data.RunScript(assignment.substr(0, assignmentUnassignIndex) + "=undefined");
+void unassign(BridgeData& data, const std::string &assignment, size_t assignmentUnassignIndex) {
+    data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment.substr(0, assignmentUnassignIndex) + "=undefined"), data.context }));
 }
 
-size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySize) {
+size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize) {
     Napi::Value result;
 
     try {
-        result = data.RunScript(std::string(reinterpret_cast<const char*>(arrayBytes), arraySize));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, std::string(reinterpret_cast<const char*>(arrayBytes), arraySize)), data.context }));
     } catch(std::exception &e) {
         throw RenderingException("Loop template error", e.what(), arrayBytes, arraySize);
     }
@@ -138,8 +138,8 @@ size_t getArrayLength(BridgeData data, const uint8_t* arrayBytes, size_t arraySi
     return properties.Length();
 }
 
-void buildLoopAssignment(BridgeData data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {
-    data.RunScript("var " + std::string(reinterpret_cast<const char*>(iterator), iteratorSize));
+void buildLoopAssignment(BridgeData& data, std::string &assignment, size_t &assignmentUpdateIndex, size_t &assignmentUnassignIndex, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) {
+    data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "var " + std::string(reinterpret_cast<const char*>(iterator), iteratorSize)), data.context }));
     
     assignment.reserve(256);
     assignment.append(reinterpret_cast<const char*>(iterator), iteratorSize);
@@ -163,28 +163,28 @@ void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentU
     assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
 }
 
-BridgeBackup backupContext(BridgeData data) {
+BridgeBackup backupContext(BridgeData& data) {
     try {
-        return data.RunScript("context");
+        return data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context"), data.context }));
     } catch(std::exception&) {
         return Napi::Value();
     }
 }
 
-void initContext(BridgeData data, const uint8_t* context, size_t contextSize) {
+void initContext(BridgeData& data, const uint8_t* context, size_t contextSize) {
     try {
         if(contextSize == 0)
-            data.RunScript("context=undefined");
-        else data.RunScript("context=" + std::string(reinterpret_cast<const char*>(context), contextSize));
+            data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=undefined"), data.context }));
+        else data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=" + std::string(reinterpret_cast<const char*>(context), contextSize)), data.context }));
     } catch(std::exception &e) {
         throw RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context, contextSize);
     }
 }
 
-void restoreContext(BridgeData data, BridgeBackup backup) {
+void restoreContext(BridgeData& data, BridgeBackup backup) {
     if(backup.IsUndefined())
-        data.RunScript("context=undefined");
+        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=undefined"), data.context }));
     else if(backup.IsNull())
-        data.RunScript("context=null");
-    else data.RunScript("context=" + stringify(data, backup.ToObject()));
+        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=null"), data.context }));
+    else data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=" + stringify(data.env, backup.ToObject())), data.context }));
 }
