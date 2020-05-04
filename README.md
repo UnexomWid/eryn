@@ -257,7 +257,7 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - Support for `Buffer in templates
 
-- Store the context locally
+- ~~Store the context locally~~ [[51a9428](https://github.com/UnexomWid/eryn/commit/51a942819305688bde41063b2291c1332336d669)]
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
