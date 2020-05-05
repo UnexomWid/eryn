@@ -7,11 +7,12 @@
 #include <cstring>
 #include <cstdio>
 
-bool Global::Options::bypassCache          = false;
-bool Global::Options::throwOnEmptyContent  = false;
-bool Global::Options::throwOnMissingEntry  = false;
-bool Global::Options::ignoreBlankPlaintext = false;
-bool Global::Options::logRenderTime        = false;
+bool Global::Options::bypassCache            = false;
+bool Global::Options::throwOnEmptyContent    = false;
+bool Global::Options::throwOnMissingEntry    = false;
+bool Global::Options::throwOnCompileDirError = false;
+bool Global::Options::ignoreBlankPlaintext   = false;
+bool Global::Options::logRenderTime          = false;
 
 uint8_t  Global::Options::templateEscape = 0;
 
@@ -69,6 +70,10 @@ void Global::Options::setThrowOnEmptyContent(bool value) {
 
 void Global::Options::setThrowOnMissingEntry(bool value) {
     Global::Options::throwOnMissingEntry = value;
+}
+
+void Global::Options::setThrowOnCompileDirError(bool value) {
+    Global::Options::throwOnCompileDirError = value;
 }
 
 void Global::Options::setIgnoreBlankPlaintext(bool value) {
@@ -298,6 +303,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setBypassCache(false);
     Global::Options::setThrowOnEmptyContent(false);
     Global::Options::setThrowOnEmptyContent(false);
+    Global::Options::setThrowOnCompileDirError(false);
     Global::Options::setIgnoreBlankPlaintext(false);
     Global::Options::setLogRenderTime(false);
 
@@ -379,6 +385,10 @@ bool Global::Options::getThrowOnEmptyContent() {
 
 bool Global::Options::getThrowOnMissingEntry() {
     return Global::Options::throwOnMissingEntry;
+}
+
+bool Global::Options::getThrowOnCompileDirError() {
+    return Global::Options::throwOnCompileDirError;
 }
 
 bool Global::Options::getIgnoreBlankPlaintext() {

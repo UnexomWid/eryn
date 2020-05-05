@@ -51,6 +51,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setThrowOnMissingEntry(value.ToBoolean().Value());
+        }  else if(key == "throwOnCompileDirError") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setThrowOnCompileDirError(value.ToBoolean().Value());
         } else if(key == "ignoreBlankPlaintext") {
             if(!value.IsBoolean())
                 continue;

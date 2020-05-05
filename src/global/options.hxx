@@ -9,6 +9,7 @@ namespace Global {
             static bool bypassCache;
             static bool throwOnEmptyContent;
             static bool throwOnMissingEntry;
+            static bool throwOnCompileDirError;
             static bool ignoreBlankPlaintext;
             static bool logRenderTime;
 
@@ -62,6 +63,7 @@ namespace Global {
             static bool getBypassCache();
             static bool getThrowOnEmptyContent();
             static bool getThrowOnMissingEntry();
+            static bool getThrowOnCompileDirError();
             static bool getIgnoreBlankPlaintext();
             static bool getLogRenderTime();
 
@@ -114,6 +116,7 @@ namespace Global {
             static void setBypassCache(bool value);
             static void setThrowOnEmptyContent(bool value);
             static void setThrowOnMissingEntry(bool value);
+            static void setThrowOnCompileDirError(bool value);
             static void setIgnoreBlankPlaintext(bool value);
             static void setLogRenderTime(bool value);
 

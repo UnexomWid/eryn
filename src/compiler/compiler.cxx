@@ -115,7 +115,9 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                 if(info.isFileFiltered(relativePath.get())) {
                     try {
                         compile(absolute);
-                    } catch(std::exception &e) {
+                    } catch(CompilationException& e) {
+                        if(Options::getThrowOnCompileDirError())
+                            throw e;
                         LOG_ERROR("Error: %s", e.what());
                     }
                 }
