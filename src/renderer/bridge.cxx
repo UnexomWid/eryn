@@ -165,7 +165,7 @@ void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentU
 
 BridgeBackup backupContext(BridgeData& data) {
     try {
-        return data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context"), data.context }));
+        return data.context;
     } catch(std::exception&) {
         return Napi::Value();
     }
@@ -174,17 +174,14 @@ BridgeBackup backupContext(BridgeData& data) {
 void initContext(BridgeData& data, const uint8_t* context, size_t contextSize) {
     try {
         if(contextSize == 0)
-            data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=undefined"), data.context }));
-        else data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=" + std::string(reinterpret_cast<const char*>(context), contextSize)), data.context }));
+            data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object({})"), data.context })).ToObject();
+        else
+            data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object(" + std::string(reinterpret_cast<const char*>(context), contextSize) + ")"), data.context })).As<Napi::Object>();
     } catch(std::exception &e) {
         throw RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context, contextSize);
     }
 }
 
 void restoreContext(BridgeData& data, BridgeBackup backup) {
-    if(backup.IsUndefined())
-        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=undefined"), data.context }));
-    else if(backup.IsNull())
-        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=null"), data.context }));
-    else data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "context=" + stringify(data.env, backup.ToObject())), data.context }));
+    data.context = backup.ToObject();
 }

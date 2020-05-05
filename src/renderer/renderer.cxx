@@ -64,7 +64,7 @@ BinaryData render(BridgeData data, const char* path) {
     }
 }
 
-void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
+void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled) {
     std::string path(reinterpret_cast<const char*>(component), componentSize);
 
     LOG_DEBUG("===> Rendering component '%s'", path.c_str());
@@ -81,21 +81,21 @@ void renderComponent(BridgeData data, const uint8_t* component, size_t component
     }
 
     BinaryData entry = Cache::getEntry(path);
-    renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
+    renderBytes(data, entry.data, entry.size, output, outputSize, outputCapacity, content, contentSize, recompiled);
 
     LOG_DEBUG("===> Done\n");
 }
 
 BinaryData renderBytes(BridgeData data, const uint8_t* input, const size_t inputSize, std::unordered_set<std::string>* recompiled) {
-    return renderBytes(data, input, inputSize, nullptr, 0, nullptr, 0, recompiled);
+    return renderBytes(data, input, inputSize, nullptr, 0, recompiled);
 }
 
-BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
+BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
 
-    renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, parentContent, parentContentSize, recompiled);
+    renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, recompiled);
 
     // Bring the capacity to the actual size.
     if(outputSize > 0 && outputSize != outputCapacity) {
@@ -110,7 +110,7 @@ BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, 
     return BinaryData(rendered, outputSize);
 }
 
-void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, const uint8_t* parentContent, size_t parentContentSize, std::unordered_set<std::string>* recompiled) {
+void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled) {
     size_t inputIndex  = 0;
     size_t nameLength  = 0;
     size_t valueLength = 0;
@@ -136,6 +136,15 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
     };
 
     std::stack<LoopStackInfo> loopStack;
+
+    bool componentHasContent;
+
+    const uint8_t* componentPath;
+    const uint8_t* componentContext;
+
+    size_t componentStartIndex;
+    size_t componentPathLength;
+    size_t componentContextLength;
 
     while(inputIndex < inputSize) {
         BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
@@ -169,7 +178,10 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 if(contentSize == 0u) {
                     if(Options::getThrowOnEmptyContent())
                         throw RenderingException("No content", "there is no content for this component", value, valueLength);
-                } else renderBytes(data, content, contentSize, output, outputSize, outputCapacity, parentContent, parentContentSize, nullptr, 0u, recompiled);
+                } else {
+                    memcpy(output.get() + outputSize, content, contentSize);
+                    outputSize += contentSize;
+                }
             } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
             LOG_DEBUG("--> Found conditional template start");
@@ -255,22 +267,16 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_MARKER) {
             LOG_DEBUG("--> Found component template\n");
 
-            size_t leftLength;
-            size_t rightLength;
-
-            const uint8_t* left;
-            const uint8_t* right;
-
             inputIndex -= valueLength;
 
-            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+            componentPath = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            BDP::bytesToLength(componentPathLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength;
 
-            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            BDP::bytesToLength(componentContextLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
             inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            right = input + inputIndex;
-            inputIndex += rightLength;
+            componentContext = input + inputIndex;
+            inputIndex += componentContextLength;
 
             size_t contentLength;
 
@@ -278,17 +284,35 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             inputIndex += OSH_FORMAT;
 
-            BridgeBackup contextBackup = backupContext(data);
+            if(contentLength == 0) {
+                componentHasContent = false;
 
-            initContext(data, right, rightLength);
-            renderComponent(data, left, leftLength, output, outputSize, outputCapacity, input + inputIndex, contentLength, content, contentSize, recompiled);
-            restoreContext(data, contextBackup);
+                BridgeBackup contextBackup = backupContext(data);
 
-            inputIndex += contentLength;
+                initContext(data, componentContext, componentContextLength);
+                renderComponent(data, componentPath, componentPathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled);
+                restoreContext(data, contextBackup);
+            } else {
+                componentHasContent = true;
+                componentStartIndex = outputSize;
+            }
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_END_MARKER) {
             LOG_DEBUG("--> Found component template end");
 
-            continue;
+            if(componentHasContent) {
+                size_t contentLength = outputSize - componentStartIndex;
+                std::unique_ptr<uint8_t, decltype(qfree)*> contentBuffer(qmalloc(contentLength), qfree);
+
+                memcpy(contentBuffer.get(), output.get() + componentStartIndex, contentLength);
+
+                outputSize = componentStartIndex;
+
+                BridgeBackup contextBackup = backupContext(data);
+
+                initContext(data, componentContext, componentContextLength);
+                renderComponent(data, componentPath, componentPathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled);
+                restoreContext(data, contextBackup);
+            }
         } else throw RenderingException("Not supported", "this template type is not supported", name, nameLength);
     }
 }
