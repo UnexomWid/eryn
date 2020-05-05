@@ -135,16 +135,19 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         void update() { updateLoopAssignment(assignment, arrayIndex); }
     };
 
-    std::stack<LoopStackInfo> loopStack;
+    struct ComponentStackInfo {
+        bool hasContent;
 
-    bool componentHasContent;
+        const uint8_t* path;
+        const uint8_t* context;
 
-    const uint8_t* componentPath;
-    const uint8_t* componentContext;
+        size_t startIndex;
+        size_t pathLength;
+        size_t contextLength;
+    };
 
-    size_t componentStartIndex;
-    size_t componentPathLength;
-    size_t componentContextLength;
+    std::stack<LoopStackInfo>      loopStack;
+    std::stack<ComponentStackInfo> componentStack;
 
     while(inputIndex < inputSize) {
         BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
@@ -269,14 +272,16 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             inputIndex -= valueLength;
 
-            componentPath = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            BDP::bytesToLength(componentPathLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength;
+            ComponentStackInfo info;
 
-            BDP::bytesToLength(componentContextLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            info.path = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            BDP::bytesToLength(info.pathLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + info.pathLength;
+
+            BDP::bytesToLength(info.contextLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
             inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            componentContext = input + inputIndex;
-            inputIndex += componentContextLength;
+            info.context = input + inputIndex;
+            inputIndex += info.contextLength;
 
             size_t contentLength;
 
@@ -285,34 +290,40 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             inputIndex += OSH_FORMAT;
 
             if(contentLength == 0) {
-                componentHasContent = false;
+                info.hasContent = false;
 
                 BridgeBackup contextBackup = backupContext(data);
 
-                initContext(data, componentContext, componentContextLength);
-                renderComponent(data, componentPath, componentPathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled);
+                initContext(data, info.context, info.contextLength);
+                renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled);
                 restoreContext(data, contextBackup);
             } else {
-                componentHasContent = true;
-                componentStartIndex = outputSize;
+                info.hasContent = true;
+                info.startIndex = outputSize;
             }
+
+            componentStack.push(info);
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_END_MARKER) {
             LOG_DEBUG("--> Found component template end");
 
-            if(componentHasContent) {
-                size_t contentLength = outputSize - componentStartIndex;
+            ComponentStackInfo info = componentStack.top();
+
+            if(info.hasContent) {
+                size_t contentLength = outputSize - info.startIndex;
                 std::unique_ptr<uint8_t, decltype(qfree)*> contentBuffer(qmalloc(contentLength), qfree);
 
-                memcpy(contentBuffer.get(), output.get() + componentStartIndex, contentLength);
+                memcpy(contentBuffer.get(), output.get() + info.startIndex, contentLength);
 
-                outputSize = componentStartIndex;
+                outputSize = info.startIndex;
 
                 BridgeBackup contextBackup = backupContext(data);
 
-                initContext(data, componentContext, componentContextLength);
-                renderComponent(data, componentPath, componentPathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled);
+                initContext(data, info.context, info.contextLength);
+                renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled);
                 restoreContext(data, contextBackup);
             }
+
+            componentStack.pop();
         } else throw RenderingException("Not supported", "this template type is not supported", name, nameLength);
     }
 }
