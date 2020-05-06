@@ -12,7 +12,9 @@ const eryn = {
         binding.compile(path);
     },
     compileDir: (dirPath, filters) => {
-        if(!(dirPath && (typeof dirPath === 'string' && !(dirPath instanceof String))))
+        if(!dirPath)
+            dirPath = "";
+        if(!(typeof dirPath === 'string' || (dirPath instanceof String)))
             throw `Invalid argument 'dirPath' (expected: string | found: ${typeof(dirPath)})`
         if(!(filters && (filters instanceof Array)))
             throw `Invalid argument 'filters' (expected: array | found: ${typeof(filters)})`

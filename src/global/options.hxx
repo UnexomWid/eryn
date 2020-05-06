@@ -13,6 +13,8 @@ namespace Global {
             static bool ignoreBlankPlaintext;
             static bool logRenderTime;
 
+            static char*    workingDirectory;
+
             static uint8_t  templateEscape;
 
             static uint8_t* templateStart;
@@ -67,6 +69,8 @@ namespace Global {
             static bool getIgnoreBlankPlaintext();
             static bool getLogRenderTime();
 
+            static const char*    getWorkingDirectory();
+
             static       uint8_t  getTemplateEscape();
 
             static const uint8_t* getTemplateStart();
@@ -119,6 +123,8 @@ namespace Global {
             static void setThrowOnCompileDirError(bool value);
             static void setIgnoreBlankPlaintext(bool value);
             static void setLogRenderTime(bool value);
+
+            static void setWorkingDirectory(const char* value);
 
             static void setTemplateEscape(char value);
 

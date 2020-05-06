@@ -14,7 +14,9 @@ bool Global::Options::throwOnCompileDirError = false;
 bool Global::Options::ignoreBlankPlaintext   = false;
 bool Global::Options::logRenderTime          = false;
 
-uint8_t  Global::Options::templateEscape = 0;
+char*   Global::Options::workingDirectory    = nullptr;
+
+uint8_t  Global::Options::templateEscape     = 0;
 
 uint8_t* Global::Options::templateStart                          = nullptr;
 uint8_t  Global::Options::templateStartLength                    = 0;
@@ -82,6 +84,13 @@ void Global::Options::setIgnoreBlankPlaintext(bool value) {
 
 void Global::Options::setLogRenderTime(bool value) {
     Global::Options::logRenderTime = value;
+}
+
+void Global::Options::setWorkingDirectory(const char* value) {
+    if(Global::Options::workingDirectory != nullptr)
+        qfree(Global::Options::workingDirectory);
+
+    Global::Options::workingDirectory = qstrdup(value);
 }
 
 void Global::Options::setTemplateEscape(char value) {
@@ -307,6 +316,8 @@ void Global::Options::restoreDefaults() {
     Global::Options::setIgnoreBlankPlaintext(false);
     Global::Options::setLogRenderTime(false);
 
+    Global::Options::setWorkingDirectory(".");
+
     Global::Options::setTemplateEscape('\\');
 
     Global::Options::setTemplateStart("[|");
@@ -329,6 +340,9 @@ void Global::Options::restoreDefaults() {
 }
 
 void Global::Options::destroy() {
+    if(workingDirectory != nullptr)
+        qfree(workingDirectory);
+
     if(templateStart != nullptr)
         qfree(templateStart);
     if(templateStartLookup != nullptr)
@@ -397,6 +411,10 @@ bool Global::Options::getIgnoreBlankPlaintext() {
 
 bool Global::Options::getLogRenderTime() {
     return Global::Options::logRenderTime;
+}
+
+const char* Global::Options::getWorkingDirectory() {
+    return Global::Options::workingDirectory;
 }
 
 uint8_t Global::Options::getTemplateEscape() {

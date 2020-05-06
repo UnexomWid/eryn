@@ -11,6 +11,9 @@
 #include "renderer/renderer.hxx"
 
 #include <memory>
+#include <filesystem>
+
+using Global::Options;
 
 void bufferFinalizer(Napi::Env env, uint8_t* data) {
     LOG_DEBUG("Finalizing buffer %p", data);
@@ -63,6 +66,21 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setLogRenderTime(value.ToBoolean().Value());
+        } else if(key == "workingDirectory") {
+            if(!value.IsString())
+                continue;
+
+            std::string& dir = value.ToString().Utf8Value();
+
+            size_t i = dir.size() - 1;
+
+            while(i > 0) {
+                if(dir[i] == '/' || dir[i] == '\\')
+                    --i;
+                else break;
+            }
+
+            Global::Options::setWorkingDirectory(dir.substr(0, i + 1).c_str());
         } else if(key == "templateEscape") {
             if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
                 continue;
@@ -126,11 +144,17 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
 void erynCompile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::unique_ptr<char, decltype(qfree)*> path(
-        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+    std::string  absPath;
+    std::string& pathString = info[0].As<Napi::String>().Utf8Value();
+
+    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+        absPath = Options::getWorkingDirectory();
+        if(pathString.size() > 0)
+            absPath += ('/' + pathString);
+    } else absPath = pathString;
 
     try {
-        compile(path.get());
+        compile(absPath.c_str());
 
         #ifdef DUMP_OSH_FILES_ON_COMPILE
             FILE* f = fopen((path.get() + std::string(".osh")).c_str(), "wb");
@@ -145,8 +169,14 @@ void erynCompile(const Napi::CallbackInfo& info) {
 void erynCompileDir(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::unique_ptr<char, decltype(qfree)*> path(
-        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+    std::string  absPath;
+    std::string& pathString = info[0].As<Napi::String>().Utf8Value();
+
+    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+        absPath = Options::getWorkingDirectory();
+        if(pathString.size() > 0)
+            absPath += ('/' + pathString);
+    } else absPath = pathString;
 
     std::vector<std::string> filters;
     Napi::Array filterArray = info[1].As<Napi::Array>();
@@ -162,7 +192,7 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
     }
 
     try {
-        compileDir(path.get(), filters);
+        compileDir(absPath.c_str(), filters);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }
@@ -171,16 +201,22 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::unique_ptr<char, decltype(qfree)*> path(
-        qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+    std::string  absPath;
+    std::string& pathString = info[0].As<Napi::String>().Utf8Value();
+
+    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+        absPath = Options::getWorkingDirectory();
+        if(pathString.size() > 0)
+            absPath += ('/' + pathString);
+    } else absPath = pathString;
 
     try {
-        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Function>()), path.get());
+        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Function>()), absPath.c_str());
 
         return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
     } catch(std::exception &e) {
-        throw Napi::Error::New(env, ((std::string("Rendering error in '") + path.get()) + "'\n") + e.what());
+        throw Napi::Error::New(env, ((std::string("Rendering error in '") + absPath.c_str()) + "'\n") + e.what());
     }
 }
 

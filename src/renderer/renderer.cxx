@@ -76,7 +76,7 @@ void renderComponent(BridgeData data, const uint8_t* component, size_t component
         }
     } else if(!Cache::hasEntry(path)) {
         if(Options::getThrowOnMissingEntry())
-            throw RenderingException("Item does not exist in cache", "did you forget to compile this?");
+            throw RenderingException(("Item '" + path + "' does not exist in cache").c_str(), "did you forget to compile this?");
         compile(path.c_str());
     }
 
