@@ -157,8 +157,8 @@ void erynCompile(const Napi::CallbackInfo& info) {
         compile(absPath.c_str());
 
         #ifdef DUMP_OSH_FILES_ON_COMPILE
-            FILE* f = fopen((path.get() + std::string(".osh")).c_str(), "wb");
-            fwrite(Global::Cache::getEntry(path.get()).data, 1, Global::Cache::getEntry(path.get()).size, f);
+            FILE* f = fopen((absPath + std::string(".osh")).c_str(), "wb");
+            fwrite(Global::Cache::getEntry(absPath.c_str()).data, 1, Global::Cache::getEntry(absPath.c_str()).size, f);
             fclose(f);
         #endif
     } catch(std::exception &e) {

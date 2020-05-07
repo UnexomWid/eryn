@@ -115,6 +115,12 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                 if(info.isFileFiltered(relativePath.get())) {
                     try {
                         compile(absolute);
+
+                        #ifdef DUMP_OSH_FILES_ON_COMPILE
+                            FILE* f = fopen((absolute + std::string(".osh")).c_str(), "wb");
+                            fwrite(Global::Cache::getEntry(absolute).data, 1, Global::Cache::getEntry(absolute).size, f);
+                            fclose(f);
+                        #endif
                     } catch(CompilationException& e) {
                         if(Options::getThrowOnCompileDirError())
                             throw e;
