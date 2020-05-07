@@ -182,6 +182,12 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                     if(Options::getThrowOnEmptyContent())
                         throw RenderingException("No content", "there is no content for this component", value, valueLength);
                 } else {
+                    while(outputSize + contentSize > outputCapacity) {
+                        uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                        output.release();
+                        output.reset(newOutput);
+                    }
+
                     memcpy(output.get() + outputSize, content, contentSize);
                     outputSize += contentSize;
                 }
