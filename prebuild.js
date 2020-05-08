@@ -37,6 +37,11 @@ ps32.on("exit", function (statusCode) {
     ps64.stderr.pipe(process.stderr);
 
     ps64.on("exit", function (statusCode) {
+        if(statusCode != 0) {
+            console.log("[PREBUILD] [x64] Failed with status code " + statusCode);
+            process.exit(statusCode);
+        }
+
         console.log("[PREBUILD] [x64] Done\n");
         console.log("[PREBUILD] Done");
         process.exit(statusCode);
