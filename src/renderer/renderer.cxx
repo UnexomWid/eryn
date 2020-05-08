@@ -232,17 +232,17 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             inputIndex -= valueLength;
 
             left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
 
-                BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-                right = input + inputIndex;
-                inputIndex += rightLength;
+            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            right = input + inputIndex;
+            inputIndex += rightLength;
 
             loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength));
 
-            if(loopStack.top().arrayIndex >= loopStack.top().arrayLength) {
+            if(loopStack.top().arrayLength == 0) {
                 size_t loopEnd;
                 BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
 
