@@ -25,6 +25,6 @@ ps.stdout.pipe(process.stdout);
 ps.stderr.pipe(process.stderr);
 
 ps.on("exit", function (statusCode) {
-    console.log("[BUILD] Done")
+    console.log("[BUILD] Done");
     process.exit(statusCode);
 });
