@@ -58,6 +58,7 @@ cmake-js compile
 
 - **install** - installs the package and compiles it if no (pre)build is available
 - **rebuild** - compiles the package
+- **prebuild** - generates prebuilds the package (you need to provide your own generator)
 - **check** - checks if a build or prebuild is available (if not, exits with code `1`)
 
 ## Quick examples
