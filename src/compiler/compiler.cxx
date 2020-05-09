@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
+#include <unordered_set>
 
 #ifdef _MSC_VER
     #include "../../include/dirent.h"
@@ -30,8 +31,11 @@ using Global::Cache;
 using Global::Options;
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
+void localizeIterator(uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity);
 size_t getDirectoryEndIndex(const char* path);
+
 bool isBlank(uint8_t c);
+bool canExistInToken(uint8_t c);
 
 void compile(const char* path) {
     LOG_DEBUG("===> Compiling file '%s'", path);
@@ -209,7 +213,15 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
         TemplateStackInfo(TemplateType typ, size_t start, size_t index) : type(typ), bodyIndex(start), templateIndex(index) { };
     };
 
-    std::stack<TemplateStackInfo> templateStack;
+    struct IteratorVectorInfo {
+        uint8_t* iterator;
+        size_t iteratorLength;
+
+        IteratorVectorInfo(uint8_t* it, size_t itLength) : iterator(it), iteratorLength(itLength) { };
+    };
+
+    std::stack<TemplateStackInfo>   templateStack;
+    std::vector<IteratorVectorInfo> iteratorVector;
 
     while(end < limit) {
         if(start != end) {
@@ -311,8 +323,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 length = end - start;
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -324,14 +339,14 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), length - escapes.size());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
                 outputSize += OSH_FORMAT;
@@ -515,8 +530,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 length = end - start;
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -528,14 +546,30 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() + OSH_FORMAT > outputCapacity) {
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), length - escapes.size());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
                 outputSize += OSH_FORMAT;
@@ -772,8 +806,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             size_t leftLength = leftEnd - leftStart;
 
             // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+            size_t bufferSize     = length - escapes.size();
+            size_t bufferCapacity = bufferSize;
                 
-            std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+            std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
             index = 0;
 
             for(size_t i = 0; i < escapes.size(); ++i) {
@@ -785,6 +822,22 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             if(length > 0)
                 memcpy(buffer.get() + index, start, end - start);
 
+            if(!iteratorVector.empty()) {
+                LOG_DEBUG("Localizing iterators");
+
+                // If 2 or more iterators share the same name, don't replace twice.
+                std::unordered_set<std::string> iteratorSet;
+
+                for(auto info : iteratorVector) {
+                    std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+
+                    if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                        iteratorSet.insert(iteratorString);
+                        localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                    }
+                }
+            }
+
             while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_START_MARKER_LENGTH > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
@@ -794,11 +847,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             LOG_DEBUG("Writing template loop start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
             outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_START_MARKER, OSH_TEMPLATE_LOOP_START_MARKER_LENGTH);
 
-            size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + length - escapes.size();
+            size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + bufferSize;
             std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
 
             BDP::writeValue(Global::BDP832, tempBuffer.get(), leftStart, leftLength);
-            BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, buffer.get(), length - escapes.size());
+            BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, buffer.get(), bufferSize);
 
             while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -812,6 +865,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             outputSize += OSH_FORMAT;
                 
             templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex));
+            iteratorVector.push_back(IteratorVectorInfo(leftStart, leftLength));
 
             LOG_DEBUG("done\n");
 
@@ -913,6 +967,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                 outputSize += OSH_FORMAT;
                 templateStack.pop();
+                iteratorVector.pop_back();
                 LOG_DEBUG("done\n");
 
                 end = start;
@@ -1077,8 +1132,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 }
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -1089,6 +1147,22 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
+
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -1103,11 +1177,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 std::unique_ptr<uint8_t, decltype(free)*> componentPath(
                     componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), qfree);
 
-                size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + length - escapes.size();
+                size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + bufferSize;
                 std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
 
                 BDP::writeValue(Global::BDP832, tempBuffer.get(), componentPath.get(), componentPathLength);
-                BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, buffer.get(), length - escapes.size());
+                BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, buffer.get(), bufferSize);
 
                 while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
@@ -1279,8 +1353,11 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 length = end - start;
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qmalloc(length - escapes.size()), qfree);
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -1292,14 +1369,30 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
 
-                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length - escapes.size() > outputCapacity) {
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
+
+                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, buffer.get(), length - escapes.size());
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, buffer.get(), bufferSize);
                 LOG_DEBUG("done\n");
             } else {
                 LOG_DEBUG("Detected empty template\n");
@@ -1415,6 +1508,119 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
     return (uint8_t*) absolute;
 }
 
+void localizeIterator(uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity) {
+    size_t index = 0;
+    size_t matchIndex = 0;
+
+    uint8_t quoteCount         = 0;
+    uint8_t quoteTemplateCount = 0; // Template count, for template literals such as `text ${template}`.
+    uint8_t quoteType          = 0;
+
+    while(index < sourceSize) {
+        uint8_t ch = source.get()[index];
+
+        switch(ch) {
+            case '\'':
+            case '\"':
+            case  '`':
+                if(index > 0 && source.get()[index - 1] == '\\') {
+                    ++index;
+                    matchIndex = index; // Quotes. The iterator won't be matched, so reset the index.
+
+                    continue;
+                }
+
+                if(quoteCount == 0) {
+                    ++quoteCount;
+                    quoteType = ch;
+                } else if(quoteType == ch)
+                    --quoteCount;
+
+                ++index;
+                matchIndex = index;
+
+                continue;
+
+            case '$': // Template literals.
+            case '}':
+                if(ch == '$') { // Doing the check again so both characters can branch, and also fall to default if needed.
+                    if(index < sourceSize - 1 && source.get()[index + 1] == '{') {
+                        if(quoteCount > 0 && quoteType == '`') {
+                            --quoteCount;
+                            ++quoteTemplateCount;
+
+                            index += 2;
+                            matchIndex = index;
+                            LOG_DEBUG("Jupned to index %zu", index);
+
+                            continue;
+                        }
+                    }
+                } else {
+                    if(quoteTemplateCount > 0) {
+                        --quoteTemplateCount;
+                        ++quoteCount;
+                        quoteType = '`';
+
+                        ++index;
+                        matchIndex = index;
+
+                        continue;
+                    }
+                }
+            
+            default: { // Regular characters fall here.
+                if(index > 0 && matchIndex == index) {
+                    if(source.get()[index - 1] == '.'
+                    || source.get()[index - 1] == '\\'
+                    || canExistInToken(source.get()[index - 1])) {
+
+                        ++index;
+                        matchIndex = index;
+
+                        continue;
+                    }
+                }
+
+                if(ch == iterator[index - matchIndex] && (quoteCount == 0 || quoteCount < quoteTemplateCount)) {
+                    if(index - matchIndex + 1 == iteratorLength) {
+                        if(index < sourceSize - 1
+                        && (canExistInToken(source.get()[index + 1])
+                        ||  source.get()[index + 1] == ':')) { // For object properties, such as {item: item}.
+
+                            ++index;
+                            matchIndex = index;
+
+                            continue;
+                        }
+
+                        while(sourceSize + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH > sourceCapacity) {
+                            uint8_t* newSource = qexpand(source.get(), sourceCapacity);
+                            source.release();
+                            source.reset(newSource);
+                        }
+
+                        uint8_t* start = source.get() + matchIndex;
+
+                        memmove(start + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH, start, sourceSize - matchIndex);
+                        memcpy(start, OSH_TEMPLATE_LOCAL_PREFIX, OSH_TEMPLATE_LOCAL_PREFIX_LENGTH);
+
+                        sourceSize += OSH_TEMPLATE_LOCAL_PREFIX_LENGTH;
+                        
+                        index = matchIndex + iteratorLength + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH;
+
+                        matchIndex = index;
+                        continue;
+                    } else ++index;
+                } else {
+                    ++index;
+                    matchIndex = index;
+                }
+            }
+        }
+    }
+}
+
 size_t getDirectoryEndIndex(const char* path) {
     size_t length = strlen(path);
     size_t index = 0;
@@ -1432,4 +1638,16 @@ size_t getDirectoryEndIndex(const char* path) {
 
 bool isBlank(uint8_t c) {
     return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+}
+
+bool canExistInToken(uint8_t c) {
+    if(c >= 'A' && c <= 'Z')
+        return true;
+    if(c >= 'a' && c <= 'z')
+        return true;
+    if(c >= '0' && c <= '9')
+        return true;
+    if(c == '_' || c == '$')
+        return true;
+    return false;
 }

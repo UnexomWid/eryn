@@ -1,6 +1,6 @@
 var binding = require('./build-load')(__dirname);
 
-function bridgeEval(script, context) {
+function bridgeEval(script, context, local) {
     return eval(script);
 }
 
@@ -29,7 +29,7 @@ const eryn = {
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.render(path, context, bridgeEval);
+        return binding.render(path, context, {}, bridgeEval);
     },
     setOptions: (options) => {
         if(!(options && (typeof options === 'object')))

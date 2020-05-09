@@ -122,12 +122,12 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         size_t arrayIndex;              // Used to iterate over the array.
         size_t arrayLength;             // Used to stop the iteration.
         size_t assignmentUpdateIndex;   // Used to update the assignment string.
-        size_t assignmentUnassignIndex; // Used to unassign the variable that the assignment string creates.
 
+        std::string iterator;           // The iterator name.
         std::string assignment;         // Used to assign a value from the array to a variable.
 
-        LoopStackInfo(BridgeData data, const uint8_t* iterator, size_t iteratorSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), arrayLength(getArrayLength(data, array, arraySize)) {
-            buildLoopAssignment(data, assignment, assignmentUpdateIndex, assignmentUnassignIndex, iterator, iteratorSize, array, arraySize);
+        LoopStackInfo(BridgeData data, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), arrayLength(getArrayLength(data, array, arraySize)) {
+            buildLoopAssignment(data, iterator, assignment, assignmentUpdateIndex, it, itSize, array, arraySize);
             update();
         };
 
@@ -148,6 +148,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
     std::stack<LoopStackInfo>      loopStack;
     std::stack<ComponentStackInfo> componentStack;
+    std::stack<BridgeBackup>       localStack;
 
     while(inputIndex < inputSize) {
         BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
@@ -250,7 +251,9 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 loopStack.pop();
             } else {
                 inputIndex += OSH_FORMAT;
-                evalAssignment(data, loopStack.top().assignment);
+
+                localStack.push(backupLocal(data));
+                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment);
             }
         } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
             LOG_DEBUG("--> Found loop template end");
@@ -259,7 +262,9 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 loopStack.top().invalidate();
                 loopStack.top().update();
 
-                evalAssignment(data, loopStack.top().assignment);
+                restoreLocal(data, copyValue(data, localStack.top())); // In case the array uses the parent local object.
+
+                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment);
 
                 size_t loopStart;
 
@@ -270,8 +275,11 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             } else {
                 inputIndex += OSH_FORMAT;
 
-                unassign(data, loopStack.top().assignment, loopStack.top().assignmentUnassignIndex);
+                unassign(data, loopStack.top().iterator);
                 loopStack.pop();
+
+                restoreLocal(data, localStack.top());
+                localStack.pop();
             }
         } else if(nameByte == *OSH_TEMPLATE_COMPONENT_MARKER) {
             LOG_DEBUG("--> Found component template\n");
@@ -299,10 +307,15 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 info.hasContent = false;
 
                 BridgeBackup contextBackup = backupContext(data);
+                BridgeBackup localBackup = backupLocal(data);
 
                 initContext(data, info.context, info.contextLength);
+                initLocal(data);
+
                 renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled);
+
                 restoreContext(data, contextBackup);
+                restoreLocal(data, localBackup);
             } else {
                 info.hasContent = true;
                 info.startIndex = outputSize;
@@ -323,10 +336,14 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 outputSize = info.startIndex;
 
                 BridgeBackup contextBackup = backupContext(data);
+                BridgeBackup localBackup = backupLocal(data);
 
                 initContext(data, info.context, info.contextLength);
+                initLocal(data);
                 renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled);
+                
                 restoreContext(data, contextBackup);
+                restoreLocal(data, localBackup);
             }
 
             componentStack.pop();
