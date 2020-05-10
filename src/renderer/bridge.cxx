@@ -108,15 +108,17 @@ bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, siz
     return result.ToBoolean().Value();
 }
 
-void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment) {
-    data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local })).ToObject();
+void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment) {
+    if(propertyAssignment.size() > 0)
+        data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local })).ToObject();
+    else data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local })).ToObject();
 }
 
 void unassign(BridgeData& data, const std::string &iterator) {
     data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "undefined"), data.context, data.local }));
 }
 
-size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize) {
+size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, std::string*& propertyArray) {
     Napi::Value result;
 
     try {
@@ -125,6 +127,8 @@ size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arrayS
         throw RenderingException("Loop template error", e.what(), arrayBytes, arraySize);
     }
 
+    bool isSimpleArray = true;
+
     if(result.IsArray())
         return result.As<Napi::Array>().Length();
     if(!result.IsObject())
@@ -132,9 +136,23 @@ size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arrayS
 
     Napi::Array properties = result.ToObject().GetPropertyNames();
 
-    for(uint32_t i = 0; i < properties.Length(); ++i)
+    if(properties.Length() == 0)
+        throw RenderingException("Unsupported loop right operand", "length is 0", arrayBytes, arraySize);
+
+    propertyArray = new std::string[properties.Length()];
+
+    for(uint32_t i = 0; i < properties.Length(); ++i) {
+        propertyArray[i] = ((Napi::Value) properties[i]).As<Napi::String>().Utf8Value();
+
         if(((Napi::Value) properties[i]).As<Napi::String>().Utf8Value() != std::to_string(i))
-            throw RenderingException("Unsupported loop right operand", "must be Array", arrayBytes, arraySize);
+            isSimpleArray = false; // Object.
+    }
+
+    if(isSimpleArray) {
+        delete[] propertyArray;
+        propertyArray = nullptr;
+    }
+
     return properties.Length();
 }
 
@@ -148,9 +166,15 @@ void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& a
     assignmentUpdateIndex = assignment.size();
 }
 
-void updateLoopAssignment(std::string &assignment, size_t &arrayIndex) {
-    assignment += std::to_string(arrayIndex);
-    assignment += "]";
+void updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t &arrayIndex, std::string*& propertyArray) {
+    if(propertyArray == nullptr) {
+        assignment += std::to_string(arrayIndex);
+        assignment += "]";
+    } else {
+        propertyAssignment = "Object({key:\"" + propertyArray[arrayIndex] + "\",value:";
+        assignment += "\"" + propertyArray[arrayIndex] + "\"]";
+    }
+    
     ++arrayIndex;
 }
 

@@ -119,20 +119,42 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
     const uint8_t* value;
 
     struct LoopStackInfo {
-        size_t arrayIndex;              // Used to iterate over the array.
-        size_t arrayLength;             // Used to stop the iteration.
-        size_t assignmentUpdateIndex;   // Used to update the assignment string.
+        size_t arrayIndex;               // Used to iterate over the array.
+        size_t arrayLength;              // Used to stop the iteration.
+        size_t assignmentUpdateIndex;    // Used to update the assignment string.
 
-        std::string iterator;           // The iterator name.
-        std::string assignment;         // Used to assign a value from the array to a variable.
+        std::string  iterator;           // The iterator name.
+        std::string  assignment;         // Used to assign a value from the array to a variable.
+        std::string  propertyAssignment; // Used to assign a key-value pair from the object to a variable.
 
-        LoopStackInfo(BridgeData data, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), arrayLength(getArrayLength(data, array, arraySize)) {
+        std::string* propertyArray;      // Used for objects.
+
+        LoopStackInfo(BridgeData data, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), propertyArray(nullptr) {
+            arrayLength = getArrayLength(data, array, arraySize, propertyArray);
             buildLoopAssignment(data, iterator, assignment, assignmentUpdateIndex, it, itSize, array, arraySize);
             update();
         };
 
+        LoopStackInfo(const LoopStackInfo& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment) {
+            propertyArray = new std::string[info.arrayLength];
+            for(size_t i = 0; i < info.arrayLength; ++i)
+                propertyArray[i] = info.propertyArray[i];
+        }
+
+        LoopStackInfo(LoopStackInfo&& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment) {
+            propertyArray = info.propertyArray;
+            info.propertyArray = nullptr;
+        }
+
+        ~LoopStackInfo() {
+            if(propertyArray != nullptr) {
+                delete[] propertyArray;
+                propertyArray = nullptr;
+            }
+        }
+
         void invalidate() { invalidateLoopAssignment(assignment, assignmentUpdateIndex); }
-        void update() { updateLoopAssignment(assignment, arrayIndex); }
+        void update() { updateLoopAssignment(assignment, propertyAssignment, arrayIndex, propertyArray); }
     };
 
     struct ComponentStackInfo {
@@ -251,9 +273,8 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 loopStack.pop();
             } else {
                 inputIndex += OSH_FORMAT;
-
                 localStack.push(backupLocal(data));
-                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment);
+                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
             }
         } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
             LOG_DEBUG("--> Found loop template end");
@@ -264,7 +285,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 restoreLocal(data, copyValue(data, localStack.top())); // In case the array uses the parent local object.
 
-                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment);
+                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
 
                 size_t loopStart;
 

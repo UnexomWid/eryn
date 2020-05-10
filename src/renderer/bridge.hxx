@@ -21,16 +21,17 @@ struct BridgeData {
     BridgeData(Napi::Env en, Napi::Object ctx, Napi::Object lcl, Napi::Function ev) : env(en), context(ctx), local(lcl), eval(ev) { }
 };
 typedef Napi::Value BridgeBackup;
+typedef Napi::Array BridgeArray;
 
 void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity);
 bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity);
-void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment);
+void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment);
 void unassign(BridgeData& data, const std::string &iterator);
 
-size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize);
+size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, std::string*& propertyArray);
 
 void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& assignment, size_t &assignmentUpdateIndex, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize);
-void updateLoopAssignment(std::string &assignment, size_t &arrayIndex);
+void updateLoopAssignment(std::string &assignment, std::string& propertyAssignment, size_t &arrayIndex, std::string*& propertyArray);
 void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex);
 
 BridgeBackup copyValue(BridgeData& data, const Napi::Value& value);
