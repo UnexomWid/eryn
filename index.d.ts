@@ -2,12 +2,12 @@
 // Definitions by UnexomWid <https://uw.exom.dev>
 
 interface ErynOptions {
-    bypassCache?:              bool,
-    throwOnEmptyContent?:      bool,
-    throwOnMissingEntry?:      bool,
-    throwOnCompileDirError?:   bool,
-    ignoreBlankPlaintext?:     bool,
-    logRenderTime?:            bool,
+    bypassCache?:              boolean,
+    throwOnEmptyContent?:      boolean,
+    throwOnMissingEntry?:      boolean,
+    throwOnCompileDirError?:   boolean,
+    ignoreBlankPlaintext?:     boolean,
+    logRenderTime?:            boolean,
     workingDirectory?:         string,
     templateEscape?:           string,
     templateStart?:            string,
