@@ -14,9 +14,7 @@
     "prebuild": "node prebuild.js",
     "check": "node build-check.js"
   },
-  "dependencies": {
-    
-  },
+  "dependencies": {},
   "author": "UnexomWid <uw@exom.dev> (https://uw.exom.dev)",
   "license": "MIT",
   "repository": "github:UnexomWid/eryn",
