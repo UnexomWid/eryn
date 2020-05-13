@@ -15,10 +15,11 @@
 #define COMPILER_ERROR_CHUNK_SIZE 20u
 
 void compile(const char* path);
+void compileString(const char* alias, const char* str);
 void compileDir(const char* path, std::vector<std::string> filters);
 void compileDir(const char* path, const char* rel, const FilterInfo& info);
 
 BinaryData compileFile(const char* path);
-BinaryData compileBytes(uint8_t* inputBuffer, size_t inputSize, const char* wd, const char* path = "");
+BinaryData compileBytes(const uint8_t* inputBuffer, size_t inputSize, const char* wd, const char* path = "");
 
 #endif

@@ -21,6 +21,14 @@ const eryn = {
 
         binding.compileDir(dirPath, filters);
     },
+    compileString: (alias, str) => {
+        if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
+            throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
+        if(!(str && (typeof str === 'string' && !(str instanceof String))))
+            throw `Invalid argument 'str' (expected: string | found: ${typeof(path)})`
+
+        binding.compileString(alias, str);
+    },
     render: (path, context) => {
         if(!(path && (typeof path === 'string' && !(path instanceof String))))
             throw `Invalid argument 'path' (expected: string | found: ${typeof(path)})`
@@ -30,6 +38,16 @@ const eryn = {
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
         return binding.render(path, context, {}, bridgeEval);
+    },
+    renderString: (alias, context) => {
+        if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
+            throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
+        if(!context)
+            context = {};
+        if(!(typeof context === 'object'))
+            throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
+
+        return binding.renderString(alias, context, {}, bridgeEval);
     },
     setOptions: (options) => {
         if(!(options && (typeof options === 'object')))
@@ -42,7 +60,9 @@ const eryn = {
 module.exports = {
     compile: eryn.compile,
     compileDir: eryn.compileDir,
+    compileString: eryn.compileString,
     render: eryn.render,
+    renderString: eryn.renderString,
     setOptions: eryn.setOptions,
     default: eryn
 };

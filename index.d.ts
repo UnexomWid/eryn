@@ -27,13 +27,17 @@ interface ErynOptions {
 
 export function compile(filePath : string) : void;
 export function compileDir(dirPath : string, filters : string[]) : void;
+export function compileString(alias : string, str : string) : void;
 export function render(filePath : string, context : object) : Buffer;
+export function renderString(alias : string, context : object) : Buffer;
 export function setOptions(options : ErynOptions) : void;
 
 declare const eryn: {
     compile: (filePath : string) => void;
     compileDir: (dirPath : string, filters : string[]) => void;
+    compileString: (alias : string, str : string) => void;
     render: (filePath : string, context : object) => Buffer;
+    renderString: (alias : string, context : object) => Buffer;
     setOptions: (options : ErynOptions) => void;
 };
   

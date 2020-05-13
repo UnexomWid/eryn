@@ -198,6 +198,22 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
     }
 }
 
+void erynCompileString(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    try {
+        std::unique_ptr<char, decltype(qfree)*> alias(
+            qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+
+        std::unique_ptr<char, decltype(qfree)*> str(
+            qstrdup(info[1].As<Napi::String>().Utf8Value().c_str()), qfree);
+
+        compileString(alias.get(), str.get());
+    } catch(std::exception &e) {
+        throw Napi::Error::New(env, e.what());
+    }
+}
+
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -220,6 +236,22 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     }
 }
 
+Napi::Buffer<uint8_t> erynRenderString(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    std::unique_ptr<char, decltype(qfree)*> alias(
+            qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+
+    try {
+        BinaryData rendered = renderString(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Function>()), alias.get());
+
+        return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
+    } catch(std::exception &e) {
+        throw Napi::Error::New(env, ((std::string("Rendering error in '") + alias.get()) + "'\n") + e.what());
+    }
+}
+
 void destroy(void* args) {
     LOG_DEBUG("Destroying...");
 
@@ -235,7 +267,9 @@ Napi::Object init(Napi::Env env, Napi::Object exports) {
 
     exports["compile"] = Napi::Function::New(env, erynCompile);
     exports["compileDir"] = Napi::Function::New(env, erynCompileDir);
+    exports["compileString"] = Napi::Function::New(env, erynCompileString);
     exports["render"] = Napi::Function::New(env, erynRender);
+    exports["renderString"] = Napi::Function::New(env, erynRenderString);
     exports["setOptions"] = Napi::Function::New(env, erynSetOptions);
 
     return exports;

@@ -31,7 +31,7 @@ using Global::Cache;
 using Global::Options;
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
-void localizeIterator(uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity);
+void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity);
 size_t getDirectoryEndIndex(const char* path);
 
 bool isBlank(uint8_t c);
@@ -45,6 +45,22 @@ void compile(const char* path) {
     else {
         BinaryData compiled = compileFile(path);
         size_t index = Cache::getRawEntry(path);
+        
+        qfree((uint8_t*) Cache::getData(index).data);
+        Cache::setData(index, compiled);
+    }
+
+    LOG_DEBUG("===> Done\n");
+}
+
+void compileString(const char* alias, const char* str) {
+    LOG_DEBUG("===> Compiling string '%s'", alias);
+
+    if(!Cache::hasEntry(alias))
+        Cache::addEntry(alias, compileBytes(reinterpret_cast<const uint8_t*>(str), strlen(str), "", alias));
+    else {
+        BinaryData compiled = compileBytes(reinterpret_cast<const uint8_t*>(str), strlen(str), "", alias);
+        size_t index = Cache::getRawEntry(alias);
         
         qfree((uint8_t*) Cache::getData(index).data);
         Cache::setData(index, compiled);
@@ -182,16 +198,16 @@ BinaryData compileFile(const char* path) {
     return compileBytes(inputBuffer.get(), inputSize, wd.get(), path);
 }
 
-BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const char* path) {
+BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, const char* path) {
     size_t   outputSize = 0;
     size_t   outputCapacity = inputSize;
     std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
 
-    uint8_t* start  = input;
-    uint8_t* end    = input + mem_find(input, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
+    const uint8_t* start  = input;
+    const uint8_t* end    = input + mem_find(input, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
     size_t   length = end - start;
 
-    uint8_t* limit  = input + inputSize;
+    const uint8_t* limit  = input + inputSize;
 
     size_t   remainingLength;
     size_t   index;
@@ -214,10 +230,10 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
     };
 
     struct IteratorVectorInfo {
-        uint8_t* iterator;
+        const uint8_t* iterator;
         size_t iteratorLength;
 
-        IteratorVectorInfo(uint8_t* it, size_t itLength) : iterator(it), iteratorLength(itLength) { };
+        IteratorVectorInfo(const uint8_t* it, size_t itLength) : iterator(it), iteratorLength(itLength) { };
     };
 
     std::stack<TemplateStackInfo>   templateStack;
@@ -230,7 +246,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             bool skip = false;
             if(Options::getIgnoreBlankPlaintext()) {
                 skip = true;
-                uint8_t* i = start;
+                const uint8_t* i = start;
 
                 while(skip && i != end) {
                     if(!isBlank(*i))
@@ -272,7 +288,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             remainingLength = inputSize - (end - input);
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
-            std::vector<uint8_t*> escapes;
+            std::vector<const uint8_t*> escapes;
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
@@ -479,7 +495,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             remainingLength = inputSize - (end - input);
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
-            std::vector<uint8_t*> escapes;
+            std::vector<const uint8_t*> escapes;
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
@@ -553,7 +569,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     std::unordered_set<std::string> iteratorSet;
 
                     for(auto info : iteratorVector) {
-                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
@@ -700,15 +716,15 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
             start = end;
 
-            uint8_t* leftStart = start;
-            uint8_t* leftEnd = start;
-            size_t   sepIndex;
+            const uint8_t* leftStart = start;
+            const uint8_t* leftEnd = start;
+            size_t sepIndex;
 
             remainingLength = inputSize - (end - input);
             sepIndex = mem_find(end, remainingLength, Options::getTemplateLoopSeparator(), Options::getTemplateLoopSeparatorLength(), Options::getTemplateLoopSeparatorLookup());
             index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
-            std::vector<uint8_t*> escapes;
+            std::vector<const uint8_t*> escapes;
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
@@ -829,7 +845,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 std::unordered_set<std::string> iteratorSet;
 
                 for(auto info : iteratorVector) {
-                    std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+                    std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
 
                     if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                         iteratorSet.insert(iteratorString);
@@ -994,15 +1010,15 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
             start = end;
 
-            uint8_t* leftStart = start;
-            uint8_t* leftEnd = start;
-            size_t   sepIndex;
+            const uint8_t* leftStart = start;
+            const uint8_t* leftEnd = start;
+            size_t sepIndex;
 
             remainingLength = inputSize - (end - input);
             sepIndex = mem_find(end, remainingLength, Options::getTemplateComponentSeparator(), Options::getTemplateComponentSeparatorLength(), Options::getTemplateComponentSeparatorLookup());
             index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
-            std::vector<uint8_t*> escapes;
+            std::vector<const uint8_t*> escapes;
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
@@ -1093,7 +1109,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                 size_t leftLength = leftEnd - leftStart;
 
                 bool isSelf = false;
-                uint8_t* selfStart;
+                const uint8_t* selfStart;
 
                 if(end - start + 1 >= Options::getTemplateComponentSelfLength()) {
                     selfStart = end - Options::getTemplateComponentSelfLength();
@@ -1155,7 +1171,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     std::unordered_set<std::string> iteratorSet;
 
                     for(auto info : iteratorVector) {
-                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
@@ -1318,7 +1334,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
             remainingLength = inputSize - (end - input);
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
 
-            std::vector<uint8_t*> escapes;
+            std::vector<const uint8_t*> escapes;
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
@@ -1376,7 +1392,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
                     std::unordered_set<std::string> iteratorSet;
 
                     for(auto info : iteratorVector) {
-                        std::string iteratorString = std::string(reinterpret_cast<char*>(info.iterator), info.iteratorLength);
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
@@ -1452,7 +1468,7 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
 
         if(Options::getIgnoreBlankPlaintext()) {
             skip = true;
-            uint8_t* i = start;
+            const uint8_t* i = start;
 
             while(skip && i != end) {
                 if(*i != ' ' && *i != '\t' && *i != '\n' && *i != '\r')
@@ -1486,7 +1502,12 @@ BinaryData compileBytes(uint8_t* input, size_t inputSize, const char* wd, const 
     return BinaryData(compiled, outputSize);
 }
 
-uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength) {
+uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t& absoluteLength) {
+    if(strlen(wd) == 0) {
+        absoluteLength = componentPathLength;
+        return (uint8_t*) qstrndup(componentPath, componentPathLength);
+    }
+    
     if(*componentPath == '/' || *componentPath == '\\') {
         uint8_t* absolute = qmalloc(componentPathLength);
         memcpy(absolute, componentPath, componentPathLength);
@@ -1508,7 +1529,7 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
     return (uint8_t*) absolute;
 }
 
-void localizeIterator(uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity) {
+void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity) {
     size_t index = 0;
     size_t matchIndex = 0;
 
