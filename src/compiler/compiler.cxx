@@ -1329,6 +1329,97 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 throw CompilationException(path, "Expected template end", "component template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
+        } else if(membcmp(end, Options::getTemplateVoid(), Options::getTemplateVoidLength())) {
+            LOG_DEBUG("Detected void template");
+
+            end += Options::getTemplateVoidLength();
+
+            while(isBlank(*end))
+                ++end;
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+
+            std::vector<const uint8_t*> escapes;
+
+            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+
+                escapes.push_back(end + index - 1);
+                remainingLength -= index + 1;
+                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            }
+
+            templateEndIndex = end + index - input;
+
+            if(index == remainingLength) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            if(index == 0) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = end - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
+
+                throw CompilationException(path, "Unexpected template end", "did you forget to write the body?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = end + index - 1;
+            while(isBlank(*end))
+                --end;
+            ++end;
+
+            if(start != end) {
+                length = end - start;
+
+                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
+                
+                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                index = 0;
+
+                for(size_t i = 0; i < escapes.size(); ++i) {
+                    memcpy(buffer.get() + index, start, escapes[i] - start);
+                    index += escapes[i] - start;
+                    start = escapes[i] + 1;
+                }
+
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_VOID_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
+                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    output.release();
+                    output.reset(newOutput);
+                }
+
+                LOG_DEBUG("Writing void template as BDP832 pair %zu -> %zu...", start - input, end - input);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_VOID_MARKER, OSH_TEMPLATE_VOID_MARKER_LENGTH, buffer.get(), bufferSize);
+                LOG_DEBUG("done\n");
+            }
+
+            end = start;
         } else { // Normal Template.
             start = end;
             remainingLength = inputSize - (end - input);
@@ -1507,7 +1598,7 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
         absoluteLength = componentPathLength;
         return (uint8_t*) qstrndup(componentPath, componentPathLength);
     }
-    
+
     if(*componentPath == '/' || *componentPath == '\\') {
         uint8_t* absolute = qmalloc(componentPathLength);
         memcpy(absolute, componentPath, componentPathLength);

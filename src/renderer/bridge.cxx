@@ -96,6 +96,14 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
     } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined", templateBytes, templateLength);
 }
 
+void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength) {
+    try {
+        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local }));
+    } catch(std::exception &e) {
+        throw RenderingException("Void template error", e.what(), templateBytes, templateLength);
+    }
+}
+
 bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
     Napi::Value result;
 

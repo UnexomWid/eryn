@@ -237,6 +237,10 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                     outputSize += contentSize;
                 }
             } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
+        } else if(nameByte == *OSH_TEMPLATE_VOID_MARKER) {
+            LOG_DEBUG("--> Found void template");
+
+            evalVoidTemplate(data, value, valueLength);
         } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
             LOG_DEBUG("--> Found conditional template start");
 

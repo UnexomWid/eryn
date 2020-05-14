@@ -24,6 +24,7 @@ typedef Napi::Value BridgeBackup;
 typedef Napi::Array BridgeArray;
 
 void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity);
+void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength);
 bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity);
 void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment);
 void unassign(BridgeData& data, const std::string &iterator);

@@ -25,6 +25,9 @@ namespace Global {
             static uint8_t  templateEndLength;
             static uint8_t* templateEndLookup;
 
+            static uint8_t* templateVoid;
+            static uint8_t  templateVoidLength;
+
             static uint8_t* templateConditionalStart;
             static uint8_t  templateConditionalStartLength;
 
@@ -80,6 +83,9 @@ namespace Global {
             static const uint8_t* getTemplateEnd();
             static       uint8_t  getTemplateEndLength();
             static const uint8_t* getTemplateEndLookup();
+            
+            static const uint8_t* getTemplateVoid();
+            static       uint8_t  getTemplateVoidLength();
 
             static const uint8_t* getTemplateConditionalStart();
             static       uint8_t  getTemplateConditionalStartLength();
@@ -130,6 +136,8 @@ namespace Global {
 
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);
+
+            static void setTemplateVoid(const char* value);
 
             static void setTemplateConditionalStart(const char* value);
             static void setTemplateConditionalEnd(const char* value);

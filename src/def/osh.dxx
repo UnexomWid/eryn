@@ -3,6 +3,7 @@
 
 #define OSH_PLAINTEXT_MARKER                           reinterpret_cast<const uint8_t*>("p")
 #define OSH_TEMPLATE_MARKER                            reinterpret_cast<const uint8_t*>("t")
+#define OSH_TEMPLATE_VOID_MARKER                       reinterpret_cast<const uint8_t*>("v")
 #define OSH_TEMPLATE_CONDITIONAL_START_MARKER          reinterpret_cast<const uint8_t*>("?")
 #define OSH_TEMPLATE_CONDITIONAL_END_MARKER            reinterpret_cast<const uint8_t*>("c")
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER reinterpret_cast<const uint8_t*>("!")
@@ -16,6 +17,7 @@
 
 #define OSH_PLAINTEXT_MARKER_LENGTH                           1u
 #define OSH_TEMPLATE_MARKER_LENGTH                            1u
+#define OSH_TEMPLATE_VOID_MARKER_LENGTH                       1u
 #define OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH          1u
 #define OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH            1u
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH 1u
