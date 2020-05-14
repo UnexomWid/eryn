@@ -254,7 +254,7 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - ~~Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))~~ [[771c5d5](https://github.com/UnexomWid/eryn/commit/771c5d5b3363949df7afd827a68d0fba6995f80e)]
 
-- Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))
+- ~~Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))~~ [[f43e454](https://github.com/UnexomWid/eryn/commit/af86f25de844e437ebed0c808bb26715d8d1e2cc)]
 
 - Support for `Buffer` in templates
 
