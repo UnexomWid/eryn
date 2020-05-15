@@ -37,6 +37,20 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
 
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
+    } else if(result.IsBuffer()) {
+        LOG_DEBUG("    Type: buffer");
+
+        uint8_t* ptr = reinterpret_cast<uint8_t*>(result.As<Napi::Buffer<char>>().Data());
+        size_t length = result.As<Napi::Buffer<char>>().Length();
+
+        while(outputSize + length > outputCapacity) {
+            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            output.release();
+            output.reset(newOutput);
+        }
+
+        memcpy(output.get() + outputSize, ptr, length);
+        outputSize += length;
     } else if(result.IsObject()) {
         LOG_DEBUG("    Type: object");
 
@@ -79,20 +93,6 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
 
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
-    } else if(result.IsBuffer()) {
-        LOG_DEBUG("    Type: buffer");
-
-        uint8_t* ptr = reinterpret_cast<uint8_t*>(result.As<Napi::Buffer<char>>().Data());
-        size_t length = result.As<Napi::Buffer<char>>().Length();
-
-        while(outputSize + length > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
-            output.release();
-            output.reset(newOutput);
-        }
-
-        memcpy(output.get() + outputSize, ptr, length);
-        outputSize += length;
     } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined", templateBytes, templateLength);
 }
 
