@@ -1,6 +1,6 @@
 var binding = require('./build-load')(__dirname);
 
-function bridgeEval(script, context, local) {
+function bridgeEval(script, context, local, link) {
     return eval(script);
 }
 
