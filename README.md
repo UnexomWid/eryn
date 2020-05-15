@@ -256,7 +256,7 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - ~~Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))~~ [[f43e454](https://github.com/UnexomWid/eryn/commit/af86f25de844e437ebed0c808bb26715d8d1e2cc)]
 
-- Support for rendering `Buffer` objects
+- ~~Support for rendering `Buffer` objects~~ [[5d72e4e](https://github.com/UnexomWid/eryn/commit/5d72e4e2a4d4936e72c1a6047894c31394c8d675)]
 
 - ~~Store the context locally~~ [[51a9428](https://github.com/UnexomWid/eryn/commit/51a942819305688bde41063b2291c1332336d669)]
 
