@@ -821,6 +821,31 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             length = end - start;
             size_t leftLength = leftEnd - leftStart;
 
+            bool isReverse = false;
+            const uint8_t* reverseStart;
+
+            if(end - start + 1 >= Options::getTemplateLoopReverseLength()) {
+                reverseStart = end - Options::getTemplateLoopReverseLength();
+
+                if(membcmp(reverseStart, Options::getTemplateLoopReverse(), Options::getTemplateLoopReverseLength())) {
+                    LOG_DEBUG("Detected reversed loop template");
+
+                    isReverse = true;
+                    end = reverseStart - 1;
+
+                    while((isBlank(*end)) && end > start)
+                        --end;
+                    ++end;
+
+                    if(length != 0)
+                        length = end - start;
+                    else {
+                        leftEnd = end;
+                        leftLength = leftEnd - leftStart;
+                    }
+                }
+            }
+
             // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
 
             size_t bufferSize     = length - escapes.size();
@@ -854,14 +879,25 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
             }
 
-            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LOOP_START_MARKER_LENGTH > outputCapacity) {
+            const uint8_t* oshStartMarker;
+            size_t         oshStartMarkerLength;
+
+            if(!isReverse) {
+                oshStartMarker       = OSH_TEMPLATE_LOOP_START_MARKER;
+                oshStartMarkerLength = OSH_TEMPLATE_LOOP_START_MARKER_LENGTH;
+            } else {
+                oshStartMarker       = OSH_TEMPLATE_LOOP_REVERSE_START_MARKER;
+                oshStartMarkerLength = OSH_TEMPLATE_LOOP_REVERSE_START_MARKER_LENGTH;
+            }
+
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + oshStartMarkerLength > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
                 output.reset(newOutput);
             }
 
             LOG_DEBUG("Writing template loop start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
-            outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_START_MARKER, OSH_TEMPLATE_LOOP_START_MARKER_LENGTH);
+            outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, oshStartMarker, oshStartMarkerLength);
 
             size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + bufferSize;
             std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);

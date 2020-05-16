@@ -9,6 +9,7 @@
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER reinterpret_cast<const uint8_t*>("!")
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER   reinterpret_cast<const uint8_t*>("i")
 #define OSH_TEMPLATE_LOOP_START_MARKER                 reinterpret_cast<const uint8_t*>("@")
+#define OSH_TEMPLATE_LOOP_REVERSE_START_MARKER         reinterpret_cast<const uint8_t*>("~")
 #define OSH_TEMPLATE_LOOP_END_MARKER                   reinterpret_cast<const uint8_t*>("#")
 #define OSH_TEMPLATE_COMPONENT_MARKER                  reinterpret_cast<const uint8_t*>("%")
 #define OSH_TEMPLATE_COMPONENT_END_MARKER              reinterpret_cast<const uint8_t*>("/")
@@ -23,6 +24,7 @@
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH 1u
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER_LENGTH   1u
 #define OSH_TEMPLATE_LOOP_START_MARKER_LENGTH                 1u
+#define OSH_TEMPLATE_LOOP_REVERSE_START_MARKER_LENGTH         1u
 #define OSH_TEMPLATE_LOOP_END_MARKER_LENGTH                   1u
 #define OSH_TEMPLATE_COMPONENT_MARKER_LENGTH                  1u
 #define OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH              1u

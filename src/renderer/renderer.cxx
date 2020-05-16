@@ -145,25 +145,33 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         size_t arrayLength;              // Used to stop the iteration.
         size_t assignmentUpdateIndex;    // Used to update the assignment string.
 
+        int8_t direction;                // Used to update the iterator.
+
+        bool atEnd;                      // Used to stop a reversed loop.
+
         std::string  iterator;           // The iterator name.
         std::string  assignment;         // Used to assign a value from the array to a variable.
         std::string  propertyAssignment; // Used to assign a key-value pair from the object to a variable.
 
         std::string* propertyArray;      // Used for objects.
 
-        LoopStackInfo(BridgeData data, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) : arrayIndex(0), propertyArray(nullptr) {
-            arrayLength = getArrayLength(data, array, arraySize, propertyArray);
+        LoopStackInfo(BridgeData data, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize, int8_t dir) : arrayIndex(0), propertyArray(nullptr), direction(dir), atEnd(false) {
+            arrayLength = initArray(data, array, arraySize, propertyArray, direction);
             buildLoopAssignment(data, iterator, assignment, assignmentUpdateIndex, it, itSize, array, arraySize);
+
+            if(direction < 0)
+                arrayIndex = arrayLength - 1;
+
             update();
         };
 
-        LoopStackInfo(const LoopStackInfo& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment) {
+        LoopStackInfo(const LoopStackInfo& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment), direction(info.direction), atEnd(info.atEnd) {
             propertyArray = new std::string[info.arrayLength];
             for(size_t i = 0; i < info.arrayLength; ++i)
                 propertyArray[i] = info.propertyArray[i];
         }
 
-        LoopStackInfo(LoopStackInfo&& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment) {
+        LoopStackInfo(LoopStackInfo&& info) : arrayIndex(info.arrayIndex), arrayLength(info.arrayLength), assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator), assignment(info.assignment), propertyAssignment(info.propertyAssignment), direction(info.direction), atEnd(info.atEnd) {
             propertyArray = info.propertyArray;
             info.propertyArray = nullptr;
         }
@@ -176,7 +184,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         }
 
         void invalidate() { invalidateLoopAssignment(assignment, assignmentUpdateIndex); }
-        void update() { updateLoopAssignment(assignment, propertyAssignment, arrayIndex, propertyArray); }
+        void update() { updateLoopAssignment(assignment, propertyAssignment, arrayIndex, propertyArray, direction); }
     };
 
     struct ComponentStackInfo {
@@ -289,7 +297,40 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             right = input + inputIndex;
             inputIndex += rightLength;
 
-            loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength));
+            loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, 1));
+
+            if(loopStack.top().arrayLength == 0) {
+                size_t loopEnd;
+                BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+
+                inputIndex += OSH_FORMAT + loopEnd;
+                loopStack.pop();
+            } else {
+                inputIndex += OSH_FORMAT;
+                localStack.push(backupLocal(data));
+                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+            }
+        } else if(nameByte == *OSH_TEMPLATE_LOOP_REVERSE_START_MARKER) {
+            LOG_DEBUG("--> Found reverse loop template start");
+
+            size_t leftLength;
+            size_t rightLength;
+
+            const uint8_t* left;
+            const uint8_t* right;
+
+            inputIndex -= valueLength;
+
+            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+
+            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+            right = input + inputIndex;
+            inputIndex += rightLength;
+
+            loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, -1));
 
             if(loopStack.top().arrayLength == 0) {
                 size_t loopEnd;
@@ -305,7 +346,10 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
             LOG_DEBUG("--> Found loop template end");
 
-            if(loopStack.top().arrayIndex < loopStack.top().arrayLength) {
+            if(loopStack.top().arrayIndex < loopStack.top().arrayLength && !loopStack.top().atEnd) {
+                if(loopStack.top().arrayIndex == 0 && loopStack.top().direction < 0) // Mark this as the last iteration (the index will overflow).
+                    loopStack.top().atEnd = true;
+
                 loopStack.top().invalidate();
                 loopStack.top().update();
 

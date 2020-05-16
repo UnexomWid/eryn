@@ -29,10 +29,10 @@ bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, siz
 void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment);
 void unassign(BridgeData& data, const std::string &iterator);
 
-size_t getArrayLength(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, std::string*& propertyArray);
+size_t initArray(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, std::string*& propertyArray, int8_t direction);
 
 void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& assignment, size_t &assignmentUpdateIndex, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize);
-void updateLoopAssignment(std::string &assignment, std::string& propertyAssignment, size_t &arrayIndex, std::string*& propertyArray);
+void updateLoopAssignment(std::string &assignment, std::string& propertyAssignment, size_t &arrayIndex, std::string*& propertyArray, int8_t direction);
 void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex);
 
 BridgeBackup copyValue(BridgeData& data, const Napi::Value& value);

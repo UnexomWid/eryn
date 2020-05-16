@@ -20,6 +20,7 @@ interface ErynOptions {
     loopStart?:                string,
     loopEnd?:                  string,
     loopSeparator?:            string,
+    loopReverse?:              string,
     componentStart?:           string,
     componentEnd?:             string,
     componentSeparator?:       string,

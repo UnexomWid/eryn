@@ -50,6 +50,9 @@ namespace Global {
             static uint8_t  templateLoopSeparatorLength;
             static uint8_t* templateLoopSeparatorLookup;
 
+            static uint8_t* templateLoopReverse;
+            static uint8_t  templateLoopReverseLength;
+
             static uint8_t* templateComponent;
             static uint8_t  templateComponentLength;
 
@@ -109,6 +112,9 @@ namespace Global {
             static       uint8_t  getTemplateLoopSeparatorLength();
             static const uint8_t* getTemplateLoopSeparatorLookup();
 
+            static const uint8_t* getTemplateLoopReverse();
+            static       uint8_t  getTemplateLoopReverseLength();
+
             static const uint8_t* getTemplateComponent();
             static       uint8_t  getTemplateComponentLength();
 
@@ -148,6 +154,7 @@ namespace Global {
             static void setTemplateLoopStart(const char* value);
             static void setTemplateLoopEnd(const char* value);
             static void setTemplateLoopSeparator(const char* value);
+            static void setTemplateLoopReverse(const char* value);
 
             static void setTemplateComponent(const char* value);
             static void setTemplateComponentSeparator(const char* value);

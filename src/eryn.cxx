@@ -125,6 +125,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateLoopSeparator(value.ToString().Utf8Value().c_str());
+        } else if(key == "loopReverse") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateLoopReverse(value.ToString().Utf8Value().c_str());
         } else if(key == "componentStart") {
             if(!value.IsString())
                 continue;

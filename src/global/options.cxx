@@ -51,6 +51,9 @@ uint8_t* Global::Options::templateLoopSeparator                  = nullptr;
 uint8_t  Global::Options::templateLoopSeparatorLength            = 0;
 uint8_t* Global::Options::templateLoopSeparatorLookup            = nullptr;
 
+uint8_t* Global::Options::templateLoopReverse                  = nullptr;
+uint8_t  Global::Options::templateLoopReverseLength            = 0;
+
 uint8_t* Global::Options::templateComponent                      = nullptr;
 uint8_t  Global::Options::templateComponentLength                = 0;
 
@@ -253,6 +256,18 @@ void Global::Options::setTemplateLoopSeparator(const char* value) {
     Global::Options::templateLoopSeparatorLength = length;
 }
 
+void Global::Options::setTemplateLoopReverse(const char* value) {
+    if(Global::Options::templateLoopReverse != nullptr)
+        qfree(Global::Options::templateLoopReverse);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateLoopReverse = qmalloc(length);
+
+    memcpy(Global::Options::templateLoopReverse, value, length);
+
+    Global::Options::templateLoopReverseLength = length;
+}
+
 void Global::Options::setTemplateComponent(const char* value) {
     if(Global::Options::templateComponent != nullptr)
         qfree(Global::Options::templateComponent);
@@ -349,6 +364,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateLoopStart("@");
     Global::Options::setTemplateLoopEnd("end@");
     Global::Options::setTemplateLoopSeparator(":");
+    Global::Options::setTemplateLoopReverse("~");
 
     Global::Options::setTemplateComponent("%");
     Global::Options::setTemplateComponentSeparator(":");
@@ -391,6 +407,8 @@ void Global::Options::destroy() {
         qfree(templateLoopSeparator);
     if(templateLoopSeparatorLookup != nullptr)
         qfree(templateLoopSeparatorLookup);
+    if(templateLoopReverse != nullptr)
+        qfree(templateLoopReverse);
 
     if(templateComponent != nullptr)
         qfree(templateComponent);
@@ -527,6 +545,14 @@ const uint8_t* Global::Options::getTemplateLoopSeparator() {
 
 uint8_t Global::Options::getTemplateLoopSeparatorLength() {
     return Global::Options::templateLoopSeparatorLength;
+}
+
+const uint8_t* Global::Options::getTemplateLoopReverse() {
+    return Global::Options::templateLoopReverse;
+}
+
+uint8_t Global::Options::getTemplateLoopReverseLength() {
+    return Global::Options::templateLoopReverseLength;
 }
 
 const uint8_t* Global::Options::getTemplateLoopSeparatorLookup() {
