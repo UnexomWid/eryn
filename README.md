@@ -65,6 +65,33 @@ cmake-js compile
 
 Here's a basic example.
 
+**test.js**
+
+```js
+var path = require("path");
+var eryn = require("eryn");
+
+// Pass the absolute path to the file. Relative paths might not be safe (see the wiki).
+var data = eryn.render(path.join(__dirname, "test.eryn"), {
+    firstName: "Tyler",
+    lastName: "Bounty"
+});
+```
+
+**test.eryn**
+
+```js
+Hello, [|context.firstName|] [|context.lastName|]!
+```
+
+This will be rendered as:
+
+```js
+Hello, Tyler Bounty!
+```
+
+Here's a more complex example, which shows a glimpse of what eryn can do.
+
 > Note: if you don't like the syntax, see below [Changing the syntax](#Changing-the-syntax).
 
 **test.js**
@@ -73,7 +100,6 @@ Here's a basic example.
 var path = require("path");
 var eryn = require("eryn");
 
-// Pass the absolute path to the file. Relative paths might not be safe (see the wiki).
 var data = eryn.render(path.join(__dirname, "test.eryn"), {
     firstName: "Tyler",
     lastName: "Bounty",
@@ -125,7 +151,7 @@ Hello, [|context.test|]!
 This is a self closing component with no content!
 ```
 
-The **render** function will return a `buffer`, containing:
+The **render** function will return a `Buffer`, containing:
 
 ```
 Welcome, Tyler Bounty!
