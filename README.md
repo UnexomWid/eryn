@@ -237,7 +237,7 @@ Current number: {{num}}
 There is also support for components!
 {{component comp.eryn with {message: "Hello"} }}
 This is some content for the component!
-It can use the component context: {{context.message}}
+It can use the parent context: {{context.greeting}}
 {{endcomp}}
 
 And self-closing components too!
