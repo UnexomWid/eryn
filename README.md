@@ -90,7 +90,7 @@ This will be rendered as:
 Hello, Tyler Bounty!
 ```
 
-Here's a more complex example, which shows a glimpse of what eryn can do.
+Here's a more complex example, which shows a glimpse of what **eryn** can do.
 
 > Note: if you don't like the syntax, see below [Changing the syntax](#Changing-the-syntax).
 
