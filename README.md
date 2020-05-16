@@ -199,17 +199,17 @@ eryn.setOptions({
     templateStart: "{{",
     templateEnd: "}}",
 
-    conditionalStart: "if",
+    conditionalStart: "if ",
     conditionalEnd: "endif",
 
-    loopStart: "for",
+    loopStart: "for ",
     loopEnd: "endfor",
-    loopSeparator: "of",
+    loopSeparator: " of ",
     
-    componentStart: "component",
+    componentStart: "component ",
     componentEnd: "endcomp",
-    componentSeparator: "with",
-    componentSelf: "self"
+    componentSeparator: " with ",
+    componentSelf: " self"
 });
 
 eryn.render(...);
