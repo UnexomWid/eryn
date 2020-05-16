@@ -1150,7 +1150,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 if(end - start + 1 >= Options::getTemplateComponentSelfLength()) {
                     selfStart = end - Options::getTemplateComponentSelfLength();
 
-                    if(0 == mem_find(selfStart, inputSize - (selfStart - input), Options::getTemplateComponentSelf(), Options::getTemplateComponentSelfLength(), Options::getTemplateComponentSelfLookup())) {
+                    if(membcmp(selfStart, Options::getTemplateComponentSelf(), Options::getTemplateComponentSelfLength())) {
                         LOG_DEBUG("Detected self-closing component template");
 
                         isSelf = true;

@@ -62,7 +62,6 @@ namespace Global {
 
             static uint8_t* templateComponentSelf;
             static uint8_t  templateComponentSelfLength;
-            static uint8_t* templateComponentSelfLookup;
 
             static uint8_t* templateComponentEnd;
             static uint8_t  templateComponentEndLength;
@@ -124,7 +123,6 @@ namespace Global {
 
             static const uint8_t* getTemplateComponentSelf();
             static       uint8_t  getTemplateComponentSelfLength();
-            static const uint8_t* getTemplateComponentSelfLookup();
 
             static const uint8_t* getTemplateComponentEnd();
             static       uint8_t  getTemplateComponentEndLength();
