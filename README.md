@@ -250,11 +250,11 @@ Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/
 
 - Replace the global static variables with environment-dependent data
 
-- Add support for reversed loop templates ([#1](https://github.com/UnexomWid/eryn/issues/1))
+- ~~Add support for reversed loop templates ([#1](https://github.com/UnexomWid/eryn/issues/1))~~ [[51a9428](https://github.com/UnexomWid/eryn/commit/51a942819305688bde41063b2291c1332336d669)]
 
-- ~~Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))~~ [[771c5d5](https://github.com/UnexomWid/eryn/commit/771c5d5b3363949df7afd827a68d0fba6995f80e)]
+- ~~Add support for inverted conditional templates ([#2](https://github.com/UnexomWid/eryn/issues/2))~~ [[3f65ebe](https://github.com/UnexomWid/eryn/commit/3f65ebe7ea79ef413c9d2ec9a880d33766344aa0)]
 
-- ~~Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))~~ [[f43e454](https://github.com/UnexomWid/eryn/commit/af86f25de844e437ebed0c808bb26715d8d1e2cc)]
+- ~~Add an option to throw an exception if compileDir encounters an error ([#5](https://github.com/UnexomWid/eryn/issues/5))~~ [[af86f25](https://github.com/UnexomWid/eryn/commit/af86f25de844e437ebed0c808bb26715d8d1e2cc)]
 
 - ~~Support for rendering `Buffer` objects~~ [[5d72e4e](https://github.com/UnexomWid/eryn/commit/5d72e4e2a4d4936e72c1a6047894c31394c8d675)]
 
