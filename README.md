@@ -125,7 +125,7 @@ Current number: [|num|]
 There is also support for components!
 [|% comp.eryn : {message: "Hello"} |]
 This is some content for the component!
-It can use the component context: [|context.message|]
+It can use the parent context: [|context.greeting|]
 [|/|]
 
 And self-closing components too!
@@ -180,7 +180,7 @@ It has context which is automatically stringified: {"message":"Hello"}
 And also some content:
 
 This is some content for the component!
-It can use the component context: Hello
+It can use the parent context: Hey there
 
 
 And self-closing components too!
