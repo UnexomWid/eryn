@@ -29,6 +29,9 @@ uint8_t* Global::Options::templateEndLookup                      = nullptr;
 uint8_t* Global::Options::templateVoid                           = nullptr;
 uint8_t  Global::Options::templateVoidLength                     = 0;
 
+uint8_t* Global::Options::templateComment                        = nullptr;
+uint8_t  Global::Options::templateCommentLength                  = 0;
+
 uint8_t* Global::Options::templateConditionalStart               = nullptr;
 uint8_t  Global::Options::templateConditionalStartLength         = 0;
 
@@ -158,6 +161,18 @@ void Global::Options::setTemplateVoid(const char* value) {
     memcpy(Global::Options::templateVoid, value, length);
 
     Global::Options::templateVoidLength = length;
+}
+
+void Global::Options::setTemplateComment(const char* value) {
+    if(Global::Options::templateComment != nullptr)
+        qfree(Global::Options::templateComment);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateComment = qmalloc(length);
+
+    memcpy(Global::Options::templateComment, value, length);
+
+    Global::Options::templateCommentLength = length;
 }
 
 void Global::Options::setTemplateConditionalStart(const char* value) {
@@ -343,6 +358,8 @@ void Global::Options::restoreDefaults() {
 
     Global::Options::setTemplateVoid("#");
 
+    Global::Options::setTemplateComment("//");
+
     Global::Options::setTemplateConditionalStart("?");
     Global::Options::setTemplateConditionalEnd("end?");
 
@@ -376,6 +393,9 @@ void Global::Options::destroy() {
 
     if(templateVoid != nullptr)
         qfree(templateVoid);
+
+    if(templateComment != nullptr)
+        qfree(templateComment);
 
     if(templateConditionalStart != nullptr)
         qfree(templateConditionalStart);
@@ -475,6 +495,14 @@ const uint8_t* Global::Options::getTemplateVoid() {
 
 uint8_t Global::Options::getTemplateVoidLength() {
     return Global::Options::templateVoidLength;
+}
+
+const uint8_t* Global::Options::getTemplateComment() {
+    return Global::Options::templateComment;
+}
+
+uint8_t Global::Options::getTemplateCommentLength() {
+    return Global::Options::templateCommentLength;
 }
 
 const uint8_t* Global::Options::getTemplateConditionalStart() {

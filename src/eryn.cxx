@@ -93,11 +93,15 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateEnd(value.ToString().Utf8Value().c_str());
+        } else if(key == "commentTemplate") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateComment(value.ToString().Utf8Value().c_str());
         } else if(key == "voidTemplate") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateVoid(value.ToString().Utf8Value().c_str());
-        }else if(key == "conditionalStart") {
+        } else if(key == "conditionalStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateConditionalStart(value.ToString().Utf8Value().c_str());

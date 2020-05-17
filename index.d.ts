@@ -12,6 +12,7 @@ interface ErynOptions {
     templateEscape?:           string,
     templateStart?:            string,
     templateEnd?:              string,
+    commentTemplate?:          string,
     voidTemplate?:             string,
     conditionalStart?:         string,
     conditionalEnd?:           string,

@@ -276,7 +276,45 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
         while(isBlank(*end))
             ++end;
 
-        if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
+        if(membcmp(end, Options::getTemplateComment(), Options::getTemplateCommentLength())) {
+            LOG_DEBUG("Detected comment template");
+
+            end += Options::getTemplateCommentLength();
+
+            while(isBlank(*end))
+                ++end;
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+
+            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+
+                remainingLength -= index + 1;
+                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            }
+
+            templateEndIndex = (end + index) - input;
+
+            if(templateEndIndex >= inputSize) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = start;
+        } else if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
             LOG_DEBUG("Detected conditional template start");
 
             end += Options::getTemplateConditionalStartLength();
@@ -300,7 +338,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -380,7 +418,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -507,7 +545,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -603,7 +641,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -772,7 +810,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
 
                 throw CompilationException(path, "Unexpected separator", "did you forget to provide the left argument before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
-            } else if(index == remainingLength) {
+            } else if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -930,7 +968,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -1078,7 +1116,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);            
 
                 throw CompilationException(path, "Unexpected separator", "did you forget to provide the component name before the separator?", ln, col, chunk.get(), chunkIndex, chunkSize);
-            } else if(index == remainingLength) {
+            } else if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -1260,7 +1298,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -1389,7 +1427,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             templateEndIndex = end + index - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
@@ -1473,7 +1511,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             templateEndIndex = (end + index) - input;
 
-            if(index == remainingLength) {
+            if(templateEndIndex >= inputSize) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
