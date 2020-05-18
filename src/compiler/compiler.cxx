@@ -205,14 +205,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
     const uint8_t* start  = input;
     const uint8_t* end    = input + mem_find(input, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
-    size_t   length = end - start;
+    size_t length = end - start;
 
     const uint8_t* limit  = input + inputSize;
 
-    size_t   remainingLength;
-    size_t   index;
-    size_t   templateStartIndex;
-    size_t   templateEndIndex;
+    size_t remainingLength;
+    size_t index;
+    size_t templateStartIndex;
+    size_t templateEndIndex;
 
     enum class TemplateType {
         CONDITIONAL,
@@ -399,7 +399,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
-                LOG_DEBUG("Writing template conditional start as BDP832 pair %zu -> %zu...", start - input, end - input);
+                LOG_DEBUG("Writing conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
@@ -499,7 +499,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
-                LOG_DEBUG("Writing template conditional end as BDP832 pair %zu -> %zu...", start - input, end - input);
+                LOG_DEBUG("Writing conditional template end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_END_MARKER, OSH_TEMPLATE_CONDITIONAL_END_MARKER_LENGTH, start, length);
 
                 BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
@@ -934,7 +934,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 output.reset(newOutput);
             }
 
-            LOG_DEBUG("Writing template loop start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
+            LOG_DEBUG("Writing loop template start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
             outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, oshStartMarker, oshStartMarkerLength);
 
             size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + bufferSize;
@@ -1049,7 +1049,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
-                LOG_DEBUG("Writing template loop end as BDP832 pair %zu -> %zu...", start - input, end - input);
+                LOG_DEBUG("Writing loop template end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_LOOP_END_MARKER, OSH_TEMPLATE_LOOP_END_MARKER_LENGTH, start, length);
 
                 BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex + OSH_FORMAT, OSH_FORMAT);
@@ -1260,7 +1260,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
-                LOG_DEBUG("Writing template component as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
+                LOG_DEBUG("Writing component template as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
                 outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
 
                 size_t componentPathLength;
@@ -1381,7 +1381,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 size_t backup = outputSize;
 
-                LOG_DEBUG("Writing template component end as BDP832 pair %zu -> %zu...", start - input, end - input);
+                LOG_DEBUG("Writing component template end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
                 
                 BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex, backup - templateStack.top().bodyIndex - OSH_FORMAT, OSH_FORMAT);
@@ -1737,7 +1737,6 @@ void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::uniqu
 
                             index += 2;
                             matchIndex = index;
-                            LOG_DEBUG("Jupned to index %zu", index);
 
                             continue;
                         }

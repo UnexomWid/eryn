@@ -20,13 +20,6 @@ void bufferFinalizer(Napi::Env env, uint8_t* data) {
     qfree(data);
 }
 
-std::string jsonStringify(const Napi::Env& env, const Napi::Object& object) {
-    Napi::Object json = env.Global().Get("JSON").As<Napi::Object>();
-    Napi::Function stringify = env.Global().Get("JSON").As<Napi::Object>().Get("stringify").As<Napi::Function>();
-
-    return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
-}
-
 void erynSetOptions(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
@@ -156,11 +149,12 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
 void erynCompile(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::string  absPath;
+    std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
     if(std::filesystem::path(pathString.c_str()).is_relative()) {
         absPath = Options::getWorkingDirectory();
+
         if(pathString.size() > 0)
             absPath += ('/' + pathString);
     } else absPath = pathString;
@@ -181,11 +175,12 @@ void erynCompile(const Napi::CallbackInfo& info) {
 void erynCompileDir(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::string  absPath;
+    std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
     if(std::filesystem::path(pathString.c_str()).is_relative()) {
         absPath = Options::getWorkingDirectory();
+
         if(pathString.size() > 0)
             absPath += ('/' + pathString);
     } else absPath = pathString;
@@ -229,11 +224,12 @@ void erynCompileString(const Napi::CallbackInfo& info) {
 Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::string  absPath;
+    std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
     if(std::filesystem::path(pathString.c_str()).is_relative()) {
         absPath = Options::getWorkingDirectory();
+
         if(pathString.size() > 0)
             absPath += ('/' + pathString);
     } else absPath = pathString;

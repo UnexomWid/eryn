@@ -20,6 +20,7 @@ struct BridgeData {
 
     BridgeData(Napi::Env en, Napi::Object ctx, Napi::Object lcl, Napi::Function ev) : env(en), context(ctx), local(lcl), eval(ev) { }
 };
+
 typedef Napi::Value BridgeBackup;
 typedef Napi::Array BridgeArray;
 
