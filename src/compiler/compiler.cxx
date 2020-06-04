@@ -1282,9 +1282,22 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer.get(), tempBufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
-                if(!isSelf)
+                if(!isSelf) {
                     templateStack.push(TemplateStackInfo(TemplateType::COMPONENT, outputSize, templateStartIndex));
-                outputSize += OSH_FORMAT;
+                    outputSize += OSH_FORMAT;
+                } else {
+                    length = 0;
+
+                    outputSize += OSH_FORMAT;
+
+                    while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                        uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                        output.release();
+                        output.reset(newOutput);
+                    }
+
+                    outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_END_MARKER, OSH_TEMPLATE_COMPONENT_END_MARKER_LENGTH, start, length);
+                }
 
                 LOG_DEBUG("done\n");
 
