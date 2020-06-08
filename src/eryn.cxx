@@ -90,6 +90,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateComment(value.ToString().Utf8Value().c_str());
+        } else if(key == "commentTemplateEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateCommentEnd(value.ToString().Utf8Value().c_str());
         } else if(key == "voidTemplate") {
             if(!value.IsString())
                 continue;

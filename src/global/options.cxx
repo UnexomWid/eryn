@@ -32,6 +32,10 @@ uint8_t  Global::Options::templateVoidLength                     = 0;
 uint8_t* Global::Options::templateComment                        = nullptr;
 uint8_t  Global::Options::templateCommentLength                  = 0;
 
+uint8_t* Global::Options::templateCommentEnd                     = nullptr;
+uint8_t  Global::Options::templateCommentEndLength               = 0;
+uint8_t* Global::Options::templateCommentEndLookup               = nullptr;
+
 uint8_t* Global::Options::templateConditionalStart               = nullptr;
 uint8_t  Global::Options::templateConditionalStartLength         = 0;
 
@@ -173,6 +177,29 @@ void Global::Options::setTemplateComment(const char* value) {
     memcpy(Global::Options::templateComment, value, length);
 
     Global::Options::templateCommentLength = length;
+}
+
+void Global::Options::setTemplateCommentEnd(const char* value) {
+    if(Global::Options::templateCommentEnd != nullptr)
+        qfree(Global::Options::templateCommentEnd);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateCommentEnd = qmalloc(length);
+
+    memcpy(Global::Options::templateCommentEnd, value, length);
+
+    if(Global::Options::templateCommentEndLookup != nullptr)
+        qfree(Global::Options::templateCommentEndLookup);
+
+    if(length < HORSPOOL_THRESHOLD) {
+        Global::Options::templateCommentEndLookup = qmalloc(length);
+        build_kmp_lookup(Global::Options::templateCommentEndLookup, Global::Options::templateCommentEnd, length);
+    } else {
+        Global::Options::templateCommentEndLookup = qmalloc(256u);
+        build_horspool_lookup(Global::Options::templateCommentEndLookup, Global::Options::templateCommentEnd, length);
+    }
+
+    Global::Options::templateCommentEndLength = length;
 }
 
 void Global::Options::setTemplateConditionalStart(const char* value) {
@@ -359,6 +386,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setTemplateVoid("#");
 
     Global::Options::setTemplateComment("//");
+    Global::Options::setTemplateCommentEnd("//|]");
 
     Global::Options::setTemplateConditionalStart("?");
     Global::Options::setTemplateConditionalEnd("end?");
@@ -397,6 +425,11 @@ void Global::Options::destroy() {
     if(templateComment != nullptr)
         qfree(templateComment);
 
+    if(templateCommentEnd != nullptr)
+        qfree(templateCommentEnd);
+    if(templateCommentEndLookup != nullptr)
+        qfree(templateCommentEndLookup);
+
     if(templateConditionalStart != nullptr)
         qfree(templateConditionalStart);
     if(templateConditionalEnd != nullptr)
@@ -404,6 +437,8 @@ void Global::Options::destroy() {
 
     if(templateInvertedConditionalStart != nullptr)
         qfree(templateInvertedConditionalStart);
+    if(templateInvertedConditionalEnd != nullptr)
+        qfree(templateInvertedConditionalEnd);
     if(templateInvertedConditionalEnd != nullptr)
         qfree(templateInvertedConditionalEnd);
 
@@ -503,6 +538,18 @@ const uint8_t* Global::Options::getTemplateComment() {
 
 uint8_t Global::Options::getTemplateCommentLength() {
     return Global::Options::templateCommentLength;
+}
+
+const uint8_t* Global::Options::getTemplateCommentEnd() {
+    return Global::Options::templateCommentEnd;
+}
+
+uint8_t Global::Options::getTemplateCommentEndLength() {
+    return Global::Options::templateCommentEndLength;
+}
+
+const uint8_t* Global::Options::getTemplateCommentEndLookup() {
+    return Global::Options::templateCommentEndLookup;
 }
 
 const uint8_t* Global::Options::getTemplateConditionalStart() {

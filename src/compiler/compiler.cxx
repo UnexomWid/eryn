@@ -286,13 +286,13 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             start = end;
             remainingLength = inputSize - (end - input);
-            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            index = mem_find(end, remainingLength, Options::getTemplateCommentEnd(), Options::getTemplateCommentEndLength(), Options::getTemplateCommentEndLookup());
 
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
 
                 remainingLength -= index + 1;
-                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateCommentEnd(), Options::getTemplateCommentEndLength(), Options::getTemplateCommentEndLookup());
             }
 
             templateEndIndex = (end + index) - input;
@@ -314,6 +314,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = start;
+            templateEndIndex += Options::getTemplateCommentEndLength();
         } else if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
             LOG_DEBUG("Detected conditional template start");
 
@@ -410,6 +411,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
 
             end = start;
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateConditionalEnd(), Options::getTemplateConditionalEndLength())) {
             LOG_DEBUG("Detected conditional template end");
 
@@ -521,6 +523,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 throw CompilationException(path, "Expected template end", "conditional template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateInvertedConditionalStart(), Options::getTemplateInvertedConditionalStartLength())) {
             LOG_DEBUG("Detected inverted conditional template start");
 
@@ -633,6 +637,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
 
             end = start;
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateInvertedConditionalEnd(), Options::getTemplateInvertedConditionalEndLength())) {
             LOG_DEBUG("Detected inverted conditional template end");
 
@@ -744,6 +749,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 throw CompilationException(path, "Expected template end", "inverted conditional template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateLoopStart(), Options::getTemplateLoopStartLength())) {
             LOG_DEBUG("Detected loop template start");
 
@@ -960,6 +967,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             LOG_DEBUG("done\n");
 
             end = leftStart;
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateLoopEnd(), Options::getTemplateLoopEndLength())) {
             LOG_DEBUG("Detected loop template end");
 
@@ -1074,6 +1082,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 throw CompilationException(path, "Expected template end", "loop template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateComponent(), Options::getTemplateComponentLength())) {
             LOG_DEBUG("Detected component template");
 
@@ -1303,6 +1313,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 end = leftStart;
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateComponentEnd(), Options::getTemplateComponentEndLength())) {
             LOG_DEBUG("Detected component template end");
 
@@ -1416,6 +1428,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 throw CompilationException(path, "Expected template end", "component template end must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateVoid(), Options::getTemplateVoidLength())) {
             LOG_DEBUG("Detected void template");
 
@@ -1507,6 +1521,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
 
             end = start;
+            templateEndIndex += Options::getTemplateEndLength();
         } else { // Normal Template.
             start = end;
             remainingLength = inputSize - (end - input);
@@ -1591,9 +1606,11 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             } else {
                 LOG_DEBUG("Detected empty template\n");
             }
+
+            templateEndIndex += Options::getTemplateEndLength();
         }
 
-        start = input + templateEndIndex + Options::getTemplateEndLength();
+        start = input + templateEndIndex;
 
         if(start >= limit)
             break;
