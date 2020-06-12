@@ -86,11 +86,15 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateEnd(value.ToString().Utf8Value().c_str());
-        } else if(key == "commentTemplate") {
+        } else if(key == "bodyEnd") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateBodyEnd(value.ToString().Utf8Value().c_str());
+        }else if(key == "commentStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateComment(value.ToString().Utf8Value().c_str());
-        } else if(key == "commentTemplateEnd") {
+        } else if(key == "commentEnd") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateCommentEnd(value.ToString().Utf8Value().c_str());
@@ -102,26 +106,14 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateConditionalStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "conditionalEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateConditionalEnd(value.ToString().Utf8Value().c_str());
         } else if(key == "invertedConditionalStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateInvertedConditionalStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "invertedConditionalEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateInvertedConditionalEnd(value.ToString().Utf8Value().c_str());
         } else if(key == "loopStart") {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateLoopStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "loopEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateLoopEnd(value.ToString().Utf8Value().c_str());
         } else if(key == "loopSeparator") {
             if(!value.IsString())
                 continue;
@@ -142,10 +134,6 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateComponentSelf(value.ToString().Utf8Value().c_str());
-        } else if(key == "componentEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateComponentEnd(value.ToString().Utf8Value().c_str());
         }
     }
 }

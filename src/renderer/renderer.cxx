@@ -259,7 +259,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
                 inputIndex += conditionalEnd;
-        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_END_MARKER) {
+        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER) {
             LOG_DEBUG("--> Found conditional template end");
 
             continue;
@@ -273,7 +273,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
             if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
                 inputIndex += conditionalEnd;
-        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_END_MARKER) {
+        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER) {
             LOG_DEBUG("--> Found inverted conditional template end");
 
             continue;
@@ -343,7 +343,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 localStack.push(backupLocal(data));
                 evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
             }
-        } else if(nameByte == *OSH_TEMPLATE_LOOP_END_MARKER) {
+        } else if(nameByte == *OSH_TEMPLATE_LOOP_BODY_END_MARKER) {
             LOG_DEBUG("--> Found loop template end");
 
             if(loopStack.top().arrayIndex < loopStack.top().arrayLength && !loopStack.top().atEnd) {
@@ -413,7 +413,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             }
 
             componentStack.push(info);
-        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_END_MARKER) {
+        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_BODY_END_MARKER) {
             LOG_DEBUG("--> Found component template end");
 
             ComponentStackInfo info = componentStack.top();
@@ -438,6 +438,6 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
             }
 
             componentStack.pop();
-        } else throw RenderingException("Not supported", "this template type is not supported", name, nameLength);
+        } else throw RenderingException("Not supported", ((std::string("this template type is not supported: OSH marker '") + ((char) nameByte)) + "'").c_str(), name, nameLength);
     }
 }

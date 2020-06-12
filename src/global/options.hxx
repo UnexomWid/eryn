@@ -25,6 +25,9 @@ namespace Global {
             static uint8_t  templateEndLength;
             static uint8_t* templateEndLookup;
 
+            static uint8_t* templateBodyEnd;
+            static uint8_t  templateBodyEndLength;
+
             static uint8_t* templateVoid;
             static uint8_t  templateVoidLength;
 
@@ -38,20 +41,11 @@ namespace Global {
             static uint8_t* templateConditionalStart;
             static uint8_t  templateConditionalStartLength;
 
-            static uint8_t* templateConditionalEnd;
-            static uint8_t  templateConditionalEndLength;
-
             static uint8_t* templateInvertedConditionalStart;
             static uint8_t  templateInvertedConditionalStartLength;
 
-            static uint8_t* templateInvertedConditionalEnd;
-            static uint8_t  templateInvertedConditionalEndLength;
-
             static uint8_t* templateLoopStart;
             static uint8_t  templateLoopStartLength;
-
-            static uint8_t* templateLoopEnd;
-            static uint8_t  templateLoopEndLength;
 
             static uint8_t* templateLoopSeparator;
             static uint8_t  templateLoopSeparatorLength;
@@ -69,9 +63,6 @@ namespace Global {
 
             static uint8_t* templateComponentSelf;
             static uint8_t  templateComponentSelfLength;
-
-            static uint8_t* templateComponentEnd;
-            static uint8_t  templateComponentEndLength;
 
         public:
             static bool getBypassCache();
@@ -92,6 +83,9 @@ namespace Global {
             static const uint8_t* getTemplateEnd();
             static       uint8_t  getTemplateEndLength();
             static const uint8_t* getTemplateEndLookup();
+
+            static const uint8_t* getTemplateBodyEnd();
+            static       uint8_t  getTemplateBodyEndLength();
             
             static const uint8_t* getTemplateVoid();
             static       uint8_t  getTemplateVoidLength();
@@ -106,20 +100,11 @@ namespace Global {
             static const uint8_t* getTemplateConditionalStart();
             static       uint8_t  getTemplateConditionalStartLength();
 
-            static const uint8_t* getTemplateConditionalEnd();
-            static       uint8_t  getTemplateConditionalEndLength();
-
             static const uint8_t* getTemplateInvertedConditionalStart();
             static       uint8_t  getTemplateInvertedConditionalStartLength();
 
-            static const uint8_t* getTemplateInvertedConditionalEnd();
-            static       uint8_t  getTemplateInvertedConditionalEndLength();
-
             static const uint8_t* getTemplateLoopStart();
             static       uint8_t  getTemplateLoopStartLength();
-
-            static const uint8_t* getTemplateLoopEnd();
-            static       uint8_t  getTemplateLoopEndLength();
 
             static const uint8_t* getTemplateLoopSeparator();
             static       uint8_t  getTemplateLoopSeparatorLength();
@@ -138,9 +123,6 @@ namespace Global {
             static const uint8_t* getTemplateComponentSelf();
             static       uint8_t  getTemplateComponentSelfLength();
 
-            static const uint8_t* getTemplateComponentEnd();
-            static       uint8_t  getTemplateComponentEndLength();
-
             static void setBypassCache(bool value);
             static void setThrowOnEmptyContent(bool value);
             static void setThrowOnMissingEntry(bool value);
@@ -155,26 +137,24 @@ namespace Global {
             static void setTemplateStart(const char* value);
             static void setTemplateEnd(const char* value);
 
+            static void setTemplateBodyEnd(const char* value);
+
             static void setTemplateVoid(const char* value);
 
             static void setTemplateComment(const char* value);
             static void setTemplateCommentEnd(const char* value);
 
             static void setTemplateConditionalStart(const char* value);
-            static void setTemplateConditionalEnd(const char* value);
 
             static void setTemplateInvertedConditionalStart(const char* value);
-            static void setTemplateInvertedConditionalEnd(const char* value);
 
             static void setTemplateLoopStart(const char* value);
-            static void setTemplateLoopEnd(const char* value);
             static void setTemplateLoopSeparator(const char* value);
             static void setTemplateLoopReverse(const char* value);
 
             static void setTemplateComponent(const char* value);
             static void setTemplateComponentSeparator(const char* value);
             static void setTemplateComponentSelf(const char* value);
-            static void setTemplateComponentEnd(const char* value);
 
             static void restoreDefaults();
             static void destroy();
