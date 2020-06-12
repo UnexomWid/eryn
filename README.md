@@ -115,18 +115,18 @@ Welcome, [|context.firstName|] [|context.lastName|]!
 
 [|? context.greeting.length > 5 |]
 The greeting has more than 5 characters!
-[|end?|]
+[|end|]
 
 This is a basic loop:
 [|@ num : context.numbers|]
 Current number: [|num|]
-[|end@|]
+[|end|]
 
 There is also support for components!
 [|% comp.eryn : {message: "Hello"} |]
 This is some content for the component!
 It can use the parent context: [|context.greeting|]
-[|/|]
+[|end|]
 
 And self-closing components too!
 [|% comp2.eryn : {test: "world"} /|]
@@ -200,14 +200,11 @@ eryn.setOptions({
     templateEnd: "}}",
 
     conditionalStart: "if ",
-    conditionalEnd: "endif",
 
     loopStart: "for ",
-    loopEnd: "endfor",
     loopSeparator: " of ",
     
     componentStart: "component ",
-    componentEnd: "endcomp",
     componentSeparator: " with ",
     componentSelf: " self"
 });
@@ -227,18 +224,18 @@ Welcome, {{context.firstName}} {{context.lastName}}!
 
 {{if context.greeting.length > 5 }}
 The greeting has more than 5 characters!
-{{endif}}
+{{end}}
 
 This is a basic loop:
 {{for num of context.numbers}}
 Current number: {{num}}
-{{endfor}}
+{{end}}
 
 There is also support for components!
 {{component comp.eryn with {message: "Hello"} }}
 This is some content for the component!
 It can use the parent context: {{context.greeting}}
-{{endcomp}}
+{{end}}
 
 And self-closing components too!
 {{component comp2.eryn with {test: "world"} self}}
