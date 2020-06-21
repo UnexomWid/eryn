@@ -1470,7 +1470,7 @@ void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::uniqu
                             continue;
                         }
 
-                        while(sourceSize + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH > sourceCapacity) {
+                        while(sourceSize + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH + OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH  > sourceCapacity) {
                             uint8_t* newSource = qexpand(source.get(), sourceCapacity);
                             source.release();
                             source.reset(newSource);
@@ -1478,12 +1478,21 @@ void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::uniqu
 
                         uint8_t* start = source.get() + matchIndex;
 
+                        // Copy the prefix.
                         memmove(start + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH, start, sourceSize - matchIndex);
                         memcpy(start, OSH_TEMPLATE_LOCAL_PREFIX, OSH_TEMPLATE_LOCAL_PREFIX_LENGTH);
 
                         sourceSize += OSH_TEMPLATE_LOCAL_PREFIX_LENGTH;
+                        matchIndex += OSH_TEMPLATE_LOCAL_PREFIX_LENGTH;
+                        start      += OSH_TEMPLATE_LOCAL_PREFIX_LENGTH + iteratorLength;
+
+                        // Copy the suffix.
+                        memmove(start + OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH, start, sourceSize - matchIndex);
+                        memcpy(start, OSH_TEMPLATE_LOCAL_SUFFIX, OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH);
+
+                        sourceSize += OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH;
                         
-                        index = matchIndex + iteratorLength + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH;
+                        index = matchIndex + iteratorLength + OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH;
 
                         matchIndex = index;
                         continue;

@@ -14,7 +14,8 @@
 #define OSH_TEMPLATE_LOOP_BODY_END_MARKER                 reinterpret_cast<const uint8_t*>("l")
 #define OSH_TEMPLATE_COMPONENT_BODY_END_MARKER            reinterpret_cast<const uint8_t*>("o")
 #define OSH_TEMPLATE_CONTENT_MARKER                       reinterpret_cast<const uint8_t*>("content")
-#define OSH_TEMPLATE_LOCAL_PREFIX                         reinterpret_cast<const uint8_t*>("local.")
+#define OSH_TEMPLATE_LOCAL_PREFIX                         reinterpret_cast<const uint8_t*>("local[\"")
+#define OSH_TEMPLATE_LOCAL_SUFFIX                         reinterpret_cast<const uint8_t*>("\"]")
 
 #define OSH_PLAINTEXT_MARKER_LENGTH                              1u
 #define OSH_TEMPLATE_MARKER_LENGTH                               1u
@@ -29,7 +30,8 @@
 #define OSH_TEMPLATE_LOOP_BODY_END_MARKER_LENGTH                 1u
 #define OSH_TEMPLATE_COMPONENT_BODY_END_MARKER_LENGTH            1u
 #define OSH_TEMPLATE_CONTENT_MARKER_LENGTH                       7u
-#define OSH_TEMPLATE_LOCAL_PREFIX_LENGTH                         6u
+#define OSH_TEMPLATE_LOCAL_PREFIX_LENGTH                         7u
+#define OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH                         2u
 
 #define OSH_FORMAT 32u / 8u
 
