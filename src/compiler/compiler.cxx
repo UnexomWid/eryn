@@ -1153,6 +1153,12 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                         BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
                         break;
                     case TemplateType::LOOP:
+                        while(outputSize + OSH_FORMAT > outputCapacity) {
+                            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                            output.release();
+                            output.reset(newOutput);
+                        }
+
                         BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex + OSH_FORMAT, OSH_FORMAT);
                         BDP::lengthToBytes(output.get() + outputSize, outputSize + OSH_FORMAT - templateStack.top().bodyIndex, OSH_FORMAT);
 

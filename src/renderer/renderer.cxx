@@ -354,7 +354,6 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 loopStack.top().update();
 
                 restoreLocal(data, copyValue(data, localStack.top())); // In case the array uses the parent local object.
-
                 evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
 
                 size_t loopStart;
