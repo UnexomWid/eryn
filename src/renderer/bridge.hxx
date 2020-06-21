@@ -15,10 +15,11 @@
 struct BridgeData {
     Napi::Env env;
     Napi::Function eval;
+    Napi::Function clone;
     Napi::Object context;
     Napi::Object local;
 
-    BridgeData(Napi::Env en, Napi::Object ctx, Napi::Object lcl, Napi::Function ev) : env(en), context(ctx), local(lcl), eval(ev) { }
+    BridgeData(Napi::Env en, Napi::Object ctx, Napi::Object lcl, Napi::Function ev, Napi::Function cln) : env(en), context(ctx), local(lcl), eval(ev), clone(cln) { }
 };
 
 typedef Napi::Value BridgeBackup;

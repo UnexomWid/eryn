@@ -204,7 +204,7 @@ void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentU
 
 BridgeBackup copyValue(BridgeData& data, const Napi::Value& value) {
     try {
-        return data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object.assign({}, link)"), data.context, data.local, value }));
+        return data.clone.Call(std::initializer_list<napi_value>({ value }));
     } catch(std::exception&) {
         return Napi::Value();
     }
@@ -212,7 +212,7 @@ BridgeBackup copyValue(BridgeData& data, const Napi::Value& value) {
 
 BridgeBackup backupContext(BridgeData& data) {
     try {
-        return data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object.assign({}, context)"), data.context, data.local }));
+        return data.clone.Call(std::initializer_list<napi_value>({ data.context }));
     } catch(std::exception&) {
         return Napi::Value();
     }
@@ -220,7 +220,7 @@ BridgeBackup backupContext(BridgeData& data) {
 
 BridgeBackup backupLocal(BridgeData& data) {
     try {
-        return data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object.assign({}, local)"), data.context, data.local }));
+        return data.clone.Call(std::initializer_list<napi_value>({ data.local }));
     } catch(std::exception&) {
         return Napi::Value();
     }

@@ -1,6 +1,11 @@
 var binding = require('./build-load')(__dirname);
+var v8 = require('v8');
 
-function bridgeEval(script, context, local, link) {
+function bridgeClone(obj) {
+    return Object.assign({}, obj);
+}
+
+function bridgeEval(script, context, local) {
     return eval(script);
 }
 
@@ -37,7 +42,7 @@ const eryn = {
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.render(path, context, {}, bridgeEval);
+        return binding.render(path, context, {}, bridgeEval, bridgeClone);
     },
     renderString: (alias, context) => {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
@@ -47,7 +52,7 @@ const eryn = {
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.renderString(alias, context, {}, bridgeEval);
+        return binding.renderString(alias, context, {}, bridgeEval, bridgeClone);
     },
     setOptions: (options) => {
         if(!(options && (typeof options === 'object')))
