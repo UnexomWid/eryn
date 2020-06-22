@@ -8,6 +8,8 @@ interface ErynOptions {
     throwOnCompileDirError?:   boolean,
     ignoreBlankPlaintext?:     boolean,
     logRenderTime?:            boolean,
+    enableDeepCloning?:        boolean,
+    cloneIterators?:           boolean,
     workingDirectory?:         string,
     templateEscape?:           string,
     templateStart?:            string,
@@ -23,8 +25,7 @@ interface ErynOptions {
     loopReverse?:              string,
     componentStart?:           string,
     componentSeparator?:       string,
-    componentSelf?:            string,
-    enableDeepCloning?:        boolean
+    componentSelf?:            string
 }
 
 export function compile(filePath : string) : void;

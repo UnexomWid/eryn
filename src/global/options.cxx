@@ -13,6 +13,7 @@ bool Global::Options::throwOnMissingEntry    = false;
 bool Global::Options::throwOnCompileDirError = false;
 bool Global::Options::ignoreBlankPlaintext   = false;
 bool Global::Options::logRenderTime          = false;
+bool Global::Options::cloneIterators         = false;
 
 char*   Global::Options::workingDirectory    = nullptr;
 
@@ -87,6 +88,10 @@ void Global::Options::setIgnoreBlankPlaintext(bool value) {
 
 void Global::Options::setLogRenderTime(bool value) {
     Global::Options::logRenderTime = value;
+}
+
+void Global::Options::setCloneIterators(bool value) {
+    Global::Options::cloneIterators = value;
 }
 
 void Global::Options::setWorkingDirectory(const char* value) {
@@ -330,6 +335,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setThrowOnCompileDirError(false);
     Global::Options::setIgnoreBlankPlaintext(false);
     Global::Options::setLogRenderTime(false);
+    Global::Options::setCloneIterators(false);
 
     Global::Options::setWorkingDirectory(".");
 
@@ -415,6 +421,10 @@ bool Global::Options::getIgnoreBlankPlaintext() {
 
 bool Global::Options::getLogRenderTime() {
     return Global::Options::logRenderTime;
+}
+
+bool Global::Options::getCloneIterators() {
+    return Global::Options::cloneIterators;
 }
 
 const char* Global::Options::getWorkingDirectory() {

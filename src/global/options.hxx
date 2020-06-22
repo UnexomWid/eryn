@@ -12,6 +12,7 @@ namespace Global {
             static bool throwOnCompileDirError;
             static bool ignoreBlankPlaintext;
             static bool logRenderTime;
+            static bool cloneIterators;
 
             static char*    workingDirectory;
 
@@ -71,6 +72,7 @@ namespace Global {
             static bool getThrowOnCompileDirError();
             static bool getIgnoreBlankPlaintext();
             static bool getLogRenderTime();
+            static bool getCloneIterators();
 
             static const char*    getWorkingDirectory();
 
@@ -129,6 +131,7 @@ namespace Global {
             static void setThrowOnCompileDirError(bool value);
             static void setIgnoreBlankPlaintext(bool value);
             static void setLogRenderTime(bool value);
+            static void setCloneIterators(bool value);
 
             static void setWorkingDirectory(const char* value);
 

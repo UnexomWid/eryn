@@ -35,6 +35,7 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
         std::string key = keyVal.As<Napi::String>().Utf8Value();
         Napi::Value value = options.Get(keys[i]);
 
+        // A switch case would've been ideal, if only std::string was supported.
         if(key == "bypassCache") {
             if(!value.IsBoolean())
                 continue;
@@ -59,6 +60,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setLogRenderTime(value.ToBoolean().Value());
+        } else if(key == "cloneIterators") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setCloneIterators(value.ToBoolean().Value());
         } else if(key == "workingDirectory") {
             if(!value.IsString())
                 continue;

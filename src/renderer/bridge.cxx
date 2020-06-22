@@ -2,6 +2,7 @@
 #include "../../lib/buffer.hxx"
 #include "../def/logging.dxx"
 #include "../except/rendering.hxx"
+#include "../global/options.hxx"
 
 #include <string>
 
@@ -117,9 +118,22 @@ bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, siz
 }
 
 void evalAssignment(BridgeData& data, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment) {
-    if(propertyAssignment.size() > 0)
-        data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local })).ToObject();
-    else data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local }));
+    if(Global::Options::getCloneIterators()) {
+        if(propertyAssignment.size() > 0) {
+            data.local[iterator] = data.clone.Call(std::initializer_list<napi_value>({
+                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local }))
+                                   })).ToObject();
+        } else {
+            data.local[iterator] = data.clone.Call(std::initializer_list<napi_value>({
+                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local }))
+                                   }));
+        }
+    } else {
+        if(propertyAssignment.size() > 0)
+            data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local })).ToObject();
+        else data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local }));
+    }
+    
 }
 
 void unassign(BridgeData& data, const std::string &iterator) {
