@@ -394,6 +394,22 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
 
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
+
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
@@ -1051,6 +1067,22 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 if(length > 0)
                     memcpy(buffer.get() + index, start, end - start);
+
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_VOID_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
