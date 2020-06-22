@@ -12,20 +12,19 @@ interface ErynOptions {
     templateEscape?:           string,
     templateStart?:            string,
     templateEnd?:              string,
-    commentTemplate?:          string,
+    bodyEnd?:                  string,
+    commentStart?:             string,
+    commentEnd?:               string,
     voidTemplate?:             string,
     conditionalStart?:         string,
-    conditionalEnd?:           string,
     invertedConditionalStart?: string,
-    invertedConditionalEnd?:   string,
     loopStart?:                string,
-    loopEnd?:                  string,
     loopSeparator?:            string,
     loopReverse?:              string,
     componentStart?:           string,
-    componentEnd?:             string,
     componentSeparator?:       string,
-    componentSelf?:            string
+    componentSelf?:            string,
+    enableDeepCloning?:        boolean
 }
 
 export function compile(filePath : string) : void;

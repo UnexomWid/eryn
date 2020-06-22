@@ -1,7 +1,15 @@
 var binding = require('./build-load')(__dirname);
-var v8 = require('v8');
+const v8 = require('v8');
 
-function bridgeClone(obj) {
+var bridgeOptions = {
+    enableDeepCloning: false
+}
+
+function bridgeDeepClone(obj) {
+    return v8.deserialize(v8.serialize(obj));
+}
+
+function bridgeShallowClone(obj) {
     return Object.assign({}, obj);
 }
 
@@ -42,7 +50,7 @@ const eryn = {
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.render(path, context, {}, bridgeEval, bridgeClone);
+        return binding.render(path, context, {}, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },
     renderString: (alias, context) => {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
@@ -52,11 +60,14 @@ const eryn = {
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.renderString(alias, context, {}, bridgeEval, bridgeClone);
+        return binding.renderString(alias, context, {}, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },
     setOptions: (options) => {
         if(!(options && (typeof options === 'object')))
             throw `Invalid argument 'options' (expected: object | found: ${typeof(options)})`
+
+        if(options.hasOwnProperty("enableDeepCloning") && ((typeof options.enableDeepCloning) === "boolean"))
+            bridgeOptions.enableDeepCloning = options.enableDeepCloning;
 
         binding.setOptions(options);
     }
