@@ -216,227 +216,256 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         uint8_t nameByte = *name;
         
         // Only compares the first byte, for performance reasons. Change this if the markers have length > 1.
-        if(nameByte == *OSH_PLAINTEXT_MARKER) {
-            LOG_DEBUG("--> Found plaintext");
+        switch(nameByte) {
+            case *OSH_PLAINTEXT: {
+                LOG_DEBUG("--> Found plaintext");
 
-            while(outputSize + valueLength > outputCapacity) {
-                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
-                output.release();
-                output.reset(newOutput);
-            }
-
-            memcpy(output.get() + outputSize, value, valueLength);
-            outputSize += valueLength;
-        } else if(nameByte == *OSH_TEMPLATE_MARKER) {
-            LOG_DEBUG("--> Found template");
-
-            if(valueLength == OSH_TEMPLATE_CONTENT_MARKER_LENGTH && membcmp(value, OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
-                if(contentSize == 0u) {
-                    if(Options::getThrowOnEmptyContent())
-                        throw RenderingException("No content", "there is no content for this component", value, valueLength);
-                } else {
-                    while(outputSize + contentSize > outputCapacity) {
-                        uint8_t* newOutput = qexpand(output.get(), outputCapacity);
-                        output.release();
-                        output.reset(newOutput);
-                    }
-
-                    memcpy(output.get() + outputSize, content, contentSize);
-                    outputSize += contentSize;
+                while(outputSize + valueLength > outputCapacity) {
+                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    output.release();
+                    output.reset(newOutput);
                 }
-            } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
-        } else if(nameByte == *OSH_TEMPLATE_VOID_MARKER) {
-            LOG_DEBUG("--> Found void template");
 
-            evalVoidTemplate(data, value, valueLength);
-        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_START_MARKER) {
-            LOG_DEBUG("--> Found conditional template start");
-
-            size_t conditionalEnd;
-            BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
-
-            inputIndex += OSH_FORMAT;
-
-            if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
-                inputIndex += conditionalEnd;
-        } else if(nameByte == *OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER) {
-            LOG_DEBUG("--> Found conditional template end");
-
-            continue;
-        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER) {
-            LOG_DEBUG("--> Found inverted conditional template start");
-
-            size_t conditionalEnd;
-            BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
-
-            inputIndex += OSH_FORMAT;
-
-            if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
-                inputIndex += conditionalEnd;
-        } else if(nameByte == *OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER) {
-            LOG_DEBUG("--> Found inverted conditional template end");
-
-            continue;
-        } else if(nameByte == *OSH_TEMPLATE_LOOP_START_MARKER) {
-            LOG_DEBUG("--> Found loop template start");
-
-            size_t leftLength;
-            size_t rightLength;
-
-            const uint8_t* left;
-            const uint8_t* right;
-
-            inputIndex -= valueLength;
-
-            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
-
-            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            right = input + inputIndex;
-            inputIndex += rightLength;
-
-            loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, 1));
-
-            if(loopStack.top().arrayLength == 0) {
-                size_t loopEnd;
-                BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
-
-                inputIndex += OSH_FORMAT + loopEnd;
-                loopStack.pop();
-            } else {
-                inputIndex += OSH_FORMAT;
-                localStack.push(backupLocal(data));
-                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+                memcpy(output.get() + outputSize, value, valueLength);
+                outputSize += valueLength;
+                break;
             }
-        } else if(nameByte == *OSH_TEMPLATE_LOOP_REVERSE_START_MARKER) {
-            LOG_DEBUG("--> Found reverse loop template start");
+            case *OSH_TEMPLATE: {
+                LOG_DEBUG("--> Found template");
 
-            size_t leftLength;
-            size_t rightLength;
+                if(valueLength == OSH_TEMPLATE_CONTENT_LENGTH && membcmp(value, OSH_TEMPLATE_CONTENT_MARKER, valueLength)) {
+                    if(contentSize == 0u) {
+                        if(Options::getThrowOnEmptyContent())
+                            throw RenderingException("No content", "there is no content for this component", value, valueLength);
+                    } else {
+                        while(outputSize + contentSize > outputCapacity) {
+                            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                            output.release();
+                            output.reset(newOutput);
+                        }
 
-            const uint8_t* left;
-            const uint8_t* right;
+                        memcpy(output.get() + outputSize, content, contentSize);
+                        outputSize += contentSize;
+                    }
+                } else evalTemplate(data, value, valueLength, output, outputSize, outputCapacity);
 
-            inputIndex -= valueLength;
-
-            left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
-
-            BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            right = input + inputIndex;
-            inputIndex += rightLength;
-
-            loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, -1));
-
-            if(loopStack.top().arrayLength == 0) {
-                size_t loopEnd;
-                BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
-
-                inputIndex += OSH_FORMAT + loopEnd;
-                loopStack.pop();
-            } else {
-                inputIndex += OSH_FORMAT;
-                localStack.push(backupLocal(data));
-                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+                break;
             }
-        } else if(nameByte == *OSH_TEMPLATE_LOOP_BODY_END_MARKER) {
-            LOG_DEBUG("--> Found loop template end");
+            case *OSH_TEMPLATE_VOID: {
+                LOG_DEBUG("--> Found void template");
 
-            if(loopStack.top().arrayIndex < loopStack.top().arrayLength && !loopStack.top().atEnd) {
-                if(loopStack.top().arrayIndex == 0 && loopStack.top().direction < 0) // Mark this as the last iteration (the index will overflow).
-                    loopStack.top().atEnd = true;
+                evalVoidTemplate(data, value, valueLength);
+                break;
+            }
+            case *OSH_TEMPLATE_CONDITIONAL_START: {
+                LOG_DEBUG("--> Found conditional template start");
 
-                loopStack.top().invalidate();
-                loopStack.top().update();
-
-                restoreLocal(data, copyValue(data, localStack.top())); // In case the array uses the parent local object.
-                evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
-
-                size_t loopStart;
-
-                BDP::bytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
+                size_t conditionalEnd;
+                BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
 
                 inputIndex += OSH_FORMAT;
-                inputIndex -= loopStart;
-            } else {
+
+                if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
+                    inputIndex += conditionalEnd;
+                break;
+            }
+            case *OSH_TEMPLATE_CONDITIONAL_BODY_END: {
+                LOG_DEBUG("--> Found conditional template end");
+
+                continue;
+            }
+            case *OSH_TEMPLATE_INVERTED_CONDITIONAL_START: {
+                LOG_DEBUG("--> Found inverted conditional template start");
+
+                size_t conditionalEnd;
+                BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+
                 inputIndex += OSH_FORMAT;
 
-                unassign(data, loopStack.top().iterator);
-                loopStack.pop();
-
-                restoreLocal(data, localStack.top());
-                localStack.pop();
+                if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
+                    inputIndex += conditionalEnd;
+                break;
             }
-        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_MARKER) {
-            LOG_DEBUG("--> Found component template\n");
+            case *OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END: {
+                LOG_DEBUG("--> Found inverted conditional template end");
 
-            inputIndex -= valueLength;
-
-            ComponentStackInfo info;
-
-            info.path = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            BDP::bytesToLength(info.pathLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + info.pathLength;
-
-            BDP::bytesToLength(info.contextLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
-            inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
-            info.context = input + inputIndex;
-            inputIndex += info.contextLength;
-
-            size_t contentLength;
-
-            BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
-
-            inputIndex += OSH_FORMAT;
-
-            if(contentLength == 0) {
-                info.hasContent = false;
-
-                BridgeBackup contextBackup = backupContext(data);
-                BridgeBackup localBackup = backupLocal(data);
-
-                initContext(data, info.context, info.contextLength);
-                initLocal(data);
-
-                renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled, isString);
-
-                restoreContext(data, contextBackup);
-                restoreLocal(data, localBackup);
-            } else {
-                info.hasContent = true;
-                info.startIndex = outputSize;
+                continue;
             }
+            case *OSH_TEMPLATE_LOOP_START: {
+                LOG_DEBUG("--> Found loop template start");
 
-            componentStack.push(info);
-        } else if(nameByte == *OSH_TEMPLATE_COMPONENT_BODY_END_MARKER) {
-            LOG_DEBUG("--> Found component template end");
+                size_t leftLength;
+                size_t rightLength;
 
-            ComponentStackInfo info = componentStack.top();
+                const uint8_t* left;
+                const uint8_t* right;
 
-            if(info.hasContent) {
-                size_t contentLength = outputSize - info.startIndex;
-                std::unique_ptr<uint8_t, decltype(qfree)*> contentBuffer(qmalloc(contentLength), qfree);
+                inputIndex -= valueLength;
 
-                memcpy(contentBuffer.get(), output.get() + info.startIndex, contentLength);
+                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
 
-                outputSize = info.startIndex;
+                BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                right = input + inputIndex;
+                inputIndex += rightLength;
 
-                BridgeBackup contextBackup = backupContext(data);
-                BridgeBackup localBackup = backupLocal(data);
+                loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, 1));
 
-                initContext(data, info.context, info.contextLength);
-                initLocal(data);
-                renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled, isString);
-                
-                restoreContext(data, contextBackup);
-                restoreLocal(data, localBackup);
+                if(loopStack.top().arrayLength == 0) {
+                    size_t loopEnd;
+                    BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+
+                    inputIndex += OSH_FORMAT + loopEnd;
+                    loopStack.pop();
+                } else {
+                    inputIndex += OSH_FORMAT;
+                    localStack.push(backupLocal(data));
+                    evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+                }
+
+                break;
             }
+            case *OSH_TEMPLATE_LOOP_REVERSE_START: {
+                LOG_DEBUG("--> Found reverse loop template start");
 
-            componentStack.pop();
-        } else throw RenderingException("Not supported", ((std::string("this template type is not supported: OSH marker '") + ((char) nameByte)) + "'").c_str(), name, nameLength);
+                size_t leftLength;
+                size_t rightLength;
+
+                const uint8_t* left;
+                const uint8_t* right;
+
+                inputIndex -= valueLength;
+
+                left = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                BDP::bytesToLength(leftLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength;
+
+                BDP::bytesToLength(rightLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                right = input + inputIndex;
+                inputIndex += rightLength;
+
+                loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, -1));
+
+                if(loopStack.top().arrayLength == 0) {
+                    size_t loopEnd;
+                    BDP::bytesToLength(loopEnd, input + inputIndex, OSH_FORMAT);
+
+                    inputIndex += OSH_FORMAT + loopEnd;
+                    loopStack.pop();
+                } else {
+                    inputIndex += OSH_FORMAT;
+                    localStack.push(backupLocal(data));
+                    evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+                }
+
+                break;
+            }
+            case *OSH_TEMPLATE_LOOP_BODY_END: {
+                LOG_DEBUG("--> Found loop template end");
+
+                if(loopStack.top().arrayIndex < loopStack.top().arrayLength && !loopStack.top().atEnd) {
+                    if(loopStack.top().arrayIndex == 0 && loopStack.top().direction < 0) // Mark this as the last iteration (the index will overflow).
+                        loopStack.top().atEnd = true;
+
+                    loopStack.top().invalidate();
+                    loopStack.top().update();
+
+                    restoreLocal(data, copyValue(data, localStack.top())); // In case the array uses the parent local object.
+                    evalAssignment(data, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+
+                    size_t loopStart;
+
+                    BDP::bytesToLength(loopStart, input + inputIndex, OSH_FORMAT);
+
+                    inputIndex += OSH_FORMAT;
+                    inputIndex -= loopStart;
+                } else {
+                    inputIndex += OSH_FORMAT;
+
+                    unassign(data, loopStack.top().iterator);
+                    loopStack.pop();
+
+                    restoreLocal(data, localStack.top());
+                    localStack.pop();
+                }
+
+                break;
+            }
+            case *OSH_TEMPLATE_COMPONENT: {
+                LOG_DEBUG("--> Found component template\n");
+
+                inputIndex -= valueLength;
+
+                ComponentStackInfo info;
+
+                info.path = input + inputIndex + Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                BDP::bytesToLength(info.pathLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE + info.pathLength;
+
+                BDP::bytesToLength(info.contextLength, input + inputIndex, Global::BDP832->VALUE_LENGTH_BYTE_SIZE);
+                inputIndex += Global::BDP832->VALUE_LENGTH_BYTE_SIZE;
+                info.context = input + inputIndex;
+                inputIndex += info.contextLength;
+
+                size_t contentLength;
+
+                BDP::bytesToLength(contentLength, input + inputIndex, OSH_FORMAT);
+
+                inputIndex += OSH_FORMAT;
+
+                if(contentLength == 0) {
+                    info.hasContent = false;
+
+                    BridgeBackup contextBackup = backupContext(data);
+                    BridgeBackup localBackup = backupLocal(data);
+
+                    initContext(data, info.context, info.contextLength);
+                    initLocal(data);
+
+                    renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, nullptr, 0, recompiled, isString);
+
+                    restoreContext(data, contextBackup);
+                    restoreLocal(data, localBackup);
+                } else {
+                    info.hasContent = true;
+                    info.startIndex = outputSize;
+                }
+
+                componentStack.push(info);
+                break;
+            }
+            case *OSH_TEMPLATE_COMPONENT_BODY_END: {
+                LOG_DEBUG("--> Found component template end");
+
+                ComponentStackInfo info = componentStack.top();
+
+                if(info.hasContent) {
+                    size_t contentLength = outputSize - info.startIndex;
+                    std::unique_ptr<uint8_t, decltype(qfree)*> contentBuffer(qmalloc(contentLength), qfree);
+
+                    memcpy(contentBuffer.get(), output.get() + info.startIndex, contentLength);
+
+                    outputSize = info.startIndex;
+
+                    BridgeBackup contextBackup = backupContext(data);
+                    BridgeBackup localBackup = backupLocal(data);
+
+                    initContext(data, info.context, info.contextLength);
+                    initLocal(data);
+                    renderComponent(data, info.path, info.pathLength, output, outputSize, outputCapacity, contentBuffer.get(), contentLength, recompiled, isString);
+                    
+                    restoreContext(data, contextBackup);
+                    restoreLocal(data, localBackup);
+                }
+
+                componentStack.pop();
+                break;
+            }
+            default:
+                throw RenderingException("Not supported", ((std::string("this template type is not supported: OSH marker '") + ((char) nameByte)) + "'").c_str(), name, nameLength);
+        }
     }
 }

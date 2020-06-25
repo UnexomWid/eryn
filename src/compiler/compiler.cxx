@@ -256,14 +256,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
 
             if(!skip) {
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_LENGTH, start, length);
                 LOG_DEBUG("done\n");
             } else LOG_DEBUG("Skipping blank plaintext");
         }
@@ -410,14 +410,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), bufferSize);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
                 outputSize += OSH_FORMAT;
@@ -523,14 +523,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER_LENGTH, buffer.get(), bufferSize);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
                 outputSize += OSH_FORMAT;
@@ -719,10 +719,10 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             if(!isReverse) {
                 oshStartMarker       = OSH_TEMPLATE_LOOP_START_MARKER;
-                oshStartMarkerLength = OSH_TEMPLATE_LOOP_START_MARKER_LENGTH;
+                oshStartMarkerLength = OSH_TEMPLATE_LOOP_START_LENGTH;
             } else {
                 oshStartMarker       = OSH_TEMPLATE_LOOP_REVERSE_START_MARKER;
-                oshStartMarkerLength = OSH_TEMPLATE_LOOP_REVERSE_START_MARKER_LENGTH;
+                oshStartMarkerLength = OSH_TEMPLATE_LOOP_REVERSE_START_LENGTH;
             }
 
             while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + oshStartMarkerLength > outputCapacity) {
@@ -938,14 +938,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_MARKER_LENGTH > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_LENGTH > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing component template as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
-                outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_MARKER_LENGTH);
+                outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_LENGTH);
 
                 size_t componentPathLength;
                 std::unique_ptr<uint8_t, decltype(free)*> componentPath(
@@ -974,13 +974,13 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                     outputSize += OSH_FORMAT;
 
-                    while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_BODY_END_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+                    while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_BODY_END_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                         uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                         output.release();
                         output.reset(newOutput);
                     }
 
-                    outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_BODY_END_MARKER, OSH_TEMPLATE_COMPONENT_BODY_END_MARKER_LENGTH, start, length);
+                    outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_BODY_END_MARKER, OSH_TEMPLATE_COMPONENT_BODY_END_LENGTH, start, length);
                 }
 
                 LOG_DEBUG("done\n");
@@ -1084,14 +1084,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_VOID_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_VOID_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing void template as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_VOID_MARKER, OSH_TEMPLATE_VOID_MARKER_LENGTH, buffer.get(), bufferSize);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_VOID_MARKER, OSH_TEMPLATE_VOID_LENGTH, buffer.get(), bufferSize);
                 LOG_DEBUG("done\n");
             }
 
@@ -1150,19 +1150,19 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 switch(templateStack.top().type) {
                     case TemplateType::CONDITIONAL:
                         bodyEndMarker = OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER;
-                        bodyEndMarkerLength = OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER_LENGTH;
+                        bodyEndMarkerLength = OSH_TEMPLATE_CONDITIONAL_BODY_END_LENGTH;
                         break;
                     case TemplateType::INVERTED_CONDITIONAL:
                         bodyEndMarker = OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER;
-                        bodyEndMarkerLength = OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER_LENGTH;
+                        bodyEndMarkerLength = OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_LENGTH;
                         break;
                     case TemplateType::LOOP:
                         bodyEndMarker = OSH_TEMPLATE_LOOP_BODY_END_MARKER;
-                        bodyEndMarkerLength = OSH_TEMPLATE_LOOP_BODY_END_MARKER_LENGTH;
+                        bodyEndMarkerLength = OSH_TEMPLATE_LOOP_BODY_END_LENGTH;
                         break;
                     case TemplateType::COMPONENT:
                         bodyEndMarker = OSH_TEMPLATE_COMPONENT_BODY_END_MARKER;
-                        bodyEndMarkerLength = OSH_TEMPLATE_COMPONENT_BODY_END_MARKER_LENGTH;
+                        bodyEndMarkerLength = OSH_TEMPLATE_COMPONENT_BODY_END_LENGTH;
                         break;
                 }
 
@@ -1293,14 +1293,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
+                if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
                     uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                     output.release();
                     output.reset(newOutput);
                 }
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_MARKER_LENGTH, buffer.get(), bufferSize);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_LENGTH, buffer.get(), bufferSize);
                 LOG_DEBUG("done\n");
             } else {
                 LOG_DEBUG("Detected empty template\n");
@@ -1371,14 +1371,14 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
         }
         if(!skip) {
-            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_MARKER_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
                 uint8_t* newOutput = qexpand(output.get(), outputCapacity);
                 output.release();
                 output.reset(newOutput);
             }
 
             LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
-            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_MARKER_LENGTH, start, length);
+            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_LENGTH, start, length);
             LOG_DEBUG("done\n");
         } else LOG_DEBUG("Skipping blank plaintext");
     }
