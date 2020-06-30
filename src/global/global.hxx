@@ -4,7 +4,6 @@
 #include "../../lib/bdp.hxx"
 
 namespace Global {
-
     extern BDP::Header* BDP832;
 
     void init();

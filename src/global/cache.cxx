@@ -59,7 +59,7 @@ const BinaryData& Global::Cache::getData(size_t index) {
     return data[index];
 }
 
-void Global::Cache::setData(size_t index, const BinaryData &value) {
+void Global::Cache::setData(size_t index, const BinaryData& value) {
     data[index] = value;
 }
 

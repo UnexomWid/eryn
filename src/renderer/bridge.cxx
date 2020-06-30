@@ -13,7 +13,7 @@ std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*>& output, size_t& outputSize, size_t& outputCapacity) {
     Napi::Value result;
 
     try {
@@ -105,7 +105,7 @@ void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t tem
     }
 }
 
-bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity) {
+bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*>& output, size_t& outputSize, size_t& outputCapacity) {
     Napi::Value result;
 
     try {
@@ -190,7 +190,7 @@ size_t initArray(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, 
     return properties.Length();
 }
 
-void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& assignment, size_t &assignmentUpdateIndex, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) {
+void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, const uint8_t* it, size_t itSize, const uint8_t* array, size_t arraySize) {
     iterator.assign(reinterpret_cast<const char*>(it), itSize);
     
     assignment.reserve(256);
@@ -200,7 +200,7 @@ void buildLoopAssignment(BridgeData& data, std::string& iterator, std::string& a
     assignmentUpdateIndex = assignment.size();
 }
 
-void updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t &arrayIndex, std::string*& propertyArray, int8_t direction) {
+void updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction) {
     if(propertyArray == nullptr) {
         assignment += std::to_string(arrayIndex);
         assignment += "]";
@@ -212,7 +212,7 @@ void updateLoopAssignment(std::string& assignment, std::string& propertyAssignme
     arrayIndex += direction;
 }
 
-void invalidateLoopAssignment(std::string &assignment, const size_t &assignmentUpdateIndex) {
+void invalidateLoopAssignment(std::string& assignment, const size_t& assignmentUpdateIndex) {
     assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
 }
 

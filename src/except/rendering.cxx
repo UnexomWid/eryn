@@ -2,11 +2,11 @@
 #include "../def/warnings.dxx"
 #include "../../lib/buffer.hxx"
 
-RenderingException::RenderingException(const RenderingException &e) {
+RenderingException::RenderingException(const RenderingException& e) {
     message = qstrdup(e.message);
 }
 
-RenderingException::RenderingException(RenderingException &&e) {
+RenderingException::RenderingException(RenderingException&& e) {
     message = e.message;
     e.message = nullptr;
 }
@@ -42,7 +42,7 @@ const char* RenderingException::what() const noexcept {
     return message;
 }
 
-RenderingException& RenderingException::operator=(const RenderingException &e) {
+RenderingException& RenderingException::operator=(const RenderingException& e) {
     if(this == &e)
         return *this;
 

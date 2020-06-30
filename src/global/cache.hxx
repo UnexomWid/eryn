@@ -26,7 +26,7 @@ namespace Global {
             static bool       hasEntry(const char* key);
 
             static const BinaryData& getData(size_t index);
-            static       void        setData(size_t index, const BinaryData &data);
+            static       void        setData(size_t index, const BinaryData& data);
 
             static void destroy();
     };

@@ -2,11 +2,11 @@
 #include "../def/warnings.dxx"
 #include "../../lib/buffer.hxx"
 
-CompilationException::CompilationException(const CompilationException &e) {
+CompilationException::CompilationException(const CompilationException& e) {
     message = qstrdup(e.message);
 }
 
-CompilationException::CompilationException(CompilationException &&e) {
+CompilationException::CompilationException(CompilationException&& e) {
     message = e.message;
     e.message = nullptr;
 }
@@ -59,7 +59,7 @@ const char* CompilationException::what() const noexcept {
     return message;
 }
 
-CompilationException& CompilationException::operator=(const CompilationException &e) {
+CompilationException& CompilationException::operator=(const CompilationException& e) {
     if(this == &e)
         return *this;
 

@@ -35,7 +35,7 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
         std::string key = keyVal.As<Napi::String>().Utf8Value();
         Napi::Value value = options.Get(keys[i]);
 
-        // A switch case would've been ideal, if only std::string was supported.
+        // A switch statement would've been ideal, if only std::string was supported. However, setOptions isn't performance-critical.
         if(key == "bypassCache") {
             if(!value.IsBoolean())
                 continue;
