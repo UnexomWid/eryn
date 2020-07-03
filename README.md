@@ -254,6 +254,7 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 # Releases
 
 [0.1.0](https://github.com/UnexomWid/eryn/releases/tag/0.1.0) - May 2nd, 2020
+
 [0.2.0](https://github.com/UnexomWid/eryn/releases/tag/0.2.0) - July 3rd, 2020
 
 # Contributing
