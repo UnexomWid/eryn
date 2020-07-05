@@ -25,6 +25,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#ifdef _MSC_VER
+    #pragma warning(disable: 4293)
+#endif
+
 #if defined(REMEM_ENABLE_MAPPING)
     std::unordered_map<void*, re::AddressInfo> map;
     size_t totalSize = 0;
@@ -34,7 +38,7 @@
     #define REMEM_EXPAND_FACTOR 2
 #endif
 
-/// Rounds the size to the nearest power of 2 that is >= size.
+// Rounds the size to the nearest power of 2 that is >= size.
 void adjustSize(size_t &size) {
     --size;
     size |= size >> 1;
