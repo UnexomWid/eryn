@@ -10,14 +10,18 @@
 #include "compiler/compiler.hxx"
 #include "renderer/renderer.hxx"
 
+#include "common/str.hxx"
+
+#include "../lib/remem.hxx"
+
 #include <memory>
 #include <filesystem>
 
 using Global::Options;
 
-void bufferFinalizer(Napi::Env env, uint8_t* data) {
+void finalizeBuffer(Napi::Env env, uint8_t* data) {
     LOG_DEBUG("Finalizing buffer %p", data);
-    qfree(data);
+    re::free(data);
 }
 
 void erynSetOptions(const Napi::CallbackInfo& info) {
@@ -206,11 +210,11 @@ void erynCompileString(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
     try {
-        std::unique_ptr<char, decltype(qfree)*> alias(
-            qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+        std::unique_ptr<char, decltype(re::free)*> alias(
+            strDup(info[0].As<Napi::String>().Utf8Value().c_str()), re::free);
 
-        std::unique_ptr<char, decltype(qfree)*> str(
-            qstrdup(info[1].As<Napi::String>().Utf8Value().c_str()), qfree);
+        std::unique_ptr<char, decltype(re::free)*> str(
+            strDup(info[1].As<Napi::String>().Utf8Value().c_str()), re::free);
 
         compileString(alias.get(), str.get());
     } catch(std::exception &e) {
@@ -234,8 +238,8 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     try {
         BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Function>(), info[4].As<Napi::Function>()), absPath.c_str());
 
-        return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
-                   env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
+        return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, ((std::string("Rendering error in '") + absPath.c_str()) + "'\n") + e.what());
     }
@@ -244,14 +248,14 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
 Napi::Buffer<uint8_t> erynRenderString(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    std::unique_ptr<char, decltype(qfree)*> alias(
-            qstrdup(info[0].As<Napi::String>().Utf8Value().c_str()), qfree);
+    std::unique_ptr<char, decltype(re::free)*> alias(
+            strDup(info[0].As<Napi::String>().Utf8Value().c_str()), re::free);
 
     try {
         BinaryData rendered = renderString(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Function>(), info[4].As<Napi::Function>()), alias.get());
 
-        return Napi::Buffer<uint8_t>::New<decltype(bufferFinalizer)*>(
-                   env, (uint8_t*) rendered.data, rendered.size, bufferFinalizer);
+        return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);
     } catch(std::exception &e) {
         throw Napi::Error::New(env, ((std::string("Rendering error in '") + alias.get()) + "'\n") + e.what());
     }
@@ -261,6 +265,10 @@ void destroy(void* args) {
     LOG_DEBUG("Destroying...");
 
     Global::destroy();
+
+    #ifdef REMEM_ENABLE_MAPPING
+        re::memPrint();
+    #endif
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {

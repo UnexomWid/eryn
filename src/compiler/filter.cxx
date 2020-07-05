@@ -1,30 +1,30 @@
 #include "filter.hxx"
+
+#include "../../lib/remem.hxx"
 #include "../../lib/globlib.h"
 #include "../../lib/buffer.hxx"
+
+#include "../common/str.hxx"
 
 #include <cstdlib>
 #include <stdexcept>
 
 using Filter = FilterInfo::Filter;
 
-Filter::Filter(const char* pattern) : glob(qstrdup(pattern)), exclusions() { }
-Filter::Filter(const char* pattern, size_t count) : glob(qstrndup(pattern, count)), exclusions() { }
+Filter::Filter(const char* pattern) : glob(strDup(pattern)), exclusions() { }
+Filter::Filter(const char* pattern, size_t count) : glob(strDup(pattern, count)), exclusions() { }
 Filter::~Filter() {
-    qfree(glob);
+    re::free(glob);
 
-    for(auto exclusion : exclusions) {
-        try {
-            // Some exclusions may be shared, so try to free.
-            qfree(exclusion);
-        } catch(std::exception&) { }
-    }
+    for(auto exclusion : exclusions)
+        re::free(exclusion);
 }
 
 FilterInfo::~FilterInfo() {
     for(auto filter : filters)
         delete filter;
     for(auto exclusion : exclusions)
-        qfree(exclusion);
+        re::free(exclusion);
 }
 
 void FilterInfo::addFilter(const char* const pattern) {
@@ -36,7 +36,7 @@ void FilterInfo::addFilter(const char* const pattern, size_t count) {
 }
 
 void FilterInfo::addExclusion(const char* const pattern) {
-    char* exclusion = qstrdup(pattern);
+    char* exclusion = strDup(pattern);
     bool found = false;
 
     for(size_t i = 0; i < filters.size();) {
@@ -64,7 +64,7 @@ void FilterInfo::addExclusion(const char* const pattern) {
 }
 
 void FilterInfo::addExclusion(const char* const pattern, size_t count) {
-    char* exclusion = qstrndup(pattern, count);
+    char* exclusion = strDup(pattern, count);
     bool found = false;
 
     for(size_t i = 0; i < filters.size();) {

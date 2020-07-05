@@ -35,11 +35,16 @@ file(GLOB SOURCE_FILES
     lib/**/*.h
     lib/**/*.c)
 
+# Required macros
 add_definitions(-DMODULE_NAME=${PROJECT_NAME})
 add_definitions(-DNAPI_VERSION=3)
+add_definitions(-DREMEM_DISABLE_MALLOC_ALIGNING)
+add_definitions(-DREMEM_DISABLE_REALLOC_ALIGNING)
+
+# Optional macros (for debugging)
 #add_definitions(-DDEBUG)
-#add_definitions(-DLOG_MEMORY_OPERATIONS)
-#add_definitions(-DLOG_MEMORY_FULLY_FREED)
+#add_definitions(-DREMEM_ENABLE_MAPPING)
+#add_definitions(-DREMEM_ENABLE_LOGGING)
 #add_definitions(-DDUMP_OSH_FILES_ON_COMPILE)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})

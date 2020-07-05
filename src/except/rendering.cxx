@@ -1,9 +1,14 @@
 #include "rendering.hxx"
+
 #include "../def/warnings.dxx"
+
+#include "../common/str.hxx"
+
+#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
 
 RenderingException::RenderingException(const RenderingException& e) {
-    message = qstrdup(e.message);
+    message = strDup(e.message);
 }
 
 RenderingException::RenderingException(RenderingException&& e) {
@@ -13,7 +18,7 @@ RenderingException::RenderingException(RenderingException&& e) {
 
 RenderingException::~RenderingException() {
     if(message != nullptr)
-        qfree((char*) message);
+        re::free((char*) message);
 }
 
 RenderingException::RenderingException(const char* msg, const char* description) {
@@ -23,7 +28,7 @@ RenderingException::RenderingException(const char* msg, const char* description)
     buffer += description;
     buffer += ")\n";
 
-    message = qstrdup(buffer.c_str());
+    message = strDup(buffer.c_str());
 }
 
 RenderingException::RenderingException(const char* msg, const char* description, const uint8_t* token, size_t tokenSize) {
@@ -35,7 +40,7 @@ RenderingException::RenderingException(const char* msg, const char* description,
     buffer += std::string(reinterpret_cast<const char*>(token), tokenSize);
     buffer += "\n^\n";
 
-    message = qstrdup(buffer.c_str());
+    message = strDup(buffer.c_str());
 }
 
 const char* RenderingException::what() const noexcept {
@@ -47,9 +52,9 @@ RenderingException& RenderingException::operator=(const RenderingException& e) {
         return *this;
 
     if(message != nullptr)
-        qfree((char*) message);
+        re::free((char*) message);
 
-    message = qstrdup(e.message);
+    message = strDup(e.message);
 
     return *this;
 }

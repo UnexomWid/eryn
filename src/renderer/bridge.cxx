@@ -1,5 +1,5 @@
 #include "bridge.hxx"
-#include "../../lib/buffer.hxx"
+
 #include "../def/logging.dxx"
 #include "../except/rendering.hxx"
 #include "../global/options.hxx"
@@ -13,7 +13,7 @@ std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*>& output, size_t& outputSize, size_t& outputCapacity) {
+void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(re::free)*>& output, size_t& outputSize, size_t& outputCapacity) {
     Napi::Value result;
 
     try {
@@ -31,7 +31,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
             output.release();
             output.reset(newOutput);
         }
@@ -45,7 +45,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
         size_t length = result.As<Napi::Buffer<char>>().Length();
 
         while(outputSize + length > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
             output.release();
             output.reset(newOutput);
         }
@@ -59,7 +59,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
             output.release();
             output.reset(newOutput);
         }
@@ -73,7 +73,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
             output.release();
             output.reset(newOutput);
         }
@@ -87,7 +87,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
         const uint8_t* ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         while(outputSize + str.size() > outputCapacity) {
-            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
             output.release();
             output.reset(newOutput);
         }
@@ -105,7 +105,7 @@ void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t tem
     }
 }
 
-bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(qfree)*>& output, size_t& outputSize, size_t& outputCapacity) {
+bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength, std::unique_ptr<uint8_t, decltype(re::free)*>& output, size_t& outputSize, size_t& outputCapacity) {
     Napi::Value result;
 
     try {

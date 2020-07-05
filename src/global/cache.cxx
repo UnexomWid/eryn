@@ -1,5 +1,7 @@
 #include "cache.hxx"
 
+#include "../../lib/remem.hxx"
+
 #include <vector>
 #include <cstdint>
 #include <cstdlib>
@@ -65,5 +67,5 @@ void Global::Cache::setData(size_t index, const BinaryData& value) {
 
 void Global::Cache::destroy() {
     for(BinaryData &entry : Global::Cache::data)
-        qfree((uint8_t*) entry.data);
+        re::free((uint8_t*) entry.data);
 }

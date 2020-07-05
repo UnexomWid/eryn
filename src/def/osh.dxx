@@ -1,5 +1,5 @@
-#ifndef DEF_OSH_DXX_GUARD
-#define DEF_OSH_DXX_GUARD
+#ifndef ERYN_DEF_OSH_DXX_GUARD
+#define ERYN_DEF_OSH_DXX_GUARD
 
 #define OSH_FORMAT 32u / 8u
 

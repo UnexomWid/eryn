@@ -3,7 +3,10 @@
 #include "../def/osh.dxx"
 #include "../def/logging.dxx"
 
+#include "../common/str.hxx"
+
 #include "../../lib/bdp.hxx"
+#include "../../lib/remem.hxx"
 #include "../../lib/mem_find.h"
 #include "../../lib/mem_index.h"
 
@@ -31,7 +34,7 @@ using Global::Cache;
 using Global::Options;
 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
-void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity);
+void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(re::free)*>& source, size_t& sourceSize, size_t& sourceCapacity);
 size_t getDirectoryEndIndex(const char* path);
 
 bool isBlank(uint8_t c);
@@ -46,7 +49,7 @@ void compile(const char* path) {
         BinaryData compiled = compileFile(path);
         size_t index = Cache::getRawEntry(path);
         
-        qfree((uint8_t*) Cache::getData(index).data);
+        re::free((uint8_t*) Cache::getData(index).data);
         Cache::setData(index, compiled);
     }
 
@@ -62,7 +65,7 @@ void compileString(const char* alias, const char* str) {
         BinaryData compiled = compileBytes(reinterpret_cast<const uint8_t*>(str), strlen(str), "", alias);
         size_t index = Cache::getRawEntry(alias);
         
-        qfree((uint8_t*) Cache::getData(index).data);
+        re::free((uint8_t*) Cache::getData(index).data);
         Cache::setData(index, compiled);
     }
 
@@ -125,8 +128,8 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
             if(entry->d_type == DT_REG) {
                 strcpy(absoluteEnd, entry->d_name);
 
-                std::unique_ptr<char, decltype(qfree)*> relativePath(
-                    reinterpret_cast<char*>(qmalloc(relLength + nameLength + 1)), qfree);
+                std::unique_ptr<char, decltype(re::free)*> relativePath(
+                    reinterpret_cast<char*>(re::malloc(relLength + nameLength + 1, "CompileDir relative path", __FILE__, __LINE__)), re::free);
 
                 if(relLength > 0)
                     strcpy(relativePath.get(), rel);
@@ -153,8 +156,8 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                     continue;
 
                 const size_t newRelLength = relLength + nameLength;
-                std::unique_ptr<char, decltype(qfree)*> newRel(
-                    reinterpret_cast<char*>(qmalloc(newRelLength + 2)), qfree);
+                std::unique_ptr<char, decltype(re::free)*> newRel(
+                    reinterpret_cast<char*>(re::malloc(newRelLength + 2, "CompileDir new relative path", __FILE__, __LINE__)), re::free);
 
                 if(relLength > 0)
                     strcpy(newRel.get(), rel);
@@ -188,12 +191,12 @@ BinaryData compileFile(const char* path) {
     LOG_DEBUG("File size is %ld bytes\n", fileLength);
 
     size_t inputSize = (size_t) fileLength;
-    std::unique_ptr<uint8_t, decltype(qfree)*> inputBuffer(qmalloc(inputSize), qfree);
+    std::unique_ptr<uint8_t, decltype(re::free)*> inputBuffer((uint8_t*) re::malloc(inputSize, "CompileFile input buffer", __FILE__, __LINE__), re::free);
 
     fread(inputBuffer.get(), 1, inputSize, input);
     fclose(input);
 
-    std::unique_ptr<char, decltype(qfree)*> wd(qstrndup(path, getDirectoryEndIndex(path)), qfree);
+    std::unique_ptr<char, decltype(re::free)*> wd(strDup(path, getDirectoryEndIndex(path)), re::free);
 
     return compileBytes(inputBuffer.get(), inputSize, wd.get(), path);
 }
@@ -201,7 +204,7 @@ BinaryData compileFile(const char* path) {
 BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, const char* path) {
     size_t   outputSize = 0;
     size_t   outputCapacity = inputSize;
-    std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
+    std::unique_ptr<uint8_t, decltype(re::free)*> output((uint8_t*) re::alloc(outputCapacity, "Compiler Output", __FILE__, __LINE__), re::free);
 
     const uint8_t* start  = input;
     const uint8_t* end    = input + mem_find(input, inputSize, Options::getTemplateStart(), Options::getTemplateStartLength(), Options::getTemplateStartLookup());
@@ -257,7 +260,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             if(!skip) {
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -382,7 +385,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -411,7 +414,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -495,7 +498,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -524,7 +527,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -686,7 +689,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             size_t bufferSize     = length - escapes.size();
             size_t bufferCapacity = bufferSize;
                 
-            std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+            std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
             index = 0;
 
             for(size_t i = 0; i < escapes.size(); ++i) {
@@ -726,7 +729,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             }
 
             while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + oshStartMarkerLength > outputCapacity) {
-                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                 output.release();
                 output.reset(newOutput);
             }
@@ -735,13 +738,13 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, oshStartMarker, oshStartMarkerLength);
 
             size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + bufferSize;
-            std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
+            std::unique_ptr<uint8_t, decltype(re::free)*> tempBuffer((uint8_t*) re::malloc(tempBufferSize, "Compiler loop template temp buffer", __FILE__, __LINE__), re::free);
 
             BDP::writeValue(Global::BDP832, tempBuffer.get(), leftStart, leftLength);
             BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, buffer.get(), bufferSize);
 
             while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
-                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                 output.release();
                 output.reset(newOutput);
             }
@@ -910,7 +913,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -939,7 +942,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_LENGTH > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -949,16 +952,16 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 size_t componentPathLength;
                 std::unique_ptr<uint8_t, decltype(free)*> componentPath(
-                    componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), qfree);
+                    componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), re::free);
 
                 size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + componentPathLength + bufferSize;
-                std::unique_ptr<uint8_t, decltype(qfree)*> tempBuffer(qmalloc(tempBufferSize), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> tempBuffer((uint8_t*) re::malloc(tempBufferSize, "Compiler component template temp buffer", __FILE__, __LINE__), re::free);
 
                 BDP::writeValue(Global::BDP832, tempBuffer.get(), componentPath.get(), componentPathLength);
                 BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + componentPathLength, buffer.get(), bufferSize);
 
                 while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -975,7 +978,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     outputSize += OSH_FORMAT;
 
                     while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_COMPONENT_BODY_END_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                        uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                        uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                         output.release();
                         output.reset(newOutput);
                     }
@@ -1056,7 +1059,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -1085,7 +1088,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_VOID_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -1167,7 +1170,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + bodyEndMarkerLength + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -1186,7 +1189,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                         break;
                     case TemplateType::LOOP:
                         while(outputSize + OSH_FORMAT > outputCapacity) {
-                            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                             output.release();
                             output.reset(newOutput);
                         }
@@ -1265,7 +1268,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
                 
-                std::unique_ptr<uint8_t, decltype(qfree)*> buffer(qalloc(bufferCapacity), qfree);
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
@@ -1294,7 +1297,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 if(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -1372,7 +1375,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
         }
         if(!skip) {
             while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                 output.release();
                 output.reset(newOutput);
             }
@@ -1385,7 +1388,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
     // Bring the capacity to the actual size.
     if(outputSize != outputCapacity) {
-        uint8_t* newOutput = qrealloc(output.get(), outputSize);
+        uint8_t* newOutput = (uint8_t*) re::realloc(output.get(), outputSize, __FILE__, __LINE__);
         output.release();
         output.reset(newOutput);
     }
@@ -1399,11 +1402,11 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t& absoluteLength) {
     if(strlen(wd) == 0) {
         absoluteLength = componentPathLength;
-        return (uint8_t*) qstrndup(componentPath, componentPathLength);
+        return (uint8_t*) strDup(componentPath, componentPathLength);
     }
 
     if(*componentPath == '/' || *componentPath == '\\') {
-        uint8_t* absolute = qmalloc(componentPathLength);
+        uint8_t* absolute = (uint8_t*) re::malloc(componentPathLength, "PathToAbsolute buffer", __FILE__, __LINE__);
         memcpy(absolute, componentPath, componentPathLength);
 
         absoluteLength = componentPathLength;
@@ -1417,13 +1420,13 @@ uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size
         pathBuilder += '/';
     pathBuilder.append(componentPath, componentPathLength);
 
-    const char* absolute = qstrdup(pathBuilder.c_str());
+    const char* absolute = strDup(pathBuilder.c_str());
 
     absoluteLength = pathBuilder.size();
     return (uint8_t*) absolute;
 }
 
-void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(qfree)*>& source, size_t& sourceSize, size_t& sourceCapacity) {
+void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(re::free)*>& source, size_t& sourceSize, size_t& sourceCapacity) {
     size_t index = 0;
     size_t matchIndex = 0;
 
@@ -1509,7 +1512,7 @@ void localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::uniqu
                         }
 
                         while(sourceSize + OSH_TEMPLATE_LOCAL_PREFIX_LENGTH + OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH  > sourceCapacity) {
-                            uint8_t* newSource = qexpand(source.get(), sourceCapacity);
+                            uint8_t* newSource = (uint8_t*) re::expand(source.get(), sourceCapacity, __FILE__, __LINE__);
                             source.release();
                             source.reset(newSource);
                         }

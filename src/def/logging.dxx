@@ -1,5 +1,5 @@
-#ifndef ERYN_LOGGING_DXX_GUARD
-#define ERYN_LOGGING_DXX_GUARD
+#ifndef ERYN_DEF_LOGGING_DXX_GUARD
+#define ERYN_DEF_LOGGING_DXX_GUARD
 
 #ifdef DEBUG
     #define LOG_DEBUG(...) printf("\n[eryn] " __VA_ARGS__);

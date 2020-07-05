@@ -81,7 +81,7 @@ BinaryData renderString(BridgeData data, const char* alias) {
     } else return renderBytes(data, entry.data, entry.size, nullptr, true);
 }
 
-void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(qfree)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled, bool isString) {
+void renderComponent(BridgeData data, const uint8_t* component, size_t componentSize, std::unique_ptr<uint8_t, decltype(re::free)*> &output, size_t &outputSize, size_t &outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled, bool isString) {
     std::string path(reinterpret_cast<const char*>(component), componentSize);
 
     LOG_DEBUG("===> Rendering component '%s'", path.c_str());
@@ -115,13 +115,13 @@ BinaryData renderBytes(BridgeData data, const uint8_t* input, const size_t input
 BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled, bool isString) {
     size_t outputSize = 0;
     size_t outputCapacity = inputSize;
-    std::unique_ptr<uint8_t, decltype(qfree)*> output(qalloc(outputCapacity), qfree);
+    std::unique_ptr<uint8_t, decltype(re::free)*> output((uint8_t*) re::alloc(outputCapacity, "Renderer Output", __FILE__, __LINE__), re::free);
 
     renderBytes(data, input, inputSize, output, outputSize, outputCapacity, content, contentSize, recompiled, isString);
 
     // Bring the capacity to the actual size.
     if(outputSize > 0 && outputSize != outputCapacity) {
-        uint8_t* newBuffer = qrealloc(output.get(), outputSize);
+        uint8_t* newBuffer = (uint8_t*) re::realloc(output.get(), outputSize, __FILE__, __LINE__);
         output.release();
         output.reset(newBuffer);
     }
@@ -132,7 +132,7 @@ BinaryData renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, 
     return BinaryData(rendered, outputSize);
 }
 
-void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(qfree)*>& output, size_t& outputSize, size_t& outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled, bool isString) {
+void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::unique_ptr<uint8_t, decltype(re::free)*>& output, size_t& outputSize, size_t& outputCapacity, const uint8_t* content, size_t contentSize, std::unordered_set<std::string>* recompiled, bool isString) {
     size_t inputIndex  = 0;
     size_t nameLength  = 0;
     size_t valueLength = 0;
@@ -221,7 +221,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 LOG_DEBUG("--> Found plaintext");
 
                 while(outputSize + valueLength > outputCapacity) {
-                    uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
@@ -239,7 +239,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                             throw RenderingException("No content", "there is no content for this component", value, valueLength);
                     } else {
                         while(outputSize + contentSize > outputCapacity) {
-                            uint8_t* newOutput = qexpand(output.get(), outputCapacity);
+                            uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                             output.release();
                             output.reset(newOutput);
                         }
@@ -444,7 +444,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 if(info.hasContent) {
                     size_t contentLength = outputSize - info.startIndex;
-                    std::unique_ptr<uint8_t, decltype(qfree)*> contentBuffer(qmalloc(contentLength), qfree);
+                    std::unique_ptr<uint8_t, decltype(re::free)*> contentBuffer((uint8_t*) re::malloc(contentLength, "Renderer component content buffer", __FILE__, __LINE__), re::free);
 
                     memcpy(contentBuffer.get(), output.get() + info.startIndex, contentLength);
 

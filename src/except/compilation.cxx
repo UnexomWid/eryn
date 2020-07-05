@@ -1,9 +1,14 @@
 #include "compilation.hxx"
+
 #include "../def/warnings.dxx"
+
+#include "../common/str.hxx"
+
+#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
 
 CompilationException::CompilationException(const CompilationException& e) {
-    message = qstrdup(e.message);
+    message = strDup(e.message);
 }
 
 CompilationException::CompilationException(CompilationException&& e) {
@@ -13,7 +18,7 @@ CompilationException::CompilationException(CompilationException&& e) {
 
 CompilationException::~CompilationException() {
     if(message != nullptr)
-        qfree((char*) message);
+        re::free((char*) message);
 }
 
 CompilationException::CompilationException(const char* file, const char* msg, const char* description) {
@@ -26,7 +31,7 @@ CompilationException::CompilationException(const char* file, const char* msg, co
     buffer += description;
     buffer += ")";
 
-    message = qstrdup(buffer.c_str());
+    message = strDup(buffer.c_str());
 }
 
 CompilationException::CompilationException(const char* file, const char* msg, const char* description, size_t line, size_t column, const uint8_t* chunk, size_t chunkIndex, size_t chunkSize) {
@@ -52,7 +57,7 @@ CompilationException::CompilationException(const char* file, const char* msg, co
         buffer += "^\n";
     }
 
-    message = qstrdup(buffer.c_str());
+    message = strDup(buffer.c_str());
 }
 
 const char* CompilationException::what() const noexcept {
@@ -64,9 +69,9 @@ CompilationException& CompilationException::operator=(const CompilationException
         return *this;
 
     if(message != nullptr)
-        qfree((char*) message);
+        re::free((char*) message);
 
-    message = qstrdup(e.message);
+    message = strDup(e.message);
 
     return *this;
 }

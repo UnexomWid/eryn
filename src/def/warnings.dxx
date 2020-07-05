@@ -1,5 +1,5 @@
-#ifndef ERYN_WARNINGS_DXX_GUARD
-#define ERYN_WARNINGS_DXX_GUARD
+#ifndef ERYN_DEF_WARNINGS_DXX_GUARD
+#define ERYN_DEF_WARNINGS_DXX_GUARD
 
 #ifdef _MSC_VER
     #pragma warning(disable: 4996)
