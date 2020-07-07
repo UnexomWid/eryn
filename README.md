@@ -294,6 +294,7 @@ This project uses first-party and third-party dependencies. They are listed belo
 ## First-Party (C/C++)
 
 - [UnexomWid/**BDP**](https://github.com/UnexomWid/bdp) - 64 bit packaging format for binary data ([MIT License](https://github.com/UnexomWid/BDP/blob/master/LICENSE))
+- [UndexomWid/**remem**](https://github.com/UnexomWid/remem) - memory tracking via address mapping ([MIT License](https://github.com/UnexomWid/remem/blob/master/LICENSE))
 - [UndexomWid/**timerh**](https://github.com/UnexomWid/timerh) - library for measuring execution time ([MIT License](https://github.com/UnexomWid/timerh/blob/master/LICENSE))
 
 ## Third-Party (C/C++)
