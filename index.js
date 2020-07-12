@@ -42,6 +42,13 @@ const eryn = {
 
         binding.compileString(alias, str);
     },
+    express: (path, context, callback) => {
+        try {
+            callback(null, eryn.render(path, context));
+        } catch (error) {
+            callback(error);
+        }
+    },
     render: (path, context) => {
         if(!(path && (typeof path === 'string' && !(path instanceof String))))
             throw `Invalid argument 'path' (expected: string | found: ${typeof(path)})`
@@ -77,6 +84,7 @@ module.exports = {
     compile: eryn.compile,
     compileDir: eryn.compileDir,
     compileString: eryn.compileString,
+    express: eryn.express,
     render: eryn.render,
     renderString: eryn.renderString,
     setOptions: eryn.setOptions,
