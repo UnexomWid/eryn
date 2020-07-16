@@ -80,13 +80,11 @@ const eryn = {
     }
 };
 
-module.exports = {
-    compile: eryn.compile,
-    compileDir: eryn.compileDir,
-    compileString: eryn.compileString,
-    express: eryn.express,
-    render: eryn.render,
-    renderString: eryn.renderString,
-    setOptions: eryn.setOptions,
-    default: eryn
-};
+module.exports = eryn;
+module.exports.compile = eryn.compile;
+module.exports.compileDir = eryn.compileDir;
+module.exports.compileString = eryn.compileString;
+module.exports.express = eryn.express;
+module.exports.render = eryn.render;
+module.exports.renderString = eryn.renderString;
+module.exports.setOptions = eryn.setOptions;

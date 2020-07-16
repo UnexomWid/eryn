@@ -46,4 +46,4 @@ declare const eryn: {
     setOptions: (options : ErynOptions) => void;
 };
   
-export default eryn;
+export = eryn;
