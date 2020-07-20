@@ -1,7 +1,3 @@
-/* Provides simple C-style memory management for byte buffers which may change size.
- * The allocations and expansions are made in a quadratic manner (i.e. powers of 2).
- * Also contains other misc functions, like qstrdup, which use these memory management functions.
- */
 #include "buffer.hxx"
 
 #include <string>
