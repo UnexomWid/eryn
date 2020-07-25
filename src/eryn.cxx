@@ -1,6 +1,8 @@
 #include "napi.h"
 #include <node_api.h>
 
+#include <memory>
+
 #include "def/logging.dxx"
 
 #include "global/cache.hxx"
@@ -11,9 +13,7 @@
 #include "renderer/renderer.hxx"
 
 #include "common/str.hxx"
-
-#include <memory>
-#include <filesystem>
+#include "common/path.hxx"
 
 #include "../lib/remem.hxx"
 
@@ -153,7 +153,7 @@ void erynCompile(const Napi::CallbackInfo& info) {
     std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
-    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+    if(pathIsRelative(pathString.c_str(), pathString.length())) {
         absPath = Options::getWorkingDirectory();
 
         if(pathString.size() > 0)
@@ -179,7 +179,7 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
     std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
-    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+    if(pathIsRelative(pathString.c_str(), pathString.length())) {
         absPath = Options::getWorkingDirectory();
 
         if(pathString.size() > 0)
@@ -228,7 +228,7 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
     std::string absPath;
     std::string pathString = info[0].As<Napi::String>().Utf8Value();
 
-    if(std::filesystem::path(pathString.c_str()).is_relative()) {
+    if(pathIsRelative(pathString.c_str(), pathString.length())) {
         absPath = Options::getWorkingDirectory();
 
         if(pathString.size() > 0)

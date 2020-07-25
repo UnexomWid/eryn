@@ -20,3 +20,11 @@ char* strDup(const char* str, size_t size) {
 
     return ptr;
 }
+
+unsigned char toUpper(unsigned char c) {
+    return c >= 'a' && c <= 'z' ? c - 32 : c;
+}
+
+bool isPrint(unsigned char c) {
+    return (c >= ' ' && c <= '~');
+}

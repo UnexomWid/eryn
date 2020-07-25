@@ -1,0 +1,22 @@
+#ifndef ERYN_DEF_OS_DXX_GUARD
+#define ERYN_DEF_OS_DXX_GUARD
+
+#if defined _WIN64
+    #define OS_WINDOWS
+    #define OS_WIN64
+#elif defined _WIN32
+    #define OS_WINDOWS
+    #define OS_WIN32
+#elif defined __ANDROID__
+    #define OS_ANDROID
+#elif defined __MACH__
+    #define OS_MACOS_X
+#elif defined __linux__
+    #define OS_LINUX
+#elif defined __unix__
+    #define OS_UNIX
+#else
+    #define OS_OTHER
+#endif
+
+#endif
