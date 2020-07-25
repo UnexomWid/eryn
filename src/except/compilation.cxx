@@ -1,11 +1,10 @@
 #include "compilation.hxx"
 
 #include "../def/warnings.dxx"
-
 #include "../common/str.hxx"
 
-#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
+#include "../../lib/remem.hxx"
 
 CompilationException::CompilationException(const CompilationException& e) {
     message = strDup(e.message);

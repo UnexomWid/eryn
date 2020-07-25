@@ -1,17 +1,17 @@
 #ifndef ERYN_BRIDGE_HXX_GUARD
 #define ERYN_BRIDGE_HXX_GUARD
 
+#include <string>
+#include <memory>
+#include <cstdint>
+
 #include "napi.h"
 #include <node_api.h>
 
 #include "../def/osh.dxx"
 #include "../def/warnings.dxx"
-
-#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
-
-#include <memory>
-#include <cstdint>
+#include "../../lib/remem.hxx"
 
 struct BridgeData {
     Napi::Env env;

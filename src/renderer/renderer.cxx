@@ -3,10 +3,6 @@
 #include "../def/osh.dxx"
 #include "../def/logging.dxx"
 
-#include "../../lib/bdp.hxx"
-#include "../../lib/mem_find.h"
-#include "../../lib/timer.hxx"
-
 #include "../global/cache.hxx"
 #include "../global/global.hxx"
 #include "../global/options.hxx"
@@ -15,9 +11,9 @@
 
 #include "../compiler/compiler.hxx"
 
-#include <stack>
-#include <cstdio>
-#include <memory>
+#include "../../lib/bdp.hxx"
+#include "../../lib/mem_find.h"
+#include "../../lib/timer.hxx"
 
 using Global::Cache;
 using Global::Options;

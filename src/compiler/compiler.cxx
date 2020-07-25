@@ -1,21 +1,5 @@
 #include "compiler.hxx"
 
-#include "../def/osh.dxx"
-#include "../def/logging.dxx"
-
-#include "../common/str.hxx"
-
-#include "../../lib/bdp.hxx"
-#include "../../lib/remem.hxx"
-#include "../../lib/mem_find.h"
-#include "../../lib/mem_index.h"
-
-#include "../global/cache.hxx"
-#include "../global/global.hxx"
-#include "../global/options.hxx"
-
-#include "../except/compilation.hxx"
-
 #include <stack>
 #include <vector>
 #include <memory>
@@ -24,11 +8,27 @@
 #include <cstdlib>
 #include <unordered_set>
 
+#include "../def/osh.dxx"
+#include "../def/logging.dxx"
+
+#include "../common/str.hxx"
+
+#include "../global/cache.hxx"
+#include "../global/global.hxx"
+#include "../global/options.hxx"
+
+#include "../except/compilation.hxx"
+
 #ifdef _MSC_VER
     #include "../../include/dirent.h"
 #else
     #include <dirent.h>
 #endif
+
+#include "../../lib/bdp.hxx"
+#include "../../lib/mem_find.h"
+#include "../../lib/mem_index.h"
+#include "../../lib/remem.hxx"
 
 using Global::Cache;
 using Global::Options;

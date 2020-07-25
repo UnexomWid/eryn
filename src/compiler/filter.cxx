@@ -1,13 +1,13 @@
 #include "filter.hxx"
 
-#include "../../lib/remem.hxx"
-#include "../../lib/globlib.h"
-#include "../../lib/buffer.hxx"
+#include <cstdlib>
+#include <stdexcept>
 
 #include "../common/str.hxx"
 
-#include <cstdlib>
-#include <stdexcept>
+#include "../../lib/globlib.h"
+#include "../../lib/buffer.hxx"
+#include "../../lib/remem.hxx"
 
 using Filter = FilterInfo::Filter;
 

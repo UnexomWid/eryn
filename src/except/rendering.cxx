@@ -1,11 +1,10 @@
 #include "rendering.hxx"
 
 #include "../def/warnings.dxx"
-
 #include "../common/str.hxx"
 
-#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
+#include "../../lib/remem.hxx"
 
 RenderingException::RenderingException(const RenderingException& e) {
     message = strDup(e.message);

@@ -1,13 +1,15 @@
 #ifndef ERYN_RENDERER_HXX_GUARD
 #define ERYN_RENDERER_HXX_GUARD
 
+#include <stack>
+#include <cstdio>
+#include <memory>
+#include <unordered_set>
+
 #include "bridge.hxx"
 #include "../def/warnings.dxx"
-
-#include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
-
-#include <unordered_set>
+#include "../../lib/remem.hxx"
 
 BinaryData render(BridgeData data, const char* path);
 BinaryData renderString(BridgeData data, const char* alias);

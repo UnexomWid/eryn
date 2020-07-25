@@ -1,12 +1,12 @@
 #ifndef ERYN_GLOBAL_CACHE_HXX_GUARD
 #define ERYN_GLOBAL_CACHE_HXX_GUARD
 
-#include "../../lib/buffer.hxx"
-
 #include <vector>
 #include <string>
 #include <cstdint>
 #include <unordered_map>
+
+#include "../../lib/buffer.hxx"
 
 namespace Global {
     class Cache {

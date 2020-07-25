@@ -1,7 +1,8 @@
 #include "str.hxx"
-#include "../../lib/remem.hxx"
 
 #include <cstring>
+
+#include "../../lib/remem.hxx"
 
 char* strDup(const char* str) {
     size_t length = strlen(str) + 1;

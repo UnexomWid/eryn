@@ -1,14 +1,14 @@
 #ifndef ERYN_COMPILER_HXX_GUARD
 #define ERYN_COMPILER_HXX_GUARD
 
-#include "filter.hxx"
-#include "../def/warnings.dxx"
-#include "../../lib/buffer.hxx"
-
 #include <string>
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+
+#include "filter.hxx"
+#include "../def/warnings.dxx"
+#include "../../lib/buffer.hxx"
 
 #define COMPILER_PATH_SEPARATOR '/'
 #define COMPILER_PATH_MAX_LENGTH 4096

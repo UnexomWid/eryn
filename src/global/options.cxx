@@ -1,15 +1,15 @@
 #include "options.hxx"
 
+#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+
 #include "../common/str.hxx"
 
 #include "../../lib/remem.hxx"
 #include "../../lib/mem_find.h"
 #include "../../lib/buffer.hxx"
-
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
 
 bool Global::Options::bypassCache            = false;
 bool Global::Options::throwOnEmptyContent    = false;

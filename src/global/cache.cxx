@@ -1,11 +1,11 @@
 #include "cache.hxx"
 
-#include "../../lib/remem.hxx"
-
 #include <vector>
 #include <cstdint>
 #include <cstdlib>
 #include <unordered_map>
+
+#include "../../lib/remem.hxx"
 
 std::vector<BinaryData> Global::Cache::data;
 std::unordered_map<std::string, size_t> Global::Cache::entries;

@@ -12,10 +12,10 @@
 
 #include "common/str.hxx"
 
-#include "../lib/remem.hxx"
-
 #include <memory>
 #include <filesystem>
+
+#include "../lib/remem.hxx"
 
 using Global::Options;
 

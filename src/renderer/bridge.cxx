@@ -4,8 +4,6 @@
 #include "../except/rendering.hxx"
 #include "../global/options.hxx"
 
-#include <string>
-
 std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     Napi::Object json = env.Global().Get("JSON").As<Napi::Object>();
     Napi::Function stringify = env.Global().Get("JSON").As<Napi::Object>().Get("stringify").As<Napi::Function>();
