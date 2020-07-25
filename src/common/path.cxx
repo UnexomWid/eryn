@@ -11,7 +11,7 @@ bool pathIsAbsolute(const char* path, size_t length) {
             && (path[2] == '/');
     #else
         return (length > 1)
-            && (path[1] == '/');
+            && (path[0] == '/');
     #endif
 }
 
