@@ -43,6 +43,10 @@ const eryn = {
         binding.compileString(alias, str);
     },
     express: (path, context, callback) => {
+        // Windows is like a girl with mood swings: sometimes it's /, other times it's \.
+        // So let's not risk it.
+        path = path.replace(/\\/g, '/');
+        
         try {
             callback(null, eryn.render(path, context));
         } catch (error) {
