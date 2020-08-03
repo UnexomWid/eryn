@@ -8,7 +8,7 @@ bool pathIsAbsolute(const char* path, size_t length) {
             && (toUpper(static_cast<unsigned char>(path[0])) >= 'A')
             && (toUpper(static_cast<unsigned char>(path[0])) <= 'Z')
             && (path[1] == ':')
-            && (path[2] == '/');
+            && (path[2] == '/' || path[2] == '\\');
     #else
         return (length > 1)
             && (path[0] == '/');
