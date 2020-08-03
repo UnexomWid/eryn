@@ -92,7 +92,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
 
         memcpy(output.get() + outputSize, ptr, str.size());
         outputSize += str.size();
-    } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, ArrayBuffer, null or undefined", templateBytes, templateLength);
+    } else throw RenderingException("Unsupported template return type", "must be String, Number, Object, Array, Buffer, null or undefined", templateBytes, templateLength);
 }
 
 void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength) {
