@@ -1,4 +1,4 @@
-// Type definitions for eryn 0.2.2
+// Type definitions for eryn 0.2.3
 // Definitions by UnexomWid <https://uw.exom.dev>
 
 interface ErynOptions {
