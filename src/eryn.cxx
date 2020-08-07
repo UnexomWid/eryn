@@ -164,7 +164,7 @@ void erynCompile(const Napi::CallbackInfo& info) {
 
     for(uint32_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
-            absPath[i] == '/';
+            absPath[i] = '/';
 
     try {
         compile(absPath.c_str());
@@ -194,7 +194,7 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
 
     for(uint32_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
-            absPath[i] == '/';
+            absPath[i] = '/';
 
     std::vector<std::string> filters;
     Napi::Array filterArray = info[1].As<Napi::Array>();
@@ -247,7 +247,7 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
 
     for(uint32_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
-            absPath[i] == '/';
+            absPath[i] = '/';
 
     try {
         BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Function>(), info[4].As<Napi::Function>()), absPath.c_str());
