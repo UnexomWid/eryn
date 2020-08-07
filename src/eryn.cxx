@@ -162,7 +162,7 @@ void erynCompile(const Napi::CallbackInfo& info) {
             absPath += ('/' + pathString);
     } else absPath = pathString;
 
-    for(uint32_t i = 0; i < absPath.size(); ++i)
+    for(size_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
             absPath[i] = '/';
 
@@ -192,7 +192,7 @@ void erynCompileDir(const Napi::CallbackInfo& info) {
             absPath += ('/' + pathString);
     } else absPath = pathString;
 
-    for(uint32_t i = 0; i < absPath.size(); ++i)
+    for(size_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
             absPath[i] = '/';
 
@@ -245,7 +245,7 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
             absPath += ('/' + pathString);
     } else absPath = pathString;
 
-    for(uint32_t i = 0; i < absPath.size(); ++i)
+    for(size_t i = 0; i < absPath.size(); ++i)
         if(absPath[i] == '\\')
             absPath[i] = '/';
 
