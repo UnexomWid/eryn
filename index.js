@@ -13,7 +13,7 @@ function bridgeShallowClone(obj) {
     return Object.assign({}, obj);
 }
 
-function bridgeEval(script, context, local) {
+function bridgeEval(script, context, local, shared) {
     return eval(script);
 }
 
@@ -49,21 +49,25 @@ const eryn = {
             callback(error);
         }
     },
-    render: (path, context) => {
+    render: (path, context, shared) => {
         if(!(path && (typeof path === 'string' && !(path instanceof String))))
             throw `Invalid argument 'path' (expected: string | found: ${typeof(path)})`
         if(!context)
             context = {};
+        if(!shared)
+            shared = {};
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
-        return binding.render(path, context, {}, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
+        return binding.render(path, context, {}, shared, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },
-    renderString: (alias, context) => {
+    renderString: (alias, context, shared) => {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
             throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
         if(!context)
             context = {};
+        if(!shared)
+            shared = {};
         if(!(typeof context === 'object'))
             throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 

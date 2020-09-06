@@ -15,7 +15,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
     Napi::Value result;
 
     try {
-        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local }));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local, data.shared }));
     } catch(std::exception &e) {
         throw RenderingException("Template error", e.what(), templateBytes, templateLength);
     }
@@ -97,7 +97,7 @@ void evalTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templat
 
 void evalVoidTemplate(BridgeData& data, const uint8_t* templateBytes, size_t templateLength) {
     try {
-        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local }));
+        data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local, data.shared }));
     } catch(std::exception &e) {
         throw RenderingException("Void template error", e.what(), templateBytes, templateLength);
     }
@@ -107,7 +107,7 @@ bool evalConditionalTemplate(BridgeData& data, const uint8_t* templateBytes, siz
     Napi::Value result;
 
     try {
-        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local }));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, reinterpret_cast<const char*>(templateBytes), templateLength), data.context, data.local, data.shared }));
     } catch(std::exception &e) {
         throw RenderingException("Conditional template error", e.what(), templateBytes, templateLength);
     }
@@ -119,30 +119,30 @@ void evalAssignment(BridgeData& data, const std::string& iterator, const std::st
     if(Global::Options::getCloneIterators()) {
         if(propertyAssignment.size() > 0) {
             data.local[iterator] = data.clone.Call(std::initializer_list<napi_value>({
-                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local }))
+                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local, data.shared }))
                                    })).ToObject();
         } else {
             data.local[iterator] = data.clone.Call(std::initializer_list<napi_value>({
-                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local }))
+                                       data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local, data.shared }))
                                    }));
         }
     } else {
         if(propertyAssignment.size() > 0)
-            data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local })).ToObject();
-        else data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local }));
+            data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, propertyAssignment + assignment + "})"), data.context, data.local, data.shared })).ToObject();
+        else data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, assignment), data.context, data.local, data.shared }));
     }
     
 }
 
 void unassign(BridgeData& data, const std::string &iterator) {
-    data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "undefined"), data.context, data.local }));
+    data.local[iterator] = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "undefined"), data.context, data.local, data.shared }));
 }
 
 size_t initArray(BridgeData& data, const uint8_t* arrayBytes, size_t arraySize, std::string*& propertyArray, int8_t direction) {
     Napi::Value result;
 
     try {
-        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, std::string(reinterpret_cast<const char*>(arrayBytes), arraySize)), data.context, data.local }));
+        result = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, std::string(reinterpret_cast<const char*>(arrayBytes), arraySize)), data.context, data.local, data.shared }));
     } catch(std::exception &e) {
         throw RenderingException("Loop template error", e.what(), arrayBytes, arraySize);
     }
@@ -241,8 +241,8 @@ BridgeBackup backupLocal(BridgeData& data) {
 void initContext(BridgeData& data, const uint8_t* context, size_t contextSize) {
     try {
         if(contextSize == 0)
-            data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object({})"), data.context, data.local })).ToObject();
-        else data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object(" + std::string(reinterpret_cast<const char*>(context), contextSize) + ")"), data.context, data.local })).As<Napi::Object>();
+            data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object({})"), data.context, data.local, data.shared })).ToObject();
+        else data.context = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object(" + std::string(reinterpret_cast<const char*>(context), contextSize) + ")"), data.context, data.local, data.shared })).As<Napi::Object>();
     } catch(std::exception &e) {
         throw RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context, contextSize);
     }
@@ -250,7 +250,7 @@ void initContext(BridgeData& data, const uint8_t* context, size_t contextSize) {
 
 void initLocal(BridgeData& data) {
     try {
-        data.local = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object({})"), data.context, data.local })).ToObject();
+        data.local = data.eval.Call(std::initializer_list<napi_value>({ Napi::String::New(data.env, "Object({})"), data.context, data.local, data.shared })).ToObject();
     } catch(std::exception &e) {
         throw RenderingException("Component template error", (std::string("cannot init local object") + e.what()).c_str());
     }
