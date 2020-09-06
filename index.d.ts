@@ -28,22 +28,22 @@ interface ErynOptions {
     componentSelf?:            string
 }
 
-export function compile(filePath : string) : void;
-export function compileDir(dirPath : string, filters : string[]) : void;
-export function compileString(alias : string, str : string) : void;
-export function express(path : string, context : object, callback : (error: any, rendered: string) => void) : void;
-export function render(filePath : string, context : object) : Buffer;
-export function renderString(alias : string, context : object) : Buffer;
-export function setOptions(options : ErynOptions) : void;
+export function compile(filePath: string): void;
+export function compileDir(dirPath: string, filters: string[]): void;
+export function compileString(alias: string, str: string): void;
+export function express(path: string, context: object, callback: (error: any, rendered: string) => void): void;
+export function render(filePath: string, context: object, shared: object): Buffer;
+export function renderString(alias: string, context: object, shared: object): Buffer;
+export function setOptions(options: ErynOptions): void;
 
 declare const eryn: {
-    compile: (filePath : string) => void;
-    compileDir: (dirPath : string, filters : string[]) => void;
-    compileString: (alias : string, str : string) => void;
-    express(path : string, context : object, callback : (error: any, rendered: string) => void) : void;
-    render: (filePath : string, context : object) => Buffer;
-    renderString: (alias : string, context : object) => Buffer;
-    setOptions: (options : ErynOptions) => void;
+    compile: (filePath: string) => void;
+    compileDir: (dirPath: string, filters: string[]) => void;
+    compileString: (alias: string, str: string) => void;
+    express(path: string, context: object, callback: (error: any, rendered: string) => void): void;
+    render: (filePath: string, context: object, shared: object) => Buffer;
+    renderString: (alias: string, context: object, shared: object) => Buffer;
+    setOptions: (options: ErynOptions) => void;
 };
   
 export = eryn;
