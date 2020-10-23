@@ -117,6 +117,14 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsString())
                 continue;
             Global::Options::setTemplateConditionalStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "elseStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateElseStart(value.ToString().Utf8Value().c_str());
+        } else if(key == "elseConditionalStart") {
+            if(!value.IsString())
+                continue;
+            Global::Options::setTemplateElseConditionalStart(value.ToString().Utf8Value().c_str());
         } else if(key == "invertedConditionalStart") {
             if(!value.IsString())
                 continue;

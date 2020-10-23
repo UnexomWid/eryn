@@ -1,4 +1,4 @@
-// Type definitions for eryn 0.2.3
+// Type definitions for eryn 0.2.5
 // Definitions by UnexomWid <https://uw.exom.dev>
 
 interface ErynOptions {
@@ -19,6 +19,8 @@ interface ErynOptions {
     commentEnd?:               string,
     voidTemplate?:             string,
     conditionalStart?:         string,
+    elseStart?:                string,
+    elseConditionalStart?:     string,
     invertedConditionalStart?: string,
     loopStart?:                string,
     loopSeparator?:            string,

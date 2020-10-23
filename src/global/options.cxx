@@ -47,6 +47,12 @@ uint8_t* Global::Options::templateCommentEndLookup               = nullptr;
 uint8_t* Global::Options::templateConditionalStart               = nullptr;
 uint8_t  Global::Options::templateConditionalStartLength         = 0;
 
+uint8_t* Global::Options::templateElseStart                      = nullptr;
+uint8_t  Global::Options::templateElseStartLength                = 0;
+
+uint8_t* Global::Options::templateElseConditionalStart           = nullptr;
+uint8_t  Global::Options::templateElseConditionalStartLength     = 0;
+
 uint8_t* Global::Options::templateInvertedConditionalStart       = nullptr;
 uint8_t  Global::Options::templateInvertedConditionalStartLength = 0;
 
@@ -226,6 +232,30 @@ void Global::Options::setTemplateConditionalStart(const char* value) {
     Global::Options::templateConditionalStartLength = length;
 }
 
+void Global::Options::setTemplateElseStart(const char* value) {
+    if(Global::Options::templateElseStart != nullptr)
+        re::free(Global::Options::templateElseStart);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateElseStart = (uint8_t*) re::malloc(length, "Template else start marker", __FILE__, __LINE__);
+
+    memcpy(Global::Options::templateElseStart, value, length);
+
+    Global::Options::templateElseStartLength = length;
+}
+
+void Global::Options::setTemplateElseConditionalStart(const char* value) {
+    if(Global::Options::templateElseConditionalStart != nullptr)
+        re::free(Global::Options::templateElseConditionalStart);
+
+    uint8_t length = (uint8_t) strlen(value);
+    Global::Options::templateElseConditionalStart = (uint8_t*) re::malloc(length, "Template else conditional start marker", __FILE__, __LINE__);
+
+    memcpy(Global::Options::templateElseConditionalStart, value, length);
+
+    Global::Options::templateElseConditionalStartLength = length;
+}
+
 void Global::Options::setTemplateInvertedConditionalStart(const char* value) {
     if(Global::Options::templateInvertedConditionalStart != nullptr)
         re::free(Global::Options::templateInvertedConditionalStart);
@@ -357,6 +387,10 @@ void Global::Options::restoreDefaults() {
 
     Global::Options::setTemplateConditionalStart("?");
 
+    Global::Options::setTemplateElseStart(":");
+
+    Global::Options::setTemplateElseConditionalStart(":?");
+
     Global::Options::setTemplateInvertedConditionalStart("!");
 
     Global::Options::setTemplateLoopStart("@");
@@ -387,6 +421,10 @@ void Global::Options::destroy() {
     re::free(templateCommentEndLookup);
 
     re::free(templateConditionalStart);
+
+    re::free(templateElseStart);
+
+    re::free(templateElseConditionalStart);
 
     re::free(templateInvertedConditionalStart);
 
@@ -505,6 +543,22 @@ const uint8_t* Global::Options::getTemplateConditionalStart() {
 
 uint8_t Global::Options::getTemplateConditionalStartLength() {
     return Global::Options::templateConditionalStartLength;
+}
+
+const uint8_t* Global::Options::getTemplateElseStart() {
+    return Global::Options::templateElseStart;
+}
+
+uint8_t Global::Options::getTemplateElseStartLength() {
+    return Global::Options::templateElseStartLength;
+}
+
+const uint8_t* Global::Options::getTemplateElseConditionalStart() {
+    return Global::Options::templateElseConditionalStart;
+}
+
+uint8_t Global::Options::getTemplateElseConditionalStartLength() {
+    return Global::Options::templateElseConditionalStartLength;
 }
 
 const uint8_t* Global::Options::getTemplateInvertedConditionalStart() {

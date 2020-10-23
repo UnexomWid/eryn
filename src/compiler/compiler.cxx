@@ -219,6 +219,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
     enum class TemplateType {
         CONDITIONAL,
+        ELSE,
+        ELSE_CONDITIONAL,
         INVERTED_CONDITIONAL,
         LOOP,
         COMPONENT
@@ -227,9 +229,10 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
     struct TemplateStackInfo {
         TemplateType type;    // The template type.
         size_t bodyIndex;     // The index at which the template body starts (for writing the body size).  
-        size_t templateIndex; // The index at which the template starts in the input (provides more information when an exception occurs).
+        size_t inputIndex;    // The index at which the template starts in the input (provides more information when an exception occurs).
+        size_t outputIndex;   // The index at which the template starts at the output.
 
-        TemplateStackInfo(TemplateType typ, size_t start, size_t index) : type(typ), bodyIndex(start), templateIndex(index) { };
+        TemplateStackInfo(TemplateType typ, size_t body, size_t input, size_t output) : type(typ), bodyIndex(body), inputIndex(input), outputIndex(output) { };
     };
 
     struct IteratorVectorInfo {
@@ -413,21 +416,233 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + OSH_FORMAT > outputCapacity) {
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + 2 * OSH_FORMAT > outputCapacity) {
                     uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
                     output.release();
                     output.reset(newOutput);
                 }
 
+                size_t oshStart = outputSize;
+
                 LOG_DEBUG("Writing conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
-                memset(output.get() + outputSize, 0, OSH_FORMAT);
-
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // End index;
+                outputSize += OSH_FORMAT;
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
                 outputSize += OSH_FORMAT;
                 
-                templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex));
+                templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex, oshStart));
                 LOG_DEBUG("done\n");
             }
+
+            end = start;
+            templateEndIndex += Options::getTemplateEndLength();
+        } else if(membcmp(end, Options::getTemplateElseConditionalStart(), Options::getTemplateElseConditionalStartLength())) {
+            LOG_DEBUG("Detected else conditional template start");
+
+            end += Options::getTemplateElseConditionalStartLength();
+
+            while(isBlank(*end))
+                ++end;
+
+            TemplateType topType = templateStack.top().type;
+
+            if(templateStack.empty() || (topType != TemplateType::CONDITIONAL && topType != TemplateType::INVERTED_CONDITIONAL && topType != TemplateType::ELSE_CONDITIONAL)) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = start - input;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected else template", "there is no preceding conditional template; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+
+            std::vector<const uint8_t*> escapes;
+
+            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+
+                escapes.push_back(end + index - 1);
+                remainingLength -= index + 1;
+                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            }
+
+            templateEndIndex = end + index - input;
+
+            if(templateEndIndex >= inputSize) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            if(index == 0) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = end - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);           
+
+                throw CompilationException(path, "Unexpected template end", "did you forget to write the condition?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = end + index - 1;
+            while(isBlank(*end))
+                --end;
+            ++end;
+
+            if(start != end) {
+                length = end - start;
+
+                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                size_t bufferSize     = length - escapes.size();
+                size_t bufferCapacity = bufferSize;
+                
+                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
+                index = 0;
+
+                for(size_t i = 0; i < escapes.size(); ++i) {
+                    memcpy(buffer.get() + index, start, escapes[i] - start);
+                    index += escapes[i] - start;
+                    start = escapes[i] + 1;
+                }
+
+                if(length > 0)
+                    memcpy(buffer.get() + index, start, end - start);
+
+                if(!iteratorVector.empty()) {
+                    LOG_DEBUG("Localizing iterators");
+
+                    // If 2 or more iterators share the same name, don't replace twice.
+                    std::unordered_set<std::string> iteratorSet;
+
+                    for(auto info : iteratorVector) {
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
+
+                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
+                            iteratorSet.insert(iteratorString);
+                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        }
+                    }
+                }
+
+                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_ELSE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + 2 * OSH_FORMAT > outputCapacity) {
+                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
+                    output.release();
+                    output.reset(newOutput);
+                }
+
+                size_t oshStart = outputSize;
+
+                LOG_DEBUG("Writing else conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
+                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_ELSE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_ELSE_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // End index;
+                outputSize += OSH_FORMAT;
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
+                outputSize += OSH_FORMAT;
+                
+                templateStack.push(TemplateStackInfo(TemplateType::ELSE_CONDITIONAL, outputSize, templateStartIndex, oshStart));
+                LOG_DEBUG("done\n");
+            }
+
+            end = start;
+            templateEndIndex += Options::getTemplateEndLength();
+        } else if(membcmp(end, Options::getTemplateElseStart(), Options::getTemplateElseStartLength())) {
+            LOG_DEBUG("Detected else template start");
+
+            start = end;
+            remainingLength = inputSize - (end - input);
+            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            templateEndIndex = end + index - input;
+
+            if(templateEndIndex >= inputSize) {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = (end + index) - input - 1;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);          
+
+                throw CompilationException(path, "Unexpected EOF", "did you forget to close the template body?", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            LOG_DEBUG("Found template end at %zu", end + index - input);
+
+            end = end + index - 1;
+            while(isBlank(*end))
+                --end;
+
+            if(start == end - Options::getTemplateElseStartLength() + 1) {
+                TemplateType topType = templateStack.top().type;
+
+                if(templateStack.empty() || (topType != TemplateType::CONDITIONAL && topType != TemplateType::INVERTED_CONDITIONAL && topType != TemplateType::ELSE_CONDITIONAL)) {
+                    size_t ln;
+                    size_t col;
+                    size_t chunkIndex;
+                    size_t chunkSize;
+                    size_t errorIndex = start - input;
+
+                    mem_lncol(input, errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                    throw CompilationException(path, "Unexpected else template", "there is no preceding conditional template; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                }
+            } else {
+                size_t ln;
+                size_t col;
+                size_t chunkIndex;
+                size_t chunkSize;
+                size_t errorIndex = start + Options::getTemplateBodyEndLength() - input;
+
+                mem_lncol(input, errorIndex, &ln, &col);
+                std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                    mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                throw CompilationException(path, "Expected template body end", "else template must only contain the marker", ln, col, chunk.get(), chunkIndex, chunkSize);
+            }
+
+            length = end - start;
+
+            // No OSH value, and no end indices.
+            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_ELSE_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + 0 > outputCapacity) {
+                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
+                output.release();
+                output.reset(newOutput);
+            }
+
+            size_t oshStart = outputSize;
+
+            LOG_DEBUG("Writing else template start as BDP832 pair %zu -> %zu...", start - input, end - input);
+            outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_ELSE_START_MARKER, OSH_TEMPLATE_ELSE_START_LENGTH, NULL, 0);
+            
+            templateStack.push(TemplateStackInfo(TemplateType::ELSE, outputSize, templateStartIndex, oshStart));
+            LOG_DEBUG("done\n");
 
             end = start;
             templateEndIndex += Options::getTemplateEndLength();
@@ -532,13 +747,15 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
+                size_t oshStart = outputSize;
+
                 LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
 
                 outputSize += OSH_FORMAT;
                 
-                templateStack.push(TemplateStackInfo(TemplateType::INVERTED_CONDITIONAL, outputSize, templateStartIndex));
+                templateStack.push(TemplateStackInfo(TemplateType::INVERTED_CONDITIONAL, outputSize, templateStartIndex, oshStart));
                 LOG_DEBUG("done\n");
             }
 
@@ -734,6 +951,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 output.reset(newOutput);
             }
 
+            size_t oshStart = outputSize;
+
             LOG_DEBUG("Writing loop template start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
             outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, oshStartMarker, oshStartMarkerLength);
 
@@ -754,7 +973,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             outputSize += OSH_FORMAT;
                 
-            templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex));
+            templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex, oshStart));
             iteratorVector.push_back(IteratorVectorInfo(leftStart, leftLength));
 
             LOG_DEBUG("done\n");
@@ -947,6 +1166,8 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
+                size_t oshStart = outputSize;
+
                 LOG_DEBUG("Writing component template as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
                 outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_LENGTH);
 
@@ -970,7 +1191,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 memset(output.get() + outputSize, 0, OSH_FORMAT);
                 
                 if(!isSelf) {
-                    templateStack.push(TemplateStackInfo(TemplateType::COMPONENT, outputSize, templateStartIndex));
+                    templateStack.push(TemplateStackInfo(TemplateType::COMPONENT, outputSize, templateStartIndex, oshStart));
                     outputSize += OSH_FORMAT;
                 } else {
                     length = 0;
@@ -1101,7 +1322,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             end = start;
             templateEndIndex += Options::getTemplateEndLength();
         } else if(membcmp(end, Options::getTemplateBodyEnd(), Options::getTemplateBodyEndLength())) {
-            LOG_DEBUG("Detectet template body end");
+            LOG_DEBUG("Detected template body end");
 
             start = end;
             remainingLength = inputSize - (end - input);
@@ -1151,13 +1372,12 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 // Choose the appropiate body end marker.
                 switch(templateStack.top().type) {
+                    case TemplateType::INVERTED_CONDITIONAL:
+                    case TemplateType::ELSE:
+                    case TemplateType::ELSE_CONDITIONAL:
                     case TemplateType::CONDITIONAL:
                         bodyEndMarker = OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER;
                         bodyEndMarkerLength = OSH_TEMPLATE_CONDITIONAL_BODY_END_LENGTH;
-                        break;
-                    case TemplateType::INVERTED_CONDITIONAL:
-                        bodyEndMarker = OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER;
-                        bodyEndMarkerLength = OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_LENGTH;
                         break;
                     case TemplateType::LOOP:
                         bodyEndMarker = OSH_TEMPLATE_LOOP_BODY_END_MARKER;
@@ -1180,13 +1400,62 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 LOG_DEBUG("Writing template body end as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, bodyEndMarker, bodyEndMarkerLength, start, length);
+                // Here, 'length' is 0, so the value length will always be 0. The template body end has no value in OSH.
 
                 // Write the body length properly.
                 switch(templateStack.top().type) {
                     case TemplateType::CONDITIONAL:
                     case TemplateType::INVERTED_CONDITIONAL:
-                        BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
+                        // Only write the end index, as there is no else (conditional) template.
+                        BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
                         break;
+                    case TemplateType::ELSE_CONDITIONAL:
+                    case TemplateType::ELSE: {
+                        size_t currentEndIndex = outputSize - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - bodyEndMarkerLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE; // For the end index. The true end index will always be fixed.
+
+                        bool searching = true;
+
+                        while(!templateStack.empty() && searching) {
+                            switch(templateStack.top().type) {
+                                case TemplateType::CONDITIONAL:
+                                case TemplateType::INVERTED_CONDITIONAL:
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT);
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
+
+                                    LOG_DEBUG("TEST ============     %zu   %zu", outputSize, currentEndIndex);
+
+                                    searching = false;
+                                    continue; // Don't run the pop() from below.
+                                case TemplateType::ELSE:
+                                    break;
+                                case TemplateType::ELSE_CONDITIONAL:
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT);
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
+                                    break;
+                            }
+
+                            LOG_DEBUG("CURRENT IS NOW: %zu", currentEndIndex);
+
+                            currentEndIndex = templateStack.top().outputIndex;
+                            templateStack.pop();
+                        }
+
+                        if(templateStack.empty()) {
+                            size_t ln;
+                            size_t col;
+                            size_t chunkIndex;
+                            size_t chunkSize;
+                            size_t errorIndex = start + Options::getTemplateBodyEndLength() - input;
+
+                            mem_lncol(input, errorIndex, &ln, &col);
+                            std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                                mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                            throw CompilationException(path, "PANIC", "template body end found else (conditional) template, but no preceding conditional template (REPORT THIS TO THE DEVS)", ln, col, chunk.get(), chunkIndex, chunkSize);
+                        }
+
+                        break;
+                    }
                     case TemplateType::LOOP:
                         while(outputSize + OSH_FORMAT > outputCapacity) {
                             uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
@@ -1327,7 +1596,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
         size_t col;
         size_t chunkIndex;
         size_t chunkSize;
-        size_t errorIndex = templateStack.top().templateIndex;
+        size_t errorIndex = templateStack.top().inputIndex;
 
         mem_lncol(input, errorIndex, &ln, &col);
         std::unique_ptr<uint8_t, decltype(free)*> chunk(

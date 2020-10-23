@@ -7,12 +7,13 @@
 #define OSH_TEMPLATE                                      "t"
 #define OSH_TEMPLATE_VOID                                 "v"
 #define OSH_TEMPLATE_CONDITIONAL_START                    "?"
+#define OSH_TEMPLATE_ELSE_START                           ":"
+#define OSH_TEMPLATE_ELSE_CONDITIONAL_START               ";"
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START           "!"
 #define OSH_TEMPLATE_LOOP_START                           "@"
 #define OSH_TEMPLATE_LOOP_REVERSE_START                   "~"
 #define OSH_TEMPLATE_COMPONENT                            "%"
 #define OSH_TEMPLATE_CONDITIONAL_BODY_END                 "c"
-#define OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END        "i"
 #define OSH_TEMPLATE_LOOP_BODY_END                        "l"
 #define OSH_TEMPLATE_COMPONENT_BODY_END                   "o"
 
@@ -24,12 +25,13 @@
 #define OSH_TEMPLATE_LENGTH                               1u
 #define OSH_TEMPLATE_VOID_LENGTH                          1u
 #define OSH_TEMPLATE_CONDITIONAL_START_LENGTH             1u
+#define OSH_TEMPLATE_ELSE_START_LENGTH                    1u
+#define OSH_TEMPLATE_ELSE_CONDITIONAL_START_LENGTH        1u
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH    1u
 #define OSH_TEMPLATE_LOOP_START_LENGTH                    1u
 #define OSH_TEMPLATE_LOOP_REVERSE_START_LENGTH            1u
 #define OSH_TEMPLATE_COMPONENT_LENGTH                     1u
 #define OSH_TEMPLATE_CONDITIONAL_BODY_END_LENGTH          1u
-#define OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_LENGTH 1u
 #define OSH_TEMPLATE_LOOP_BODY_END_LENGTH                 1u
 #define OSH_TEMPLATE_COMPONENT_BODY_END_LENGTH            1u
 
@@ -41,12 +43,13 @@
 #define OSH_TEMPLATE_MARKER                               reinterpret_cast<const uint8_t*>(OSH_TEMPLATE)
 #define OSH_TEMPLATE_VOID_MARKER                          reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_VOID)
 #define OSH_TEMPLATE_CONDITIONAL_START_MARKER             reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_CONDITIONAL_START)
+#define OSH_TEMPLATE_ELSE_START_MARKER                    reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_ELSE_START)
+#define OSH_TEMPLATE_ELSE_CONDITIONAL_START_MARKER        reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_ELSE_CONDITIONAL_START)
 #define OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER    reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_INVERTED_CONDITIONAL_START)
 #define OSH_TEMPLATE_LOOP_START_MARKER                    reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_LOOP_START)
 #define OSH_TEMPLATE_LOOP_REVERSE_START_MARKER            reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_LOOP_REVERSE_START)
 #define OSH_TEMPLATE_COMPONENT_MARKER                     reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_COMPONENT)
 #define OSH_TEMPLATE_CONDITIONAL_BODY_END_MARKER          reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_CONDITIONAL_BODY_END)
-#define OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END_MARKER reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END)
 #define OSH_TEMPLATE_LOOP_BODY_END_MARKER                 reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_LOOP_BODY_END)
 #define OSH_TEMPLATE_COMPONENT_BODY_END_MARKER            reinterpret_cast<const uint8_t*>(OSH_TEMPLATE_COMPONENT_BODY_END)
 

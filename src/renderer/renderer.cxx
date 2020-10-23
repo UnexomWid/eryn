@@ -282,11 +282,6 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                     inputIndex += conditionalEnd;
                 break;
             }
-            case *OSH_TEMPLATE_INVERTED_CONDITIONAL_BODY_END: {
-                LOG_DEBUG("--> Found inverted conditional template end");
-
-                continue;
-            }
             case *OSH_TEMPLATE_LOOP_START: {
                 LOG_DEBUG("--> Found loop template start");
 
