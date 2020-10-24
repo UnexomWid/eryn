@@ -194,9 +194,15 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
         size_t contextLength;
     };
 
-    std::stack<LoopStackInfo>      loopStack;
-    std::stack<ComponentStackInfo> componentStack;
-    std::stack<BridgeBackup>       localStack;
+    struct ConditionalStackInfo {
+        bool lastConditionalTrue; // Whether or not the last conditional was true.
+        size_t lastTrueEndIndex;  // The true end index of the last conditional (used to jump over else).
+    };
+
+    std::stack<LoopStackInfo>        loopStack;
+    std::stack<ComponentStackInfo>   componentStack;
+    std::stack<BridgeBackup>         localStack;
+    std::stack<ConditionalStackInfo> conditionalStack;
 
     while(inputIndex < inputSize) {
         BDP::bytesToLength(nameLength, input + inputIndex, Global::BDP832->NAME_LENGTH_BYTE_SIZE);
@@ -258,16 +264,88 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 size_t conditionalEnd;
                 BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
-
                 inputIndex += OSH_FORMAT;
 
-                if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
+                size_t trueConditionalEnd;
+                BDP::bytesToLength(trueConditionalEnd, input + inputIndex, OSH_FORMAT);
+                inputIndex += OSH_FORMAT;
+
+                if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity)) {
                     inputIndex += conditionalEnd;
+
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = false;
+                    info.lastTrueEndIndex = 0;
+                    conditionalStack.push(info);
+                } else {
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = true;
+                    info.lastTrueEndIndex = trueConditionalEnd;
+                    conditionalStack.push(info);
+                }
+                
+                break;
+            }
+            case *OSH_TEMPLATE_ELSE_CONDITIONAL_START: {
+                LOG_DEBUG("--> Found else conditional template start");
+
+                if(conditionalStack.empty())
+                    throw RenderingException("PANIC", ((std::string("else conditional template does not have a preceding conditional template on the stack: OSH marker '") + ((char) nameByte)) + "' (REPORT THIS TO THE DEVS)").c_str(), name, nameLength);
+                
+
+                // Because the cursor is after the Name/Value pair, the lengths must be deducted from the true end index (which is relative to the beginning).
+                if(conditionalStack.top().lastConditionalTrue) {
+                    inputIndex += conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+                    conditionalStack.pop();
+                    break;
+                }
+
+                conditionalStack.pop();
+
+                size_t conditionalEnd;
+                BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
+                inputIndex += OSH_FORMAT;
+
+                size_t trueConditionalEnd;
+                BDP::bytesToLength(trueConditionalEnd, input + inputIndex, OSH_FORMAT);
+                inputIndex += OSH_FORMAT;
+
+                if(!evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity)) {
+                    inputIndex += conditionalEnd;
+
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = false;
+                    info.lastTrueEndIndex = 0;
+                    conditionalStack.push(info);
+                } else {
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = true;
+                    info.lastTrueEndIndex = trueConditionalEnd;
+                    conditionalStack.push(info);
+                }
+                break;
+            }
+            case *OSH_TEMPLATE_ELSE_START: {
+                LOG_DEBUG("--> Found else template start");
+
+                if(conditionalStack.empty())
+                    throw RenderingException("PANIC", ((std::string("else template does not have a preceding conditional template on the stack: OSH marker '") + ((char) nameByte)) + "' (REPORT THIS TO THE DEVS)").c_str(), name, nameLength);
+
+                // Because the cursor is after the Name/Value pair, the lengths must be deducted from the true end index (which is relative to the beginning).
+                if(conditionalStack.top().lastConditionalTrue) {
+                    inputIndex += conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+                    conditionalStack.pop(); // Jumping skips the end template, so pop the stack.
+                }
+
                 break;
             }
             case *OSH_TEMPLATE_CONDITIONAL_BODY_END: {
                 LOG_DEBUG("--> Found conditional template end");
 
+                if(conditionalStack.empty())
+                    throw RenderingException("PANIC", ((std::string("conditional body end does not have a preceding conditional template on the stack: OSH marker '") + ((char) nameByte)) + "' (REPORT THIS TO THE DEVS)").c_str(), name, nameLength);
+
+                conditionalStack.pop();
                 continue;
             }
             case *OSH_TEMPLATE_INVERTED_CONDITIONAL_START: {
@@ -275,11 +353,25 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 size_t conditionalEnd;
                 BDP::bytesToLength(conditionalEnd, input + inputIndex, OSH_FORMAT);
-
                 inputIndex += OSH_FORMAT;
 
-                if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity))
+                size_t trueConditionalEnd;
+                BDP::bytesToLength(trueConditionalEnd, input + inputIndex, OSH_FORMAT);
+                inputIndex += OSH_FORMAT;
+
+                if(evalConditionalTemplate(data, value, valueLength, output, outputSize, outputCapacity)) {
                     inputIndex += conditionalEnd;
+
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = false;
+                    info.lastTrueEndIndex = 0;
+                    conditionalStack.push(info);
+                } else {
+                    ConditionalStackInfo info;
+                    info.lastConditionalTrue = true;
+                    info.lastTrueEndIndex = trueConditionalEnd;
+                    conditionalStack.push(info);
+                }
                 break;
             }
             case *OSH_TEMPLATE_LOOP_START: {
@@ -456,7 +548,8 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 break;
             }
             default:
-                throw RenderingException("Not supported", ((std::string("this template type is not supported: OSH marker '") + ((char) nameByte)) + "'").c_str(), name, nameLength);
+                LOG_DEBUG("%zu", name - input);
+                throw RenderingException("Not supported", (((std::string("this template type is not supported: OSH marker '") + ((char) nameByte)) + "' at index ") + std::to_string(name - input)).c_str(), name, nameLength);
         }
     }
 }

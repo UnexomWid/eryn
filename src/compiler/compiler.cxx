@@ -445,20 +445,18 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
             while(isBlank(*end))
                 ++end;
 
-            TemplateType topType = templateStack.top().type;
-
-            if(templateStack.empty() || (topType != TemplateType::CONDITIONAL && topType != TemplateType::INVERTED_CONDITIONAL && topType != TemplateType::ELSE_CONDITIONAL)) {
+            if(templateStack.empty() || (templateStack.top().type != TemplateType::CONDITIONAL && templateStack.top().type != TemplateType::INVERTED_CONDITIONAL && templateStack.top().type != TemplateType::ELSE_CONDITIONAL)) {
                 size_t ln;
                 size_t col;
                 size_t chunkIndex;
                 size_t chunkSize;
-                size_t errorIndex = start - input;
+                size_t errorIndex = templateStartIndex;
 
                 mem_lncol(input, errorIndex, &ln, &col);
                 std::unique_ptr<uint8_t, decltype(free)*> chunk(
                     mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
-                throw CompilationException(path, "Unexpected else template", "there is no preceding conditional template; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
+                throw CompilationException(path, "Unexpected else conditional template", "there is no preceding conditional template; delete this", ln, col, chunk.get(), chunkIndex, chunkSize);
             }
 
             start = end;
@@ -563,6 +561,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
                 outputSize += OSH_FORMAT;
                 
+                // Since the scope needs to be decremented and reincremented, just subtract 1 from it.
                 templateStack.push(TemplateStackInfo(TemplateType::ELSE_CONDITIONAL, outputSize, templateStartIndex, oshStart));
                 LOG_DEBUG("done\n");
             }
@@ -598,14 +597,12 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 --end;
 
             if(start == end - Options::getTemplateElseStartLength() + 1) {
-                TemplateType topType = templateStack.top().type;
-
-                if(templateStack.empty() || (topType != TemplateType::CONDITIONAL && topType != TemplateType::INVERTED_CONDITIONAL && topType != TemplateType::ELSE_CONDITIONAL)) {
+                if(templateStack.empty() || (templateStack.top().type != TemplateType::CONDITIONAL && templateStack.top().type != TemplateType::INVERTED_CONDITIONAL && templateStack.top().type != TemplateType::ELSE_CONDITIONAL)) {
                     size_t ln;
                     size_t col;
                     size_t chunkIndex;
                     size_t chunkSize;
-                    size_t errorIndex = start - input;
+                    size_t errorIndex = templateStartIndex;
 
                     mem_lncol(input, errorIndex, &ln, &col);
                     std::unique_ptr<uint8_t, decltype(free)*> chunk(
@@ -1422,8 +1419,6 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                                     BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT);
                                     BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
 
-                                    LOG_DEBUG("TEST ============     %zu   %zu", outputSize, currentEndIndex);
-
                                     searching = false;
                                     continue; // Don't run the pop() from below.
                                 case TemplateType::ELSE:
@@ -1433,8 +1428,6 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                                     BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
                                     break;
                             }
-
-                            LOG_DEBUG("CURRENT IS NOW: %zu", currentEndIndex);
 
                             currentEndIndex = templateStack.top().outputIndex;
                             templateStack.pop();
@@ -1451,7 +1444,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                             std::unique_ptr<uint8_t, decltype(free)*> chunk(
                                 mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
 
-                            throw CompilationException(path, "PANIC", "template body end found else (conditional) template, but no preceding conditional template (REPORT THIS TO THE DEVS)", ln, col, chunk.get(), chunkIndex, chunkSize);
+                            throw CompilationException(path, "PANIC", "template body end found else (conditional) template, but no preceding conditional template on the stack (REPORT THIS TO THE DEVS)", ln, col, chunk.get(), chunkIndex, chunkSize);
                         }
 
                         break;
@@ -1610,6 +1603,12 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
         switch(templateStack.top().type) {
             case TemplateType::CONDITIONAL:
                 msgBuffer += " conditional ";
+                break;
+            case TemplateType::ELSE:
+                msgBuffer += " else ";
+                break;
+            case TemplateType::ELSE_CONDITIONAL:
+                msgBuffer += " else conditional ";
                 break;
             case TemplateType::INVERTED_CONDITIONAL:
                 msgBuffer += " inverted conditional ";
