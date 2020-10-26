@@ -748,8 +748,9 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
                 LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
                 outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
-                memset(output.get() + outputSize, 0, OSH_FORMAT);
-
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // End index;
+                outputSize += OSH_FORMAT;
+                memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
                 outputSize += OSH_FORMAT;
                 
                 templateStack.push(TemplateStackInfo(TemplateType::INVERTED_CONDITIONAL, outputSize, templateStartIndex, oshStart));
