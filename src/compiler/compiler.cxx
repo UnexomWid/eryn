@@ -228,9 +228,9 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
     struct TemplateStackInfo {
         TemplateType type;    // The template type.
-        size_t bodyIndex;     // The index at which the template body starts (for writing the body size).  
+        size_t bodyIndex;     // The index at which the template body starts in the output (for writing the body size). Points immediately after the OSH data (1 byte after).  
         size_t inputIndex;    // The index at which the template starts in the input (provides more information when an exception occurs).
-        size_t outputIndex;   // The index at which the template starts at the output.
+        size_t outputIndex;   // The index at which the template starts in the output. Points at the start of the OSH data.
 
         TemplateStackInfo(TemplateType typ, size_t body, size_t input, size_t output) : type(typ), bodyIndex(body), inputIndex(input), outputIndex(output) { };
     };
@@ -1417,16 +1417,16 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                             switch(templateStack.top().type) {
                                 case TemplateType::CONDITIONAL:
                                 case TemplateType::INVERTED_CONDITIONAL:
-                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT);
-                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT); // Jumps at the start of the next else (conditiona) template.
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT); // Jumps at the end. The jump gap keeps increasing.
 
                                     searching = false;
                                     continue; // Don't run the pop() from below.
                                 case TemplateType::ELSE:
                                     break;
                                 case TemplateType::ELSE_CONDITIONAL:
-                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT);
-                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT);
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, currentEndIndex - templateStack.top().bodyIndex, OSH_FORMAT); // Jumps at the start of the next else (conditiona) template.
+                                    BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - currentEndIndex, OSH_FORMAT); // Jumps at the end. The jump gap keeps increasing.
                                     break;
                             }
 
