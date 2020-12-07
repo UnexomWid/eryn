@@ -295,9 +295,21 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 // Because the cursor is after the Name/Value pair, the lengths must be deducted from the true end index (which is relative to the beginning).
                 if(conditionalStack.top().lastConditionalTrue) {
+                    LOG_INFO("[OSH-832] [ELSE-IF] Previous conditional was true; jumping according to true end index (>>> %zu)", conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE)
+
                     inputIndex += conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+                    
+                    LOG_INFO("[OSH-832] [ELSE-IF] OSH opcode is '%c'; THIS SHALL NOT BE '%c' OR '%c'", *(input + inputIndex + Global::BDP832->NAME_LENGTH_BYTE_SIZE), *OSH_TEMPLATE_ELSE_CONDITIONAL_START, *OSH_TEMPLATE_ELSE_START);
+
+                    if(*(input + inputIndex + Global::BDP832->NAME_LENGTH_BYTE_SIZE) == *OSH_TEMPLATE_ELSE_CONDITIONAL_START || *(input + inputIndex + Global::BDP832->NAME_LENGTH_BYTE_SIZE) == *OSH_TEMPLATE_ELSE_START) {
+                        LOG_INFO("[PANIC] THE JUMP INDEX HAS BEEN ALTERED; REPORT THIS TO THE DEVELOPERS");
+                        LOG_INFO("[PANIC] EXPECT TO ENTER ELSE (IF) TEMPLATE");
+                    }
+                    
                     conditionalStack.pop();
                     break;
+                } else {
+                    LOG_INFO("[OSH-832] [ELSE-IF] Previous conditional was false; no jump is required");
                 }
 
                 conditionalStack.pop();
@@ -333,7 +345,12 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
 
                 // Because the cursor is after the Name/Value pair, the lengths must be deducted from the true end index (which is relative to the beginning).
                 if(conditionalStack.top().lastConditionalTrue) {
+                    LOG_INFO("[OSH-832] [ELSE] Previous conditional was true; jumping according to true end index (%zu)", conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE)
+                    
                     inputIndex += conditionalStack.top().lastTrueEndIndex - valueLength - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - nameLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE;
+                    
+                    LOG_INFO("[OSH-832] [ELSE] OSH instruction at location: '%c'\n", *(input + inputIndex + Global::BDP832->NAME_LENGTH_BYTE_SIZE));
+                    
                     conditionalStack.pop(); // Jumping skips the end template, so pop the stack.
                 }
 
