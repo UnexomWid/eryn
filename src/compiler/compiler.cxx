@@ -1393,7 +1393,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                     output.reset(newOutput);
                 }
 
-                // This is for the component body, as it requires the content length.
+                // The output size before writing the conditional end.
                 size_t backup = outputSize;
 
                 LOG_DEBUG("Writing template body end as BDP832 pair %zu -> %zu...", start - input, end - input);
@@ -1404,12 +1404,12 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 switch(templateStack.top().type) {
                     case TemplateType::CONDITIONAL:
                     case TemplateType::INVERTED_CONDITIONAL:
-                        // Only write the end index, as there is no else (conditional) template.
-                        BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, outputSize - templateStack.top().bodyIndex, OSH_FORMAT);
+                        BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - 2 * OSH_FORMAT, backup - templateStack.top().bodyIndex, OSH_FORMAT);
+                        BDP::lengthToBytes(output.get() + templateStack.top().bodyIndex - OSH_FORMAT, outputSize - backup, OSH_FORMAT); // Jumps at the end.
                         break;
                     case TemplateType::ELSE_CONDITIONAL:
                     case TemplateType::ELSE: {
-                        size_t currentEndIndex = outputSize - Global::BDP832->VALUE_LENGTH_BYTE_SIZE - bodyEndMarkerLength - Global::BDP832->NAME_LENGTH_BYTE_SIZE; // For the end index. The true end index will always be fixed.
+                        size_t currentEndIndex = backup; // For the end index. The true end index will always be fixed.
 
                         bool searching = true;
 
