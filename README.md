@@ -253,6 +253,8 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 # Releases
 
+[0.2.5](https://github.com/UnexomWid/eryn/releases/tag/0.2.5) - December 27th, 2020
+
 [0.2.4](https://github.com/UnexomWid/eryn/releases/tag/0.2.4) - August 7th, 2020
 
 [0.2.3](https://github.com/UnexomWid/eryn/releases/tag/0.2.3) - August 3rd, 2020
