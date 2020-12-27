@@ -253,7 +253,9 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 # Releases
 
-[0.2.5](https://github.com/UnexomWid/eryn/releases/tag/0.2.5) - December 27th, 2020
+[0.2.6](https://github.com/UnexomWid/eryn/releases/tag/0.2.6) - December 27th, 2020
+
+[0.2.5](https://github.com/UnexomWid/eryn/releases/tag/0.2.5) - September 6th, 2020
 
 [0.2.4](https://github.com/UnexomWid/eryn/releases/tag/0.2.4) - August 7th, 2020
 
