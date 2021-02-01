@@ -24,3 +24,12 @@ Before doing this, however, manually check the generated files and ensure that t
 - run the tests one more time (all output files will be deleted)
 - if everything passed, you're good to go. If a future commit breaks something, the tests
 will help narrow down the problem
+
+## Important
+
+- OSH tests that include components will not work properly. This is because OSH translates relative
+paths into absolute paths for performance reasons. This means that the tests WILL fail on other machines.
+
+- pay attention to EOL characters. Currently, all tests use LF. However, if you use CRLF for the input files, the expected
+test files MUST also use CRLF. Otherwise, the test will not pass (because the files are not exactly the same). Why not
+consider LF and CRLF the same? Because **eryn** can also render binary files.
