@@ -34,9 +34,12 @@ function renderTestFactory(name) {
             loop_numbers: [0, 1, 2, 3, 4]
         });
 
-        if(KEEP_OUTPUT_FILES)
+        if(KEEP_OUTPUT_FILES) {
             fs.writeFile(path.join(__dirname, `input/${name}.eryn.rendered`), result, NOP);
-        else fs.unlink(path.join(__dirname, `input/${name}.eryn.rendered`), NOP);
+        } else {
+            fs.unlink(path.join(__dirname, `input/${name}.eryn.rendered`), NOP);
+            fs.unlink(path.join(__dirname, `input/${name}.eryn.osh`), NOP);
+        }
 
         let expected = fs.readFileSync(path.join(__dirname, `expected/${name}.eryn.rendered`));
         
@@ -54,13 +57,6 @@ shiyou.test('OSH', 'Conditional + else + else conditional (multiple)', oshTestFa
 shiyou.test('OSH', 'Conditional + else + else conditional (multiple) + plaintext', oshTestFactory('conditional_else_conditional_multiple_plaintext'));
 shiyou.test('OSH', 'Loop', oshTestFactory('loop'));
 shiyou.test('OSH', 'Loop + plaintext', oshTestFactory('loop_plaintext'));
-shiyou.test('OSH', 'Component', oshTestFactory('component/component'));
-shiyou.test('OSH', 'Component + content', oshTestFactory('component_content/component_content'));
-shiyou.test('OSH', 'Component + content + plaintext', oshTestFactory('component_content_plaintext/component_content_plaintext'));
-shiyou.test('OSH', 'Component (nested)', oshTestFactory('component_nested/component_nested'));
-shiyou.test('OSH', 'Component + content (nested)', oshTestFactory('component_content_nested/component_content_nested'));
-shiyou.test('OSH', 'Component + content + plaintext (nested)', oshTestFactory('component_content_plaintext_nested/component_content_plaintext_nested'));
-shiyou.test('OSH', 'Mixed', oshTestFactory('mixed/mixed'));
 
 shiyou.test('Render', 'Empty', renderTestFactory('empty'));
 shiyou.test('Render', 'Plain text', renderTestFactory('plain_text'));
