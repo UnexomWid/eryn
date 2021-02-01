@@ -7,4 +7,6 @@
 
 include/* linguist-vendored
 
-* text eol=lf
+*.eryn binary
+*.osh binary
+*.rendered binary
