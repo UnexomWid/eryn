@@ -1,0 +1,15 @@
+Mixed
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+[|? context.conditional_one === 1 |]
+    Proin volutpat malesuada feugiat. In nulla nunc, fringilla sed quam non, tincidunt porta arcu.
+    [|@ item : context.loop_numbers|]
+        Morbi finibus tristique sem, sed venenatis sem. Mauris consequat vitae quam non consectetur.
+        [|% comp1.eryn : { sample: "Sample" } |]
+            Mauris consectetur purus ex, a tempus enim convallis a.
+            [|item|]
+        [|end|]
+        Aliquam nec mauris non libero porta laoreet.
+    [|end|]
+    Nam aliquet turpis eu ex viverra pretium. Nunc vitae tortor vitae nulla luctus pharetra nec quis magna.
+[|end|]
+Nam efficitur neque eu quam sollicitudin, in feugiat risus auctor.

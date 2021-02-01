@@ -1,0 +1,33 @@
+[|? context.conditional_one === 1 |]
+    Conditional
+[|:? 2 === 2 |]
+    Conditional Else Conditional
+[|:? 3 === 3 |]
+    Conditional Else Conditional 2
+[|:|]
+    Conditional Else
+[|end|][|? context.conditional_one !== 1 |]
+    Conditional Second
+[|:? 2 === 2 |]
+    Conditional Second Else Conditional
+[|:? 3 === 3 |]
+    Conditional Second Else Conditional 2
+[|:|]
+    Conditional Second Else
+[|end|][|? context.conditional_one !== 1 |]
+    Conditional Third
+[|:? 2 !== 2 |]
+    Conditional Third Else Conditional
+[|:? 3 === 3 |]
+    Conditional Third Else Conditional 2
+[|:|]
+    Conditional Third Else
+[|end|][|? context.conditional_one !== 1 |]
+    Conditional Third
+[|:? 2 !== 2 |]
+    Conditional Fourth Else Conditional
+[|:? 3 !== 3 |]
+    Conditional Fourth Else Conditional 2
+[|:|]
+    Conditional Fourth Else
+[|end|]

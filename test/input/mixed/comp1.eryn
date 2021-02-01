@@ -1,0 +1,5 @@
+Component 1
+
+[|% comp2.eryn : context |]
+    Content: [|content|]
+[|end|]

@@ -1,0 +1,9 @@
+[|? context.conditional_one === 1 |]
+    Conditional
+[|:|]
+    Conditional Else
+[|end|][|? context.conditional_one !== 1 |]
+    Conditional Second
+[|:|]
+    Conditional Second Else
+[|end|]

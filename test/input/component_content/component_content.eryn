@@ -1,0 +1,5 @@
+[|% comp1.eryn : { sample: "Sample" } |]
+    Content: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+    Proin volutpat malesuada feugiat.
+    In nulla nunc, fringilla sed quam non, tincidunt porta arcu. Morbi finibus tristique sem, sed venenatis sem.
+[|end|]

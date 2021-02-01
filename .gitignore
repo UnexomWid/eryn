@@ -1,6 +1,4 @@
 .vscode/
 build/
 node_modules/
-test/
-
-binding.gyp
+test/node_modules/

@@ -1,0 +1,21 @@
+{
+  "name": "eryn-test",
+  "version": "0.2.6",
+  "description": "Tests for eryn",
+  "main": "test.js",
+  "dependencies": {
+    "@exom-dev/jshiyou": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UnexomWid/eryn.git"
+  },
+  "author": "UnexomWid",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/UnexomWid/eryn/issues"
+  },
+  "homepage": "https://github.com/UnexomWid/eryn"
+}

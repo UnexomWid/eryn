@@ -1,0 +1,3 @@
+[|@ item : context.loop_numbers |]
+    [|item|]
+[|end|]
