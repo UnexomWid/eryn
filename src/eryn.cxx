@@ -68,6 +68,10 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
             if(!value.IsBoolean())
                 continue;
             Global::Options::setCloneIterators(value.ToBoolean().Value());
+        } else if(key == "debugDumpOSH") {
+            if(!value.IsBoolean())
+                continue;
+            Global::Options::setDebugDumpOSH(value.ToBoolean().Value());
         } else if(key == "workingDirectory") {
             if(!value.IsString())
                 continue;
@@ -177,11 +181,11 @@ void erynCompile(const Napi::CallbackInfo& info) {
     try {
         compile(absPath.c_str());
 
-        #ifdef DUMP_OSH_FILES_ON_COMPILE
-            FILE* f = fopen((absPath + std::string(".osh")).c_str(), "wb");
-            fwrite(Global::Cache::getEntry(absPath.c_str()).data, 1, Global::Cache::getEntry(absPath.c_str()).size, f);
-            fclose(f);
-        #endif
+        if(Options::getDebugDumpOSH()) {
+            FILE* dump = fopen((absPath + std::string(".osh")).c_str(), "wb");
+            fwrite(Global::Cache::getEntry(absPath.c_str()).data, 1, Global::Cache::getEntry(absPath.c_str()).size, dump);
+            fclose(dump);
+        }
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }

@@ -45,7 +45,6 @@ add_definitions(-DREMEM_DISABLE_REALLOC_ALIGNING)
 #add_definitions(-DDEBUG)
 #add_definitions(-DREMEM_ENABLE_MAPPING)
 #add_definitions(-DREMEM_ENABLE_LOGGING)
-#add_definitions(-DDUMP_OSH_FILES_ON_COMPILE)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 

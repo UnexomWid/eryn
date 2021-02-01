@@ -139,11 +139,11 @@ void compileDir(const char* path, const char* rel, const FilterInfo& info) {
                     try {
                         compile(absolute);
 
-                        #ifdef DUMP_OSH_FILES_ON_COMPILE
-                            FILE* f = fopen((absolute + std::string(".osh")).c_str(), "wb");
-                            fwrite(Global::Cache::getEntry(absolute).data, 1, Global::Cache::getEntry(absolute).size, f);
-                            fclose(f);
-                        #endif
+                        if(Options::getDebugDumpOSH()) {
+                            FILE* dump = fopen((absolute + std::string(".osh")).c_str(), "wb");
+                            fwrite(Global::Cache::getEntry(absolute).data, 1, Global::Cache::getEntry(absolute).size, dump);
+                            fclose(dump);
+                        }
                     } catch(CompilationException& e) {
                         if(Options::getThrowOnCompileDirError())
                             throw e;

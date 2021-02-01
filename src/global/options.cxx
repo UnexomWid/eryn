@@ -18,6 +18,7 @@ bool Global::Options::throwOnCompileDirError = false;
 bool Global::Options::ignoreBlankPlaintext   = false;
 bool Global::Options::logRenderTime          = false;
 bool Global::Options::cloneIterators         = false;
+bool Global::Options::debugDumpOSH           = false;
 
 char*   Global::Options::workingDirectory    = nullptr;
 
@@ -102,6 +103,10 @@ void Global::Options::setLogRenderTime(bool value) {
 
 void Global::Options::setCloneIterators(bool value) {
     Global::Options::cloneIterators = value;
+}
+
+void Global::Options::setDebugDumpOSH(bool value) {
+    Global::Options::debugDumpOSH = value;
 }
 
 void Global::Options::setWorkingDirectory(const char* value) {
@@ -370,6 +375,7 @@ void Global::Options::restoreDefaults() {
     Global::Options::setIgnoreBlankPlaintext(false);
     Global::Options::setLogRenderTime(false);
     Global::Options::setCloneIterators(false);
+    Global::Options::setDebugDumpOSH(false);
 
     Global::Options::setWorkingDirectory(".");
 
@@ -467,6 +473,10 @@ bool Global::Options::getLogRenderTime() {
 
 bool Global::Options::getCloneIterators() {
     return Global::Options::cloneIterators;
+}
+
+bool Global::Options::getDebugDumpOSH() {
+    return Global::Options::debugDumpOSH;
 }
 
 const char* Global::Options::getWorkingDirectory() {

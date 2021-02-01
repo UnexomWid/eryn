@@ -13,6 +13,7 @@ namespace Global {
             static bool ignoreBlankPlaintext;
             static bool logRenderTime;
             static bool cloneIterators;
+            static bool debugDumpOSH;
 
             static char*    workingDirectory;
 
@@ -79,6 +80,7 @@ namespace Global {
             static bool getIgnoreBlankPlaintext();
             static bool getLogRenderTime();
             static bool getCloneIterators();
+            static bool getDebugDumpOSH();
 
             static const char*    getWorkingDirectory();
 
@@ -144,6 +146,7 @@ namespace Global {
             static void setIgnoreBlankPlaintext(bool value);
             static void setLogRenderTime(bool value);
             static void setCloneIterators(bool value);
+            static void setDebugDumpOSH(bool value);
 
             static void setWorkingDirectory(const char* value);
 
