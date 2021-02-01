@@ -6,3 +6,5 @@
 *.h linguist-language=C
 
 include/* linguist-vendored
+
+* text eol=lf
