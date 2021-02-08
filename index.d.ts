@@ -2,7 +2,6 @@
 // Definitions by UnexomWid <https://uw.exom.dev>
 
 interface ErynOptions {
-    debugDumpOSH?:             boolean,
     bypassCache?:              boolean,
     throwOnEmptyContent?:      boolean,
     throwOnMissingEntry?:      boolean,
@@ -11,6 +10,7 @@ interface ErynOptions {
     logRenderTime?:            boolean,
     enableDeepCloning?:        boolean,
     cloneIterators?:           boolean,
+    debugDumpOSH?:             boolean,
     workingDirectory?:         string,
     templateEscape?:           string,
     templateStart?:            string,
