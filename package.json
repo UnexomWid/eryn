@@ -1,6 +1,6 @@
 {
   "name": "eryn",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Native template engine",
   "keywords": [
     "template-engine",

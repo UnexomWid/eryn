@@ -1,7 +1,8 @@
-// Type definitions for eryn 0.2.5
+// Type definitions for eryn 0.2.7
 // Definitions by UnexomWid <https://uw.exom.dev>
 
 interface ErynOptions {
+    debugDumpOSH?:             boolean,
     bypassCache?:              boolean,
     throwOnEmptyContent?:      boolean,
     throwOnMissingEntry?:      boolean,
