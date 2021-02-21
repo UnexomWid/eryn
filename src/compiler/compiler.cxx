@@ -998,6 +998,7 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
 
             std::vector<const uint8_t*> escapes;
 
+            // Escape is present before the template end.
             while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
 
@@ -1126,6 +1127,20 @@ BinaryData compileBytes(const uint8_t* input, size_t inputSize, const char* wd, 
                 }
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+
+                if(length == 0 && escapes.size() > 0) {
+                    size_t ln;
+                    size_t col;
+                    size_t chunkIndex;
+                    size_t chunkSize;
+                    size_t errorIndex = (selfStart) - input;
+
+                    mem_lncol(input, errorIndex, &ln, &col);
+                    std::unique_ptr<uint8_t, decltype(free)*> chunk(
+                        mem_lnchunk(input, errorIndex, inputSize, COMPILER_ERROR_CHUNK_SIZE, &chunkIndex, &chunkSize), free);
+
+                    throw CompilationException(path, "Unexpected escape character(s) before end", "escape characters can only exist after the separator, which was not found; delete all escape characters", ln, col, chunk.get(), chunkIndex, chunkSize);
+                }
 
                 size_t bufferSize     = length - escapes.size();
                 size_t bufferCapacity = bufferSize;
