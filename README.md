@@ -8,7 +8,7 @@
 
 It was built with high performance in mind, such that it can be used for fast server-side rendering.
 
-**This is a pre-release and, as such, is not considered stable or ready for production.**
+**This is a pre-release and, as such, may suffer from breaking changes without prior notice.**
 
 # Getting started
 
