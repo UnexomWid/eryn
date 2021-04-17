@@ -262,7 +262,7 @@ Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
             absPath[i] = '/';
 
     try {
-        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Object>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), absPath.c_str());
+        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Value>(), info[2].As<Napi::Object>(), info[3].As<Napi::Value>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), absPath.c_str());
 
         return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);
@@ -278,7 +278,7 @@ Napi::Buffer<uint8_t> erynRenderString(const Napi::CallbackInfo& info) {
             strDup(info[0].As<Napi::String>().Utf8Value().c_str()), re::free);
 
     try {
-        BinaryData rendered = renderString(BridgeData(env, info[1].As<Napi::Object>(), info[2].As<Napi::Object>(), info[3].As<Napi::Object>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), alias.get());
+        BinaryData rendered = renderString(BridgeData(env, info[1].As<Napi::Value>(), info[2].As<Napi::Object>(), info[3].As<Napi::Value>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), alias.get());
 
         return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);

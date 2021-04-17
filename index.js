@@ -56,8 +56,6 @@ const eryn = {
             context = {};
         if(!shared)
             shared = {};
-        if(!(typeof context === 'object'))
-            throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
         return binding.render(path, context, {}, shared, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },
@@ -68,8 +66,6 @@ const eryn = {
             context = {};
         if(!shared)
             shared = {};
-        if(!(typeof context === 'object'))
-            throw `Invalid argument 'context' (expected: object | found: ${typeof(context)})`
 
         return binding.renderString(alias, context, {}, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },

@@ -5,4 +5,8 @@
     #pragma warning(disable: 4996)
 #endif
 
+// Suppress warnings generated when a variable is only used
+// certain situations (e.g. exception data in debug mode).
+#define IGNORE_UNREFERENCED(x) (void)x
+
 #endif

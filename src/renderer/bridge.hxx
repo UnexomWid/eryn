@@ -17,11 +17,12 @@ struct BridgeData {
     Napi::Env env;
     Napi::Function eval;
     Napi::Function clone;
-    Napi::Object context;
+    Napi::Value  context;
     Napi::Object local;
-    Napi::Object shared;
+    Napi::Value  shared;
 
-    BridgeData(Napi::Env en, Napi::Object ctx, Napi::Object lcl, Napi::Object shrd, Napi::Function ev, Napi::Function cln) : env(en), context(ctx), local(lcl), shared(shrd), eval(ev), clone(cln) { }
+    BridgeData(Napi::Env en, Napi::Value ctx, Napi::Object lcl, Napi::Value shrd, Napi::Function ev, Napi::Function cln) :
+        env(en), context(ctx), local(lcl), shared(shrd), eval(ev), clone(cln) { }
 };
 
 typedef Napi::Value BridgeBackup;
