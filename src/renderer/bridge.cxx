@@ -282,7 +282,7 @@ BridgeBackup copyValue(BridgeData& data, const Napi::Value& value) {
     } catch(std::exception& e) {
         IGNORE_UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
-        LOG_DEBUG("[WARN] Bridge function 'copyValue' caught an exception:\n%s", e.what().c_str());
+        LOG_DEBUG("[WARN] Bridge function 'copyValue' caught an exception:\n%s", e.what());
         return Napi::Value();
     }
 }
@@ -293,7 +293,7 @@ BridgeBackup backupContext(BridgeData& data) {
     } catch(std::exception& e) {
         IGNORE_UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
-        LOG_DEBUG("[WARN] Bridge function 'backupContext' caught an exception:\n%s", e.what().c_str());
+        LOG_DEBUG("[WARN] Bridge function 'backupContext' caught an exception:\n%s", e.what());
         return Napi::Value();
     }
 }
@@ -304,7 +304,7 @@ BridgeBackup backupLocal(BridgeData& data) {
     } catch(std::exception& e) {
         IGNORE_UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
-        LOG_DEBUG("[WARN] Bridge function 'backupLocal' caught an exception:\n%s", e.what().c_str());
+        LOG_DEBUG("[WARN] Bridge function 'backupLocal' caught an exception:\n%s", e.what());
         return Napi::Value();
     }
 }
