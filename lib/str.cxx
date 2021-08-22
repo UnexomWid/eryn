@@ -28,3 +28,7 @@ unsigned char toUpper(unsigned char c) {
 bool isPrint(unsigned char c) {
     return (c >= ' ' && c <= '~');
 }
+
+bool isBlank(unsigned char c) {
+    return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+}

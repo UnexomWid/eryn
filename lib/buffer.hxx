@@ -30,4 +30,11 @@ struct Buffer {
     void reserve(size_t amount);
 };
 
+struct ConstBuffer {
+    const uint8_t* data;
+    size_t size;
+
+    ConstBuffer(const void* data, size_t size)
+};
+
 #endif
