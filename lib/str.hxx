@@ -1,5 +1,5 @@
-#ifndef ERYN_COMMON_STR_HXX_GUARD
-#define ERYN_COMMON_STR_HXX_GUARD
+#ifndef STR_HXX_GUARD
+#define STR_HXX_GUARD
 
 #include <cstddef>
 

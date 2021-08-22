@@ -4,6 +4,7 @@
 #include <exception>
 #include <unordered_map>
 
+#include "../def/warnings.dxx"
 #include "../lib/buffer.hxx"
 
 using std::string;

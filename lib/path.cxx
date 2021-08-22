@@ -1,6 +1,6 @@
 #include "path.hxx"
 #include "str.hxx"
-#include "../def/os.dxx"
+#include "../src/def/os.dxx"
 
 bool pathIsAbsolute(const char* path, size_t length) {
     #ifdef OS_WINDOWS
