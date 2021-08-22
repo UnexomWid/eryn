@@ -394,6 +394,7 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                 right = input + inputIndex;
                 inputIndex += rightLength;
 
+                // 1 = direction (+1 increments)
                 loopStack.push(LoopStackInfo(data, left, leftLength, right, rightLength, 1));
 
                 if(loopStack.top().arrayLength == 0) {
@@ -517,6 +518,8 @@ void renderBytes(BridgeData data, const uint8_t* input, size_t inputSize, std::u
                     info.startIndex = outputSize;
                 }
 
+                // Even if the component has no content and it has already been rendered, push it.
+                // When the component end will be encountered, it will be popped directly.
                 componentStack.push(info);
                 break;
             }
