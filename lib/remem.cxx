@@ -2,7 +2,7 @@
  * Remem (https://github.com/UnexomWid/remem)
  *
  * This project is licensed under the MIT license.
- * Copyright (c) 2020 UnexomWid (https://uw.exom.dev)
+ * Copyright (c) 2020-2021 UnexomWid (https://uw.exom.dev)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -19,7 +19,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #include "remem.hxx"
 
 #include <cstdio>
@@ -89,25 +88,18 @@ void* operator new[](size_t size, const char* who, const char* file, size_t line
 }
 
 void operator delete[](void* ptr) noexcept {
-    if (ptr) {
-        ::free(ptr);
+    ::free(ptr);
 
-        #if defined(REMEM_ENABLE_MAPPING)
-            if(map.find(ptr) != map.end()) {
-                #if defined(REMEM_ENABLE_LOGGING)
-                    printf("[memory] Freed '%s' (%p) | %zu byte(s)\n", map[ptr].who.c_str(), ptr, map[ptr].size);
-                #endif
+    #if defined(REMEM_ENABLE_MAPPING)
+        if(ptr && map.find(ptr) != map.end()) {
+            #if defined(REMEM_ENABLE_LOGGING)
+                printf("[memory] Freed '%s' (%p) | %zu byte(s)\n", map[ptr].who.c_str(), ptr, map[ptr].size);
+            #endif
 
-                totalSize -= map[ptr].size;
-                map.erase(ptr);
-            }
-        #endif
-    } else {
-        #if defined(REMEM_ENABLE_MAPPING) && defined(REMEM_ENABLE_LOGGING)
-            if(map.find(ptr) != map.end())
-                printf("[memory] Attempted to free nullptr");
-        #endif
-    }
+            totalSize -= map[ptr].size;
+            map.erase(ptr);
+        }
+    #endif
 }
 
 #if defined(REMEM_ENABLE_MAPPING)
@@ -115,7 +107,7 @@ void operator delete[](void* ptr) noexcept {
         return map;
     }
 
-    void re::memPrint() noexcept {
+    void re::mem_print() noexcept {
         if(map.size() != 0) {
             printf("\n[memory] Map: %zu byte(s)\n", totalSize);
             for (auto entry : mem())
@@ -126,20 +118,16 @@ void operator delete[](void* ptr) noexcept {
         }
     }
 
-    size_t re::memSize() noexcept {
+    size_t re::mem_size() noexcept {
         return totalSize;
     }
 #endif
 
 void* re::malloc(size_t size, const char* who, const char* file, size_t line) {
-    #if !defined(REMEM_DISABLE_MALLOC_ALIGNING) && !defined(REMEM_DISABLE_ALIGNING)
-        adjustSize(size);
-    #endif
+    void* ptr = ::malloc(size);
 
-        void* ptr = ::malloc(size);
-
-        if(!ptr)
-            throw std::bad_alloc();
+    if(!ptr)
+        throw std::bad_alloc();
 
     #if defined(REMEM_ENABLE_MAPPING)
         map[ptr] = re::AddressInfo(who == nullptr ? "unknown" : who, size);
@@ -260,23 +248,16 @@ void* re::expand(void* ptr, size_t& size, const char* file, size_t line) {
 }
 
 void re::free(void* ptr) noexcept {
-    if (ptr) {
-        ::free(ptr);
+    ::free(ptr);
 
-        #if defined(REMEM_ENABLE_MAPPING)
-            if(map.find(ptr) != map.end()) {
-                #if defined(REMEM_ENABLE_LOGGING)
-                    printf("[memory] Freed '%s' (%p) | %zu byte(s)\n", map[ptr].who.c_str(), ptr, map[ptr].size);
-                #endif
+    #if defined(REMEM_ENABLE_MAPPING)
+        if(ptr && map.find(ptr) != map.end()) {
+            #if defined(REMEM_ENABLE_LOGGING)
+                printf("[memory] Freed '%s' (%p) | %zu byte(s)\n", map[ptr].who.c_str(), ptr, map[ptr].size);
+            #endif
 
-                totalSize -= map[ptr].size;
-                map.erase(ptr);
-            }
-        #endif
-    } else {
-        #if defined(REMEM_ENABLE_MAPPING) && defined(REMEM_ENABLE_LOGGING)
-            if(map.find(ptr) != map.end())
-                printf("[memory] Attempted to free nullptr");
-        #endif
-    }
+            totalSize -= map[ptr].size;
+            map.erase(ptr);
+        }
+    #endif
 }
