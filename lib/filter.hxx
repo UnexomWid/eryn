@@ -1,5 +1,5 @@
-#ifndef ERYN_FILTER_HXX_GUARD
-#define ERYN_FILTER_HXX_GUARD
+#ifndef FILTER_HXX_GUARD
+#define FILTER_HXX_GUARD
 
 #include <vector>
 #include <cstddef>
