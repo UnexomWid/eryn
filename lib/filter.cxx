@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <stdexcept>
 
-#include "../common/str.hxx"
+#include "str.hxx"
 
 #include "../../lib/globlib.h"
 #include "../../lib/buffer.hxx"

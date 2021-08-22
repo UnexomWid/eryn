@@ -15,9 +15,17 @@ Buffer::Buffer() : Buffer(nullptr, 0) {
     size = 0;
     capacity = 0;
 }
-Buffer::Buffer(const Buffer& Buffer) : data(Buffer.data), size(Buffer.size) { }
-Buffer::Buffer(Buffer&& buffer) : data(buffer.data), size(buffer.size) {
-    buffer = Buffer();
+
+Buffer::Buffer(uint8_t* data, size_t size) :
+    data(data), size(size), capacity(size) { }
+
+Buffer::Buffer(const Buffer& buffer) :
+    data(buffer.data), size(buffer.size), capacity(buffer.capacity) { }
+
+Buffer::Buffer(Buffer&& buffer) {
+    size     = buffer.size;
+    capacity = buffer.capacity;
+    data     = buffer.release();
 }
 
 Buffer::~Buffer() {
@@ -93,3 +101,6 @@ uint8_t* Buffer::release() {
 
     return ptr;
 }
+
+ConstBuffer::ConstBuffer(const void* data, size_t size) :
+    data(static_cast<const uint8_t*>(data)), size(size) { }

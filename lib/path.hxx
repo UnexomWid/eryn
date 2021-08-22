@@ -5,5 +5,6 @@
 
 bool pathIsAbsolute(const char* path, size_t length);
 bool pathIsRelative(const char* path, size_t length);
+size_t pathDirEndIndex(const char* path, size_t length);
 
 #endif

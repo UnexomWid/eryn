@@ -5,7 +5,9 @@
 #include <unordered_map>
 
 #include "../def/warnings.dxx"
-#include "../lib/buffer.hxx"
+#include "../../lib/chunk.hxx"
+#include "../../lib/buffer.hxx"
+#include "../../lib/filter.hxx"
 
 using std::string;
 
@@ -70,6 +72,11 @@ class Engine {
     void compile(const char* path);
     void compileString(const char* alias, const char* str);
     void compileDir(const char* path, std::vector<string> filters);
+
+  private:
+    void   compileDir(const char* path, const char* rel, const FilterInfo& info);
+    Buffer compileFile(const char* path);
+    Buffer compileBytes(ConstBuffer& inputBuffer, string wd, const char* fullPath = "");
 };
 
 class InternalException : public std::exception {
@@ -81,5 +88,20 @@ class InternalException : public std::exception {
     InternalException(string msg, string fn, int ln);
 
     const char* what() const noexcept override;
+};
+
+class CompilationException : public std::exception {
+  public:
+      string file;
+      string msg;
+      string description;
+      Chunk chunk;
+
+      string message;
+
+      CompilationException(const char* file, const char* msg, const char* description);
+      CompilationException(const char* file, const char* msg, const char* description, const Chunk& chunk);
+
+      const char* what() const noexcept override;
 };
 }
