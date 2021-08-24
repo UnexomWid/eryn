@@ -2,11 +2,11 @@
 #include "str.hxx"
 #include "../src/def/os.dxx"
 
-bool pathIsAbsolute(const char* path, size_t length) {
+bool path::is_absolute(const char* path, size_t length) {
     #ifdef OS_WINDOWS
         return (length > 2)
-            && (toUpper(static_cast<unsigned char>(path[0])) >= 'A')
-            && (toUpper(static_cast<unsigned char>(path[0])) <= 'Z')
+            && (str::to_upper(static_cast<unsigned char>(path[0])) >= 'A')
+            && (str::to_upper(static_cast<unsigned char>(path[0])) <= 'Z')
             && (path[1] == ':')
             && (path[2] == '/' || path[2] == '\\');
     #else
@@ -15,11 +15,11 @@ bool pathIsAbsolute(const char* path, size_t length) {
     #endif
 }
 
-bool pathIsRelative(const char* path, size_t length) {
-    return !pathIsAbsolute(path, length);
+bool path::is_relative(const char* path, size_t length) {
+    return !path::is_absolute(path, length);
 }
 
-size_t pathDirEndIndex(const char* path, size_t length) {
+size_t path::dir_end_index(const char* path, size_t length) {
     size_t index    = 0;
     size_t endIndex = 0;
 

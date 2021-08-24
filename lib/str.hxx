@@ -3,11 +3,13 @@
 
 #include <cstddef>
 
-char* strDup(const char* str);
-char* strDup(const char* str, size_t size);
+namespace str {
+char* dup(const char* str);
+char* dup(const char* str, size_t size);
 
-unsigned char toUpper(unsigned char c);
-bool isPrint(unsigned char c);
-bool isBlank(unsigned char c);
+unsigned char to_upper(unsigned char c);
+bool is_print(unsigned char c);
+bool is_blank(unsigned char c);
+}
 
 #endif
