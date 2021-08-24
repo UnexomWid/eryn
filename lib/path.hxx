@@ -3,8 +3,10 @@
 
 #include <cstddef>
 
-bool pathIsAbsolute(const char* path, size_t length);
-bool pathIsRelative(const char* path, size_t length);
-size_t pathDirEndIndex(const char* path, size_t length);
+namespace path {
+bool   is_absolute(const char* path, size_t length);
+bool   is_relative(const char* path, size_t length);
+size_t dir_end_index(const char* path, size_t length);
+}
 
 #endif

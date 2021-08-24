@@ -4,7 +4,7 @@
 
 #include "remem.hxx"
 
-char* strDup(const char* str) {
+char* str::dup(const char* str) {
     size_t length = strlen(str) + 1;
     char* ptr = reinterpret_cast<char*>(REMEM_MALLOC(length, "StrDup String"));
 
@@ -12,7 +12,7 @@ char* strDup(const char* str) {
     return ptr;
 }
 
-char* strDup(const char* str, size_t size) {
+char* str::dup(const char* str, size_t size) {
     char* ptr = reinterpret_cast<char*>(REMEM_MALLOC(size + 1, "StrDup String"));
 
     memcpy(ptr, str, size);
@@ -21,14 +21,14 @@ char* strDup(const char* str, size_t size) {
     return ptr;
 }
 
-unsigned char toUpper(unsigned char c) {
+unsigned char str::to_upper(unsigned char c) {
     return c >= 'a' && c <= 'z' ? c - 32 : c;
 }
 
-bool isPrint(unsigned char c) {
+bool str::is_print(unsigned char c) {
     return (c >= ' ' && c <= '~');
 }
 
-bool isBlank(unsigned char c) {
+bool str::is_blank(unsigned char c) {
     return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "mem.hxx"
 #include "remem.hxx"
 
 #ifdef _MSC_VER
@@ -104,3 +105,15 @@ uint8_t* Buffer::release() {
 
 ConstBuffer::ConstBuffer(const void* data, size_t size) :
     data(static_cast<const uint8_t*>(data)), size(size) { }
+
+const uint8_t* ConstBuffer::end() const noexcept {
+    return data + size;
+}
+
+const uint8_t* ConstBuffer::find(const std::string& pattern) const noexcept {
+    return find(pattern.c_str(), pattern.size());
+}
+
+const uint8_t* ConstBuffer::find(const void* pattern, size_t patternSize) const noexcept {
+    return mem::find(data, size, pattern, patternSize);
+}

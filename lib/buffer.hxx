@@ -34,7 +34,12 @@ struct ConstBuffer {
     const uint8_t* data;
     size_t size;
 
-    ConstBuffer(const void* data, size_t size)
+    ConstBuffer(const void* data, size_t size);
+
+    const uint8_t* end() const noexcept;
+
+    const uint8_t* find(const std::string& pattern) const noexcept;
+    const uint8_t* find(const void* pattern, size_t patternSize) const noexcept;
 };
 
 #endif
