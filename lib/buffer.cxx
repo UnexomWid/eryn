@@ -145,3 +145,22 @@ size_t ConstBuffer::find_index(const void* pattern, size_t patternSize) const no
 size_t ConstBuffer::find_index(size_t index, const void* pattern, size_t patternSize) const noexcept {
     return find(index, pattern, patternSize) - data;
 }
+
+bool ConstBuffer::match(const std::string& pattern) const noexcept {
+    return match(0, pattern.c_str(), pattern.size());
+}
+
+bool ConstBuffer::match(size_t index, const std::string& pattern) const noexcept {
+    return match(index, pattern.c_str(), pattern.size());
+}
+
+bool ConstBuffer::match(const void* pattern, size_t patternSize) const noexcept {
+    return match(0, pattern, patternSize);
+}
+
+bool ConstBuffer::match(size_t index, const void* pattern, size_t patternSize) const noexcept {
+    auto len = size - index;
+    auto min = len <= patternSize ? len : patternSize;
+
+    return mem::cmp(data + index, pattern, min);
+}
