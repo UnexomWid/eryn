@@ -19,6 +19,7 @@ struct Buffer {
     Buffer& operator=(const Buffer& buffer);
     Buffer& operator=(Buffer&& buffer);
 
+    void write(uint8_t byte);
     void write(const uint8_t* bytes, size_t amount);
     void write_bdp_name(const BDP::Header& header, const uint8_t* name, size_t nameSize);
     void write_bdp_value(const BDP::Header& header, const uint8_t* value, size_t valueSize);
@@ -39,7 +40,14 @@ struct ConstBuffer {
     const uint8_t* end() const noexcept;
 
     const uint8_t* find(const std::string& pattern) const noexcept;
+    const uint8_t* find(size_t index, const std::string& pattern) const noexcept;
     const uint8_t* find(const void* pattern, size_t patternSize) const noexcept;
+    const uint8_t* find(size_t index, const void* pattern, size_t patternSize) const noexcept;
+
+    size_t find_index(const std::string& pattern) const noexcept;
+    size_t find_index(size_t index, const std::string& pattern) const noexcept;
+    size_t find_index(const void* pattern, size_t patternSize) const noexcept;
+    size_t find_index(size_t index, const void* pattern, size_t patternSize) const noexcept;
 };
 
 #endif

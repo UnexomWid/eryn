@@ -76,7 +76,7 @@ class Engine {
   private:
     void   compileDir(const char* path, const char* rel, const FilterInfo& info);
     Buffer compileFile(const char* path);
-    Buffer compileBytes(ConstBuffer& inputBuffer, string wd, const char* fullPath = "");
+    Buffer compileBytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
 };
 
 class InternalException : public std::exception {

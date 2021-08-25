@@ -31,8 +31,8 @@ static constexpr auto COMPILER_ERROR_CHUNK_SIZE = 20u;
 static constexpr auto COMPILER_PATH_MAX_LENGTH  = 4096u;
 
 static uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
-static void     localizeIterator(const uint8_t* iterator, size_t iteratorLength, std::unique_ptr<uint8_t, decltype(re::free)*>& source, size_t& sourceSize, size_t& sourceCapacity);
-static void     throwCompilationException(const char* file, const char* message, const char* description, const uint8_t* input, size_t inputSize, size_t errorIndex);
+static void     localizeIterator(const uint8_t* iterator, size_t iteratorLength, Buffer& src);
+static void     compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex);
 
 void Eryn::Engine::compile(const char* path) {
     LOG_DEBUG("===> Compiling file '%s'", path);
@@ -46,7 +46,7 @@ void Eryn::Engine::compileString(const char* alias, const char* str) {
     LOG_DEBUG("===> Compiling string '%s'", alias);
 
     ConstBuffer input(str, strlen(str));
-    cache.add(alias, compileBytes(input, opts.workingDir, alias));
+    cache.add(alias, compileBytes(input, opts.workingDir.c_str(), alias));
 
     LOG_DEBUG("===> Done\n");
 }
@@ -199,17 +199,37 @@ Buffer Eryn::Engine::compileFile(const char* path) {
     ConstBuffer inputBuffer(inputPtr.get(), inputSize);
     string wd(path, path::dir_end_index(path, strlen(path)));
 
-    return compileBytes(inputBuffer, wd, path);
+    return compileBytes(inputBuffer, wd.c_str(), path);
 }
 
-// 'wd' is the working directory, which is necessary to find components
-// 'path' is either the full path of a file, or the alias of a string
-Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char* path) {
-    size_t outputSize = 0;
-    auto outputCapacity = input.size;
+enum class TemplateType {
+    CONDITIONAL,
+    ELSE,
+    ELSE_CONDITIONAL,
+    LOOP,
+    COMPONENT
+};
 
-    std::unique_ptr<uint8_t, decltype(re::free)*> output(
-        static_cast<uint8_t*>(REMEM_ALLOC(outputCapacity, "Compiler Output")), re::free);
+struct TemplateStackInfo {
+    TemplateType type;
+    size_t inputIndex;      // The index at which the template starts in the input (provides more information when an exception occurs).
+    size_t outputIndex;     // The index at which the template starts in the output. Points at the start of the OSH data.
+    size_t outputBodyIndex; // The index at which the template body starts in the output (for writing the body size). Points immediately after the OSH data (1 byte after). 
+
+    TemplateStackInfo(TemplateType typ, size_t body, size_t input, size_t output) :
+        type(typ), outputBodyIndex(body), inputIndex(input), outputIndex(output) { };
+};
+
+struct CompilerInfo {
+    std::stack<TemplateStackInfo> templates;
+    std::vector<ConstBuffer> iterators;
+};
+
+// 'wd' is the working directory, which is necessary to find components
+// 'path' is either the full path of the source file, or the alias of the source string
+Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char* path) {
+    Buffer output;
+    const BDP::Header BDP832 = BDP::Header(8, 32);
 
     auto start = input.data;
     auto end   = input.find(opts.templates.start);
@@ -222,134 +242,109 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
     size_t templateStartIndex;
     size_t templateEndIndex;
 
-    enum class TemplateType {
-        CONDITIONAL,
-        ELSE,
-        ELSE_CONDITIONAL,
-        INVERTED_CONDITIONAL,
-        LOOP,
-        COMPONENT
-    };
-
-    struct TemplateStackInfo {
-        TemplateType type;    // The template type.
-        size_t bodyIndex;     // The index at which the template body starts in the output (for writing the body size). Points immediately after the OSH data (1 byte after).  
-        size_t inputIndex;    // The index at which the template starts in the input (provides more information when an exception occurs).
-        size_t outputIndex;   // The index at which the template starts in the output. Points at the start of the OSH data.
-
-        TemplateStackInfo(TemplateType typ, size_t body, size_t input, size_t output) : type(typ), bodyIndex(body), inputIndex(input), outputIndex(output) { };
-    };
-
-    struct IteratorVectorInfo {
-        const uint8_t* iterator;
-        size_t iteratorLength;
-
-        IteratorVectorInfo(const uint8_t* it, size_t itLength) : iterator(it), iteratorLength(itLength) { };
-    };
-
-    std::stack<TemplateStackInfo>   templateStack;
-    std::vector<IteratorVectorInfo> iteratorVector;
+    CompilerInfo compiler;
 
     while(end < limit) {
         if(start != end) {
             LOG_DEBUG("--> Found plaintext at %zu", start - input);
 
             bool skip = false;
-            if(Options::getIgnoreBlankPlaintext()) {
+            if(opts.flags.ignoreBlankPlaintext) {
                 skip = true;
                 const uint8_t* i = start;
 
                 while(skip && i != end) {
-                    if(!isBlank(*i))
+                    if(!str::is_blank(*i)) {
                         skip = false;
+                    }
                     ++i;
                 }
             }
 
             if(!skip) {
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_PLAINTEXT_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + length > outputCapacity) {
-                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
-                    output.release();
-                    output.reset(newOutput);
-                }
-
                 LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_LENGTH, start, length);
+                output.write_bdp_pair(BDP832, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_LENGTH, start, length);
                 LOG_DEBUG("done\n");
             } else LOG_DEBUG("Skipping blank plaintext");
         }
-        templateStartIndex = end - input;
+        templateStartIndex = end - input.data;
 
         LOG_DEBUG("--> Found template start at %zu", templateStartIndex);
 
-        end += Options::getTemplateStartLength();
+        end += opts.templates.start.size();
 
-        while(isBlank(*end))
+        while(str::is_blank(*end)) {
             ++end;
+        }
 
-        if(membcmp(end, Options::getTemplateComment(), Options::getTemplateCommentLength())) {
+        if(mem::cmp(end, opts.templates.commentStart)) {
             LOG_DEBUG("Detected comment template");
 
-            end += Options::getTemplateCommentLength();
+            end += opts.templates.commentStart.size();
 
-            while(isBlank(*end))
+            while(str::is_blank(*end)) {
                 ++end;
+            }
 
             start = end;
-            remainingLength = inputSize - (end - input);
-            index = mem_find(end, remainingLength, Options::getTemplateCommentEnd(), Options::getTemplateCommentEndLength(), Options::getTemplateCommentEndLookup());
+            remainingLength = input.size - (end - input.data);
+            index = input.find_index(end - input.data, opts.templates.commentEnd) - (end - input.data);
 
-            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
 
                 remainingLength -= index + 1;
-                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateCommentEnd(), Options::getTemplateCommentEndLength(), Options::getTemplateCommentEndLookup());
+                index = input.find_index((end + index + 1) - input.data, opts.templates.commentEnd) - (end - input.data);
             }
 
-            templateEndIndex = (end + index) - input;
+            templateEndIndex = (end + index) - input.data;
 
-            if(templateEndIndex >= inputSize)
-                throwCompilationException(path, "Unexpected EOF", "did you forget to close the template?", input, inputSize, (end + index) - input - 1);
+            if(templateEndIndex >= input.size) {
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+            }
 
             LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = start;
-            templateEndIndex += Options::getTemplateCommentEndLength();
-        } else if(membcmp(end, Options::getTemplateConditionalStart(), Options::getTemplateConditionalStartLength())) {
+            templateEndIndex += opts.templates.commentEnd.size();
+        } else if(mem::cmp(end, opts.templates.conditionalStart)) {
             LOG_DEBUG("Detected conditional template start");
 
-            end += Options::getTemplateConditionalStartLength();
+            end += opts.templates.conditionalStart.size();
 
-            while(isBlank(*end))
+            while(str::is_blank(*end)) {
                 ++end;
+            }
 
             start = end;
-            remainingLength = inputSize - (end - input);
-            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            remainingLength = input.size - (end - input.data);
+            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
 
             std::vector<const uint8_t*> escapes;
 
-            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
 
                 escapes.push_back(end + index - 1);
                 remainingLength -= index + 1;
-                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+                index = input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
             }
 
-            templateEndIndex = end + index - input;
+            templateEndIndex = end + index - input.data;
 
-            if(templateEndIndex >= inputSize)
-                throwCompilationException(path, "Unexpected EOF", "did you forget to close the template?", input, inputSize, (end + index) - input - 1);
+            if(templateEndIndex >= input.size) {
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+            }
 
             if(index == 0)
-                throwCompilationException(path, "Unexpected template end", "did you forget to write the condition?", input, inputSize, end - input - 1);
+                compiler_error(path, "Unexpected template end", "did you forget to write the condition?", input, end - input.data - 1);
 
             LOG_DEBUG("Found template end at %zu", end + index - input);
 
             end = end + index - 1;
-            while(isBlank(*end))
+            while(str::is_blank(*end)) {
                 --end;
+            }
             ++end;
 
             if(start != end) {
@@ -357,58 +352,54 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
 
                 // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
 
-                size_t bufferSize     = length - escapes.size();
-                size_t bufferCapacity = bufferSize;
-                
-                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
+                Buffer buffer;
+
                 index = 0;
 
                 for(size_t i = 0; i < escapes.size(); ++i) {
-                    memcpy(buffer.get() + index, start, escapes[i] - start);
+                    memcpy(buffer.data + index, start, escapes[i] - start);
                     index += escapes[i] - start;
                     start = escapes[i] + 1;
                 }
 
                 if(length > 0)
-                    memcpy(buffer.get() + index, start, end - start);
+                    memcpy(buffer.data + index, start, end - start);
 
-                if(!iteratorVector.empty()) {
+                if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
 
                     // If 2 or more iterators share the same name, don't replace twice.
                     std::unordered_set<std::string> iteratorSet;
 
-                    for(auto info : iteratorVector) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
+                    for(auto iterator : compiler.iterators) {
+                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                            localizeIterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }
 
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + 2 * OSH_FORMAT > outputCapacity) {
-                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
-                    output.release();
-                    output.reset(newOutput);
-                }
-
-                size_t oshStart = outputSize;
+                size_t oshStart = output.size;
 
                 LOG_DEBUG("Writing conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
-                memset(output.get() + outputSize, 0, OSH_FORMAT); // End index;
-                outputSize += OSH_FORMAT;
-                memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
-                outputSize += OSH_FORMAT;
+                output.write_bdp_pair(BDP832, OSH_TEMPLATE_CONDITIONAL_START_MARKER, OSH_TEMPLATE_CONDITIONAL_START_LENGTH, buffer.data, buffer.size);
+
+                for(auto i = 0; i < OSH_FORMAT; ++i) {
+                    output.write(0); // End index.
+                }
+
+                for(auto i = 0; i < OSH_FORMAT; ++i) {
+                    output.write(0); // True end index;
+                }
                 
-                templateStack.push(TemplateStackInfo(TemplateType::CONDITIONAL, outputSize, templateStartIndex, oshStart));
+                compiler.templates.push(TemplateStackInfo(TemplateType::CONDITIONAL, output.size, templateStartIndex, oshStart));
                 LOG_DEBUG("done\n");
             }
 
             end = start;
-            templateEndIndex += Options::getTemplateEndLength();
+            templateEndIndex += opts.templates.end.size();
         } else if(membcmp(end, Options::getTemplateElseConditionalStart(), Options::getTemplateElseConditionalStartLength())) {
             LOG_DEBUG("Detected else conditional template start");
 
@@ -1372,4 +1363,9 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
     output.release();
 
     return BinaryData(compiled, outputSize);
+}
+
+static void compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex) {
+    Chunk chunk(input.data, input.size, errorIndex, COMPILER_ERROR_CHUNK_SIZE);
+    throw Eryn::CompilationException(file, message, description, chunk);
 }

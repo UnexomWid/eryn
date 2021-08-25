@@ -29,20 +29,31 @@ const uint8_t* mem::find(const void* source, size_t sourceSize, const void* patt
     return src + sourceSize;
 }
 
-bool mem::cmp(const uint8_t* m1, const uint8_t* m2, size_t size) {
+bool mem::cmp(const void* m1, const void* m2, size_t size) {
     return 0 == memcmp(m1, m2, size);
 }
 
-bool mem::rcmp(const uint8_t* m1, const uint8_t* m2, size_t length) {
-    const uint8_t* m1Limit = m1;
+bool mem::cmp(const void* m1, const std::string& m2) {
+    return mem::cmp(m1, m2.c_str(), m2.size());
+}
 
-    m1 += length - 1;
-    m2 += length - 1;
+bool mem::rcmp(const void* m1, const void* m2, size_t size) {
+    auto left = static_cast<const uint8_t*>(m1);
+    auto right = static_cast<const uint8_t*>(m2);
 
-    while(*m1 == *m2 && m1 >= m1Limit) {
-        --m1;
-        --m2;
+    const uint8_t* m1Limit = left;
+
+    left += size - 1;
+    right += size - 1;
+
+    while(*left == *right && left >= m1Limit) {
+        --left;
+        --right;
     }
 
     return m1 < m1Limit;
+}
+
+bool mem::rcmp(const void* m1, const std::string& m2) {
+    return mem::rcmp(m1, m2.c_str(), m2.size());
 }
