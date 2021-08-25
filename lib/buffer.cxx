@@ -59,6 +59,10 @@ Buffer& Buffer::operator=(Buffer&& buffer) {
     return *this;
 }
 
+void Buffer::write(uint8_t byte) {
+    write(&byte, sizeof(uint8_t));
+}
+
 void Buffer::write(const uint8_t* bytes, size_t amount) {
     reserve(size);
     memcpy(data + size, bytes, amount);
@@ -111,9 +115,33 @@ const uint8_t* ConstBuffer::end() const noexcept {
 }
 
 const uint8_t* ConstBuffer::find(const std::string& pattern) const noexcept {
-    return find(pattern.c_str(), pattern.size());
+    return find(0, pattern.c_str(), pattern.size());
+}
+
+const uint8_t* ConstBuffer::find(size_t index, const std::string& pattern) const noexcept {
+    return find(index, pattern.c_str(), pattern.size());
 }
 
 const uint8_t* ConstBuffer::find(const void* pattern, size_t patternSize) const noexcept {
-    return mem::find(data, size, pattern, patternSize);
+    return find(0, pattern, patternSize);
+}
+
+const uint8_t* ConstBuffer::find(size_t index, const void* pattern, size_t patternSize) const noexcept {
+    return mem::find(data + index, size - index, pattern, patternSize);
+}
+
+size_t ConstBuffer::find_index(const std::string& pattern) const noexcept {
+    return find(pattern) - data;
+}
+
+size_t ConstBuffer::find_index(size_t index, const std::string& pattern) const noexcept {
+    return find(index, pattern) - data;
+}
+
+size_t ConstBuffer::find_index(const void* pattern, size_t patternSize) const noexcept {
+    return find(pattern, patternSize) - data;
+}
+
+size_t ConstBuffer::find_index(size_t index, const void* pattern, size_t patternSize) const noexcept {
+    return find(index, pattern, patternSize) - data;
 }
