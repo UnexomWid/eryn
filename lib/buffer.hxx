@@ -48,6 +48,11 @@ struct ConstBuffer {
     size_t find_index(size_t index, const std::string& pattern) const noexcept;
     size_t find_index(const void* pattern, size_t patternSize) const noexcept;
     size_t find_index(size_t index, const void* pattern, size_t patternSize) const noexcept;
+
+    bool match(const std::string& pattern) const noexcept;
+    bool match(size_t index, const std::string& pattern) const noexcept;
+    bool match(const void* pattern, size_t patternSize) const noexcept;
+    bool match(size_t index, const void* pattern, size_t patternSize) const noexcept;
 };
 
 #endif
