@@ -31,7 +31,9 @@ struct Buffer {
     void write_length(size_t source, uint8_t count);
     void write_length(size_t index, size_t source, uint8_t count);
 
+    // Returns a pointer to the data and resets the buffer data pointer, along with the size and capacity.
     uint8_t* release();
+    // Creates a ConstBuffer, shrinks the allocated memory for the data buffer if possible, and releases the data pointer.
     ConstBuffer finalize();
 
   private:
