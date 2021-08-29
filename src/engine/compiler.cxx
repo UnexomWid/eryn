@@ -542,107 +542,14 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
 
             end = start;
             templateEndIndex += opts.templates.end.size();
-        } else if(membcmp(end, Options::getTemplateInvertedConditionalStart(), Options::getTemplateInvertedConditionalStartLength())) {
-            LOG_DEBUG("Detected inverted conditional template start");
-
-            end += Options::getTemplateInvertedConditionalStartLength();
-
-            while(isBlank(*end))
-                ++end;
-
-            start = end;
-            remainingLength = inputSize - (end - input);
-            index = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
-
-            std::vector<const uint8_t*> escapes;
-
-            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
-            }
-
-            templateEndIndex = end + index - input;
-
-            if(templateEndIndex >= inputSize)
-                throwCompilationException(path, "Unexpected EOF", "did you forget to close the template?", input, inputSize, (end + index) - input - 1);
-
-            if(index == 0) 
-                throwCompilationException(path, "Unexpected template end", "did you forget to write the condition?", input, inputSize, end - input - 1);
-
-            LOG_DEBUG("Found template end at %zu", end + index - input);
-
-            end = end + index - 1;
-            while(isBlank(*end))
-                --end;
-            ++end;
-
-            if(start != end) {
-                length = end - start;
-
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
-
-                size_t bufferSize     = length - escapes.size();
-                size_t bufferCapacity = bufferSize;
-                
-                std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
-                index = 0;
-
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    memcpy(buffer.get() + index, start, escapes[i] - start);
-                    index += escapes[i] - start;
-                    start = escapes[i] + 1;
-                }
-
-                if(length > 0)
-                    memcpy(buffer.get() + index, start, end - start);
-
-                if(!iteratorVector.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(auto info : iteratorVector) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
-                        }
-                    }
-                }
-
-                while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + bufferSize + 2 * OSH_FORMAT > outputCapacity) {
-                    uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
-                    output.release();
-                    output.reset(newOutput);
-                }
-
-                size_t oshStart = outputSize;
-
-                LOG_DEBUG("Writing inverted conditional template start as BDP832 pair %zu -> %zu...", start - input, end - input);
-                outputSize += BDP::writePair(Global::BDP832, output.get() + outputSize, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_MARKER, OSH_TEMPLATE_INVERTED_CONDITIONAL_START_LENGTH, buffer.get(), bufferSize);
-                memset(output.get() + outputSize, 0, OSH_FORMAT); // End index;
-                outputSize += OSH_FORMAT;
-                memset(output.get() + outputSize, 0, OSH_FORMAT); // True end index;
-                outputSize += OSH_FORMAT;
-                
-                templateStack.push(TemplateStackInfo(TemplateType::INVERTED_CONDITIONAL, outputSize, templateStartIndex, oshStart));
-                LOG_DEBUG("done\n");
-            }
-
-            end = start;
-            templateEndIndex += Options::getTemplateEndLength();
-        } else if(membcmp(end, Options::getTemplateLoopStart(), Options::getTemplateLoopStartLength())) {
+        } else if(input.match(end - input.data, opts.templates.loopStart)) {
             LOG_DEBUG("Detected loop template start");
 
-            end += Options::getTemplateLoopStartLength();
+            end += opts.templates.loopStart.size();
 
-            while(isBlank(*end))
+            while(str::is_blank(*end)) {
                 ++end;
+            }
 
             start = end;
 
@@ -650,48 +557,54 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
             const uint8_t* leftEnd = start;
             size_t sepIndex;
 
-            remainingLength = inputSize - (end - input);
-            sepIndex = mem_find(end, remainingLength, Options::getTemplateLoopSeparator(), Options::getTemplateLoopSeparatorLength(), Options::getTemplateLoopSeparatorLookup());
-            index    = mem_find(end, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+            remainingLength = input.size - (end - input.data);
+            sepIndex = input.find_index(end - input.data, opts.templates.loopSeparator) - (end - input.data);
+            index    = index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
 
             std::vector<const uint8_t*> escapes;
 
-            while(index < remainingLength && *(end + index - 1) == Options::getTemplateEscape()) {
+            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
                 LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
 
                 escapes.push_back(end + index - 1);
                 remainingLength -= index + 1;
-                index += 1 + mem_find(end + index + 1, remainingLength, Options::getTemplateEnd(), Options::getTemplateEndLength(), Options::getTemplateEndLookup());
+                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
             }
 
-            templateEndIndex = end + index - input;
+            templateEndIndex = end + index - input.data;
 
-            if(sepIndex > index)
-                throwCompilationException(path, "Unexpected end of template", "did you forget to write the loop separator?", input, inputSize, (end + index) - input - 1);
-            if(sepIndex == remainingLength)
-                throwCompilationException(path, "Unexpected EOF", "did you forget to write the loop separator?", input, inputSize, (end + sepIndex) - input - 1);
-            if(sepIndex == 0)
-                throwCompilationException(path, "Unexpected separator", "did you forget to provide the left argument before the separator?", input, inputSize, end - input);
-            if(templateEndIndex >= inputSize)
-                throwCompilationException(path, "Unexpected EOF", "did you forget to close the template?", input, inputSize, (end + index) - input - 1);
+            if(sepIndex > index) {
+                compiler_error(path, "Unexpected end of template", "did you forget to write the loop separator?", input, (end + index) - input.data - 1);
+            }
+            if(sepIndex == remainingLength) {
+                compiler_error(path, "Unexpected EOF", "did you forget to write the loop separator?", input, (end + sepIndex) - input.data - 1);
+            }
+            if(sepIndex == 0) {
+                compiler_error(path, "Unexpected separator", "did you forget to provide the left argument before the separator?", input, end - input.data);
+            }
+            if(templateEndIndex >= input.size) {
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+            }
 
             LOG_DEBUG("Found loop template separator at %zu", end + sepIndex - input);
             LOG_DEBUG("Found template end at %zu", end + index - input);
 
             leftEnd = end + sepIndex - 1;
-            start = end + sepIndex + Options::getTemplateLoopSeparatorLength();
+            start = end + sepIndex + opts.templates.loopSeparator.size();
 
             while(*leftEnd == ' ' || *leftEnd == '\t')
                 --leftEnd;
             ++leftEnd;
 
             end = end + index - 1;
-            while(isBlank(*end))
+            while(str::is_blank(*end)) {
                 --end;
+            }
             ++end;
 
-            if(end == start)
-                throwCompilationException(path, "Unexpected end of template", "did you forget to provide the right argument after the separator?", input, inputSize, (leftStart + index) - input - 1);
+            if(end == start) {
+                compiler_error(path, "Unexpected end of template", "did you forget to provide the right argument after the separator?", input, (leftStart + index) - input.data - 1);
+            }
 
             while(*start == ' ' || *start == '\t')
                 ++start;
@@ -702,17 +615,18 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
             bool isReverse = false;
             const uint8_t* reverseStart;
 
-            if(end - start + 1 >= Options::getTemplateLoopReverseLength()) {
-                reverseStart = end - Options::getTemplateLoopReverseLength();
+            if(end - start + 1 >= opts.templates.loopReverse.size()) {
+                reverseStart = end - opts.templates.loopReverse.size();
 
-                if(membcmp(reverseStart, Options::getTemplateLoopReverse(), Options::getTemplateLoopReverseLength())) {
+                if(input.match(reverseStart - input.data, opts.templates.loopReverse)) {
                     LOG_DEBUG("Detected reversed loop template");
 
                     isReverse = true;
                     end = reverseStart - 1;
 
-                    while((isBlank(*end)) && end > start)
+                    while((str::is_blank(*end)) && end > start) {
                         --end;
+                    }
                     ++end;
 
                     if(length != 0)
@@ -729,30 +643,30 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
             size_t bufferSize     = length - escapes.size();
             size_t bufferCapacity = bufferSize;
                 
-            std::unique_ptr<uint8_t, decltype(re::free)*> buffer((uint8_t*) re::alloc(bufferCapacity, "Defrag Buffer", __FILE__, __LINE__), re::free);
+            Buffer buffer;
             index = 0;
 
             for(size_t i = 0; i < escapes.size(); ++i) {
-                memcpy(buffer.get() + index, start, escapes[i] - start);
-                index += escapes[i] - start;
+                buffer.write(start, escapes[i] - start);
                 start = escapes[i] + 1;
             }
 
-            if(length > 0)
-                memcpy(buffer.get() + index, start, end - start);
+            if(length > 0) {
+                buffer.write(start, end - start);
+            }
 
-            if(!iteratorVector.empty()) {
+            if(!compiler.iterators.empty()) {
                 LOG_DEBUG("Localizing iterators");
 
                 // If 2 or more iterators share the same name, don't replace twice.
                 std::unordered_set<std::string> iteratorSet;
 
-                for(auto info : iteratorVector) {
-                    std::string iteratorString = std::string(reinterpret_cast<const char*>(info.iterator), info.iteratorLength);
+                for(auto iterator : compiler.iterators) {
+                    std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
 
                     if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                         iteratorSet.insert(iteratorString);
-                        localizeIterator(info.iterator, info.iteratorLength, buffer, bufferSize, bufferCapacity);
+                        localizeIterator(iterator.data, iterator.size, buffer);
                     }
                 }
             }
@@ -768,41 +682,29 @@ Buffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char
                 oshStartMarkerLength = OSH_TEMPLATE_LOOP_REVERSE_START_LENGTH;
             }
 
-            while(outputSize + Global::BDP832->NAME_LENGTH_BYTE_SIZE + oshStartMarkerLength > outputCapacity) {
-                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
-                output.release();
-                output.reset(newOutput);
-            }
-
-            size_t oshStart = outputSize;
+            size_t oshStart = output.size;
 
             LOG_DEBUG("Writing loop template start as BDP832 pair %zu -> %zu...", leftStart - input, end - input);
-            outputSize += BDP::writeName(Global::BDP832, output.get() + outputSize, oshStartMarker, oshStartMarkerLength);
+            output.write_bdp_name(BDP832, oshStartMarker, oshStartMarkerLength);
 
-            size_t tempBufferSize = Global::BDP832->VALUE_LENGTH_BYTE_SIZE * 2 + leftLength + bufferSize;
-            std::unique_ptr<uint8_t, decltype(re::free)*> tempBuffer((uint8_t*) re::malloc(tempBufferSize, "Compiler loop template temp buffer", __FILE__, __LINE__), re::free);
+            Buffer tempBuffer;
 
-            BDP::writeValue(Global::BDP832, tempBuffer.get(), leftStart, leftLength);
-            BDP::writeValue(Global::BDP832, tempBuffer.get() + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + leftLength, buffer.get(), bufferSize);
+            tempBuffer.write_bdp_value(BDP832, leftStart, leftLength);
+            tempBuffer.write_bdp_value(BDP832, buffer.data, buffer.size);
 
-            while(outputSize + Global::BDP832->VALUE_LENGTH_BYTE_SIZE + tempBufferSize + OSH_FORMAT > outputCapacity) {
-                uint8_t* newOutput = (uint8_t*) re::expand(output.get(), outputCapacity, __FILE__, __LINE__);
-                output.release();
-                output.reset(newOutput);
+            output.write_bdp_value(BDP832, tempBuffer.data, tempBuffer.size);
+            
+            for(auto i = 0; i < OSH_FORMAT; ++i) {
+                output.write(0);
             }
-
-            outputSize += BDP::writeValue(Global::BDP832, output.get() + outputSize, tempBuffer.get(), tempBufferSize);
-            memset(output.get() + outputSize, 0, OSH_FORMAT);
-
-            outputSize += OSH_FORMAT;
                 
-            templateStack.push(TemplateStackInfo(TemplateType::LOOP, outputSize, templateStartIndex, oshStart));
-            iteratorVector.push_back(IteratorVectorInfo(leftStart, leftLength));
+            compiler.templates.push(TemplateStackInfo(TemplateType::LOOP, output.size, templateStartIndex, oshStart));
+            compiler.iterators.push_back(ConstBuffer(leftStart, leftLength));
 
             LOG_DEBUG("done\n");
 
             end = leftStart;
-            templateEndIndex += Options::getTemplateEndLength();
+            templateEndIndex += opts.templates.end.size();
         } else if(membcmp(end, Options::getTemplateComponent(), Options::getTemplateComponentLength())) {
             LOG_DEBUG("Detected component template");
 
