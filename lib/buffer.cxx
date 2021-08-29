@@ -91,6 +91,20 @@ void Buffer::write_bdp_pair(const BDP::Header& header, const uint8_t* name, size
     write_bdp_value(header, value, valueSize);
 }
 
+void Buffer::write_length(size_t source, uint8_t count) {
+    write_length(0, source, count);
+}
+
+void Buffer::write_length(size_t index, size_t source, uint8_t count) {
+    auto diff = size - index;
+    auto extra = diff < count ? count - diff : 0;
+    
+    reserve(extra);
+
+    BDP::lengthToBytes(data + size, source, count);
+    size += extra;
+}
+
 void Buffer::reserve(size_t amount) {
     while(size + amount > capacity) {
         data = static_cast<uint8_t*>(REMEM_EXPAND(data, size));
@@ -105,6 +119,17 @@ uint8_t* Buffer::release() {
     capacity = 0;
 
     return ptr;
+}
+
+ConstBuffer Buffer::finalize() {
+    if(size != capacity) {
+        data = (uint8_t*) REMEM_REALLOC(data, size);
+    }
+
+    ConstBuffer finalized(data, size);
+    finalized.data = release();
+
+    return finalized;
 }
 
 ConstBuffer::ConstBuffer(const void* data, size_t size) :

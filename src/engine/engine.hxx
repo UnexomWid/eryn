@@ -54,12 +54,12 @@ struct Options {
 };
 
 class Cache {
-    std::unordered_map<string, Buffer> entries;
+    std::unordered_map<string, ConstBuffer> entries;
 
   public:
-    void    add(string key, Buffer&& value);
-    Buffer& get(string key);
-    bool    has(string key) const;
+    void         add(string key, ConstBuffer&& value);
+    ConstBuffer& get(string key);
+    bool         has(string key) const;
 };
 
 class Engine {
@@ -75,8 +75,8 @@ class Engine {
 
   private:
     void   compileDir(const char* path, const char* rel, const FilterInfo& info);
-    Buffer compileFile(const char* path);
-    Buffer compileBytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
+    ConstBuffer compileFile(const char* path);
+    ConstBuffer compileBytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
 };
 
 class InternalException : public std::exception {
