@@ -30,28 +30,59 @@ static constexpr auto COMPILER_PATH_SEPARATOR   = '/';
 static constexpr auto COMPILER_ERROR_CHUNK_SIZE = 20u;
 static constexpr auto COMPILER_PATH_MAX_LENGTH  = 4096u;
 
-static uint8_t* componentPathToAbsolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
-static void     localizeIterator(const uint8_t* iterator, size_t iteratorLength, Buffer& src);
-static void     compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex);
+static uint8_t*   component_path_to_absolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
+static void       localize_iterator(const uint8_t* iterator, size_t iteratorLength, Buffer& src);
+static void       compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex);
+
+struct TemplateEndInfo {
+    std::vector<const uint8_t*> escapes;
+    size_t endIndex;
+
+    TemplateEndInfo(std::vector<const uint8_t*>&& escapes, size_t endIndex) : escapes(escapes), endIndex(endIndex) { }
+};
+
+static TemplateEndInfo find_template_end(ConstBuffer& input, const uint8_t* start, const std::string& templateEnd, char escapeChar) {
+    size_t index = input.find_index(start - input.data, templateEnd) - (start - input.data);
+
+    std::vector<const uint8_t*> escapes;
+
+    while((start + index - 1) < input.end() + 1 && *(start + index - 1) == escapeChar) {
+        LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+
+        escapes.push_back(start + index - 1);
+        index = 1 + input.find_index((start + index + 1) - input.data, templateEnd) - (start - input.data);
+    }
+
+    return { std::move(escapes), index };
+}
+
+static void write_escaped_content(ConstBuffer& input, Buffer& output, const uint8_t* start, const uint8_t* end, const std::vector<const uint8_t*>& escapes) {
+    for(const auto& escape : escapes) {
+        output.write(start, escape - start);
+        start = escape + 1;
+    }
+
+    output.write(start, end - start);
+}
 
 void Eryn::Engine::compile(const char* path) {
     LOG_DEBUG("===> Compiling file '%s'", path);
 
-    cache.add(path, std::move(compileFile(path)));
+    cache.add(path, std::move(compile_file(path)));
 
     LOG_DEBUG("===> Done\n");
 }
 
-void Eryn::Engine::compileString(const char* alias, const char* str) {
+void Eryn::Engine::compile_string(const char* alias, const char* str) {
     LOG_DEBUG("===> Compiling string '%s'", alias);
 
     ConstBuffer input(str, strlen(str));
-    cache.add(alias, compileBytes(input, opts.workingDir.c_str(), alias));
+    cache.add(alias, compile_bytes(input, opts.workingDir.c_str(), alias));
 
     LOG_DEBUG("===> Done\n");
 }
 
-void Eryn::Engine::compileDir(const char* path, std::vector<string> filters) {
+void Eryn::Engine::compile_dir(const char* path, std::vector<string> filters) {
     LOG_DEBUG("===> Compiling directory '%s'", path);
 
     FilterInfo info;
@@ -86,14 +117,14 @@ void Eryn::Engine::compileDir(const char* path, std::vector<string> filters) {
         }
     }
 
-    compileDir(path, "", info);
+    compile_dir(path, "", info);
 
     LOG_DEBUG("===> Done\n");
 }
 
 // 'rel' is relative to the working directory, and is used for filtering
 // 'path' is the full path and is used to read the directory
-void Eryn::Engine::compileDir(const char* path, const char* rel, const FilterInfo& info) {
+void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterInfo& info) {
     DIR* dir;
     struct dirent* entry;
 
@@ -167,7 +198,7 @@ void Eryn::Engine::compileDir(const char* path, const char* rel, const FilterInf
                     LOG_DEBUG("Scanning: %s\n", newRel.get());
 
                     strcpy(absoluteEnd, entry->d_name);
-                    compileDir(absolute, newRel.get(), info);
+                    compile_dir(absolute, newRel.get(), info);
                 } else LOG_DEBUG("Ignoring: %s\n", newRel.get());
             }
         }
@@ -175,7 +206,7 @@ void Eryn::Engine::compileDir(const char* path, const char* rel, const FilterInf
     }
 }
 
-ConstBuffer Eryn::Engine::compileFile(const char* path) {
+ConstBuffer Eryn::Engine::compile_file(const char* path) {
     FILE* input = fopen(path, "rb");
 
     if(input == NULL) {
@@ -199,7 +230,7 @@ ConstBuffer Eryn::Engine::compileFile(const char* path) {
     ConstBuffer inputBuffer(inputPtr.get(), inputSize);
     string wd(path, path::dir_end_index(path, strlen(path)));
 
-    return compileBytes(inputBuffer, wd.c_str(), path);
+    return compile_bytes(inputBuffer, wd.c_str(), path);
 }
 
 enum class TemplateType {
@@ -227,7 +258,7 @@ struct CompilerInfo {
 
 // 'wd' is the working directory, which is necessary to find components
 // 'path' is either the full path of the source file, or the alias of the source string
-ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const char* path) {
+ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, const char* path) {
     Buffer output;
     const BDP::Header BDP832 = BDP::Header(8, 32);
 
@@ -287,23 +318,14 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
             }
 
             start = end;
-            remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.commentEnd) - (end - input.data);
-
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                remainingLength -= index + 1;
-                index = input.find_index((end + index + 1) - input.data, opts.templates.commentEnd) - (end - input.data);
-            }
-
-            templateEndIndex = (end + index) - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
                 compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
             }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
             end = start;
             templateEndIndex += opts.templates.commentEnd.size();
@@ -317,31 +339,20 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
             }
 
             start = end;
-            remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-
-            std::vector<const uint8_t*> escapes;
-
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
-            if(index == 0)
+            if(endInfo.endIndex == 0) {
                 compiler_error(path, "Unexpected template end", "did you forget to write the condition?", input, end - input.data - 1);
+            }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
@@ -349,21 +360,11 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             if(start != end) {
                 length = end - start;
-
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+                index = 0;
 
                 Buffer buffer;
 
-                index = 0;
-
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    buffer.write(start, escapes[i] - start);
-                    start = escapes[i] + 1;
-                }
-
-                if(length > 0) {
-                    buffer.write(start, end - start);
-                }
+                write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
                 if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
@@ -376,7 +377,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(iterator.data, iterator.size, buffer);
+                            localize_iterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }
@@ -414,32 +415,20 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
             }
 
             start = end;
-            remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-
-            std::vector<const uint8_t*> escapes;
-
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
-            if(index == 0) {
+            if(endInfo.endIndex == 0) {
                 compiler_error(path, "Unexpected template end", "did you forget to write the condition?", input, end - input.data - 1);
             }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
@@ -447,21 +436,11 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             if(start != end) {
                 length = end - start;
-
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
+                index = 0;
 
                 Buffer buffer;
 
-                index = 0;
-
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    buffer.write(start, escapes[i] - start);
-                    start = escapes[i] + 1;
-                }
-
-                if(length > 0) {
-                    buffer.write(start, end - start);
-                }
+                write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
                 if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
@@ -474,7 +453,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(iterator.data, iterator.size, buffer);
+                            localize_iterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }
@@ -504,17 +483,16 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
             LOG_DEBUG("Detected else template start");
 
             start = end;
-            remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template body?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template body?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
@@ -559,23 +537,16 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
             size_t sepIndex;
 
             remainingLength = input.size - (end - input.data);
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
+            
             sepIndex = input.find_index(end - input.data, opts.templates.loopSeparator) - (end - input.data);
-            index    = index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
 
-            std::vector<const uint8_t*> escapes;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = end + index - input.data;
-
-            if(sepIndex > index) {
-                compiler_error(path, "Unexpected end of template", "did you forget to write the loop separator?", input, (end + index) - input.data - 1);
+            if(sepIndex > endInfo.endIndex) {
+                compiler_error(path, "Unexpected end of template", "did you forget to write the loop separator?", input, (end + endInfo.endIndex) - input.data - 1);
             }
             if(sepIndex == remainingLength) {
                 compiler_error(path, "Unexpected EOF", "did you forget to write the loop separator?", input, (end + sepIndex) - input.data - 1);
@@ -584,11 +555,11 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                 compiler_error(path, "Unexpected separator", "did you forget to provide the left argument before the separator?", input, end - input.data);
             }
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
             LOG_DEBUG("Found loop template separator at %zu", end + sepIndex - input);
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
             leftEnd = end + sepIndex - 1;
             start = end + sepIndex + opts.templates.loopSeparator.size();
@@ -597,14 +568,14 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                 --leftEnd;
             ++leftEnd;
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
             ++end;
 
             if(end == start) {
-                compiler_error(path, "Unexpected end of template", "did you forget to provide the right argument after the separator?", input, (leftStart + index) - input.data - 1);
+                compiler_error(path, "Unexpected end of template", "did you forget to provide the right argument after the separator?", input, (leftStart + endInfo.endIndex) - input.data - 1);
             }
 
             while(*start == ' ' || *start == '\t')
@@ -639,22 +610,11 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                 }
             }
 
-            // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
-
-            size_t bufferSize     = length - escapes.size();
-            size_t bufferCapacity = bufferSize;
-                
-            Buffer buffer;
             index = 0;
 
-            for(size_t i = 0; i < escapes.size(); ++i) {
-                buffer.write(start, escapes[i] - start);
-                start = escapes[i] + 1;
-            }
+            Buffer buffer;
 
-            if(length > 0) {
-                buffer.write(start, end - start);
-            }
+            write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
             if(!compiler.iterators.empty()) {
                 LOG_DEBUG("Localizing iterators");
@@ -667,7 +627,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                     if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                         iteratorSet.insert(iteratorString);
-                        localizeIterator(iterator.data, iterator.size, buffer);
+                        localize_iterator(iterator.data, iterator.size, buffer);
                     }
                 }
             }
@@ -722,37 +682,24 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             remainingLength = input.size - (end - input.data);
             sepIndex = input.find_index(end - input.data, opts.templates.componentSeparator) - (end - input.data);
-            index    = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
 
-            std::vector<const uint8_t*> escapes;
-
-            // Escape is present before the template end.
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(sepIndex == 0) {
                 compiler_error(path, "Unexpected separator", "did you forget to provide the component name before the separator?", input, end - input.data);
             }
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
             
-            if(index == 0) {
+            if(endInfo.endIndex == 0) {
                 LOG_DEBUG("Detected empty component template");
             } else {
                 LOG_DEBUG("Found template component at %zu", end + sepIndex - input);
-                LOG_DEBUG("Found template end at %zu", end + index - input);
+                LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-                templateEndIndex = end + index - input.data;
-
-                if(sepIndex < index) {
+                if(sepIndex < endInfo.endIndex) {
                     leftEnd = end + sepIndex - 1;
 
                     while(*leftEnd == ' ' || *leftEnd == '\t')
@@ -760,14 +707,14 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                     ++leftEnd;
 
                     start = end + sepIndex + opts.templates.componentSeparator.size();
-                    end = end + index - 1;
+                    end = end + endInfo.endIndex - 1;
                     while(str::is_blank(*end)) {
                         --end;
                     }
                     ++end;
 
                     if(end == start) {
-                        compiler_error(path, "Unexpected end of template", "did you forget to provide the component context after the separator?", input, (leftStart + index) - input.data - 1);
+                        compiler_error(path, "Unexpected end of template", "did you forget to provide the component context after the separator?", input, (leftStart + endInfo.endIndex) - input.data - 1);
                     }
 
                     while(str::is_blank(*start)) {
@@ -775,7 +722,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                     }
                     length = end - start;
                 } else {
-                    leftEnd = end + index - 1;
+                    leftEnd = end + endInfo.endIndex - 1;
 
                     while(str::is_blank(*leftEnd)) {
                         --leftEnd;
@@ -819,26 +766,15 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
                     compiler_error(path, "Unexpected end of template", "did you forget to provide the component context after the separator?", input, (selfStart) - input.data);
                 }
 
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
-
-                if(length == 0 && escapes.size() > 0) {
+                if(length == 0 && endInfo.escapes.size() > 0) {
                     compiler_error(path, "Unexpected escape character(s) before end", "escape characters can only exist after the separator, which was not found; delete all escape characters", input, (selfStart) - input.data);
                 }
 
-                size_t bufferSize     = length - escapes.size();
-                size_t bufferCapacity = bufferSize;
+                index = 0;
                 
                 Buffer buffer;
-                index = 0;
 
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    buffer.write(start, escapes[i] - start);
-                    start = escapes[i] + 1;
-                }
-
-                if(length > 0) {
-                    buffer.write(start, end - start);
-                }
+                write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
                 if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
@@ -851,7 +787,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(iterator.data, iterator.size, buffer);
+                            localize_iterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }
@@ -863,7 +799,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                 size_t componentPathLength;
                 std::unique_ptr<uint8_t, decltype(free)*> componentPath(
-                    componentPathToAbsolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), re::free);
+                    component_path_to_absolute(wd, reinterpret_cast<const char*>(leftStart), leftLength, componentPathLength), re::free);
 
                 Buffer tempBuffer;
                 tempBuffer.write_bdp_value(BDP832, componentPath.get(), componentPathLength);
@@ -899,30 +835,19 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             start = end;
             remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-
-            std::vector<const uint8_t*> escapes;
-
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
-            if(index == 0) {
+            if(endInfo.endIndex == 0) {
                 compiler_error(path, "Unexpected template end", "did you forget to write the body?", input, end - input.data - 1);
             }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
@@ -930,23 +855,11 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             if(start != end) {
                 length = end - start;
-
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
-
-                size_t bufferSize     = length - escapes.size();
-                size_t bufferCapacity = bufferSize;
+                index = 0;
                 
                 Buffer buffer;
-                index = 0;
 
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    buffer.write(start, escapes[i] - start);
-                    start = escapes[i] + 1;
-                }
-
-                if(length > 0) {
-                    buffer.write(start, end - start);
-                }
+                write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
                 if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
@@ -959,7 +872,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(iterator.data, iterator.size, buffer);
+                            localize_iterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }
@@ -976,16 +889,16 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
             start = end;
             remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-            templateEndIndex = end + index - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template body?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template body?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
-            LOG_DEBUG("Found template end at %zu", end + index - input);
+            LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-            end = end + index - 1;
+            end = end + endInfo.endIndex - 1;
             while(str::is_blank(*end)) {
                 --end;
             }
@@ -1084,57 +997,35 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                 end = start;
             } else {
-                compiler_error(path, "Expected template body end", "template body end must only contain the marker", input, start + opts.templates.bodyEnd.size() - input);
+                compiler_error(path, "Expected template body end", "template body end must only contain the marker", input, start + opts.templates.bodyEnd.size() - input.data);
             }
 
             templateEndIndex += opts.templates.end.size();
         } else { // Normal Template.
             start = end;
             remainingLength = input.size - (end - input.data);
-            index = input.find_index(end - input.data, opts.templates.end) - (end - input.data);
-
-            std::vector<const uint8_t*> escapes;
-
-            while(index < remainingLength && *(end + index - 1) == opts.templates.escape) {
-                LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
-
-                escapes.push_back(end + index - 1);
-                remainingLength -= index + 1;
-                index = 1 + input.find_index((end + index + 1) - input.data, opts.templates.end) - (end - input.data);
-            }
-
-            templateEndIndex = (end + index) - input.data;
+            TemplateEndInfo endInfo = std::move(find_template_end(input, end, opts.templates.end, opts.templates.escape));
+            templateEndIndex = (end + endInfo.endIndex) - input.data;
 
             if(templateEndIndex >= input.size) {
-                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + index) - input.data - 1);
+                compiler_error(path, "Unexpected EOF", "did you forget to close the template?", input, (end + endInfo.endIndex) - input.data - 1);
             }
 
-            if(index != 0 || escapes.size() > 0) {
-                LOG_DEBUG("Found template end at %zu", end + index - input);
+            if(endInfo.endIndex != 0 || endInfo.escapes.size() > 0) {
+                LOG_DEBUG("Found template end at %zu", end + endInfo.endIndex - input);
 
-                end = end + index - 1;
+                end = end + endInfo.endIndex - 1;
                 while(str::is_blank(*end)) {
                     --end;
                 }
                 ++end;
 
                 length = end - start;
-
-                // Defragmentation: remove the escape characters by copying the fragments between them into a buffer.
-
-                size_t bufferSize     = length - escapes.size();
-                size_t bufferCapacity = bufferSize;
-                
-                Buffer buffer;
                 index = 0;
 
-                for(size_t i = 0; i < escapes.size(); ++i) {
-                    buffer.write(start, escapes[i] - start);
-                    start = escapes[i] + 1;
-                }
+                Buffer buffer;
 
-                if(length > 0)
-                    buffer.write(start, end - start);
+                write_escaped_content(input, buffer, start, end, endInfo.escapes);
 
                 if(!compiler.iterators.empty()) {
                     LOG_DEBUG("Localizing iterators");
@@ -1147,7 +1038,7 @@ ConstBuffer Eryn::Engine::compileBytes(ConstBuffer& input, const char* wd, const
 
                         if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
                             iteratorSet.insert(iteratorString);
-                            localizeIterator(iterator.data, iterator.size, buffer);
+                            localize_iterator(iterator.data, iterator.size, buffer);
                         }
                     }
                 }

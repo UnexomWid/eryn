@@ -70,13 +70,13 @@ class Engine {
     Engine();
 
     void compile(const char* path);
-    void compileString(const char* alias, const char* str);
-    void compileDir(const char* path, std::vector<string> filters);
+    void compile_string(const char* alias, const char* str);
+    void compile_dir(const char* path, std::vector<string> filters);
 
   private:
-    void   compileDir(const char* path, const char* rel, const FilterInfo& info);
-    ConstBuffer compileFile(const char* path);
-    ConstBuffer compileBytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
+    void   compile_dir(const char* path, const char* rel, const FilterInfo& info);
+    ConstBuffer compile_file(const char* path);
+    ConstBuffer compile_bytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
 };
 
 class InternalException : public std::exception {
