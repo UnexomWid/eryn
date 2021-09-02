@@ -1053,8 +1053,9 @@ void localize_iterator(const ConstBuffer& iterator, Buffer& src) {
                 if(quoteCount == 0) {
                     ++quoteCount;
                     quoteType = ch;
-                } else if(quoteType == ch)
+                } else if(quoteType == ch) {
                     --quoteCount;
+                }
 
                 ++index;
                 matchIndex = index;
@@ -1127,7 +1128,9 @@ void localize_iterator(const ConstBuffer& iterator, Buffer& src) {
                         matchIndex = index;
 
                         continue;
-                    } else ++index;
+                    } else {
+                        ++index;
+                    }
                 } else {
                     ++index;
                     matchIndex = index;
