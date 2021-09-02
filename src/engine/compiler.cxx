@@ -31,8 +31,9 @@ static constexpr auto COMPILER_ERROR_CHUNK_SIZE = 20u;
 static constexpr auto COMPILER_PATH_MAX_LENGTH  = 4096u;
 
 static uint8_t*   component_path_to_absolute(const char* wd, const char* componentPath, size_t componentPathLength, size_t &absoluteLength);
-static void       localize_iterator(const uint8_t* iterator, size_t iteratorLength, Buffer& src);
-static void       compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex);
+static void       localize_iterator(const ConstBuffer& iterator, Buffer& src);
+static void       localize_all_iterators(const std::vector<ConstBuffer>& iterators, Buffer& src);
+static void       compiler_error(const char* file, const char* message, const char* description, const ConstBuffer& input, size_t errorIndex);
 
 struct TemplateEndInfo {
     std::vector<const uint8_t*> escapes;
@@ -344,22 +345,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
                 Buffer buffer;
 
                 write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-                if(!compiler.iterators.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(const auto& iterator : compiler.iterators) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localize_iterator(iterator.data, iterator.size, buffer);
-                        }
-                    }
-                }
+                localize_all_iterators(compiler.iterators, buffer);
 
                 size_t oshStart = output.size;
 
@@ -420,22 +406,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
                 Buffer buffer;
 
                 write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-                if(!compiler.iterators.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(const auto& iterator : compiler.iterators) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localize_iterator(iterator.data, iterator.size, buffer);
-                        }
-                    }
-                }
+                localize_all_iterators(compiler.iterators, buffer);
 
                 size_t oshStart = output.size;
 
@@ -594,22 +565,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
             Buffer buffer;
 
             write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-            if(!compiler.iterators.empty()) {
-                LOG_DEBUG("Localizing iterators");
-
-                // If 2 or more iterators share the same name, don't replace twice.
-                std::unordered_set<std::string> iteratorSet;
-
-                for(const auto& iterator : compiler.iterators) {
-                    std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                    if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                        iteratorSet.insert(iteratorString);
-                        localize_iterator(iterator.data, iterator.size, buffer);
-                    }
-                }
-            }
+            localize_all_iterators(compiler.iterators, buffer);
 
             const uint8_t* oshStartMarker;
             size_t         oshStartMarkerLength;
@@ -754,22 +710,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
                 Buffer buffer;
 
                 write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-                if(!compiler.iterators.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(const auto& iterator : compiler.iterators) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localize_iterator(iterator.data, iterator.size, buffer);
-                        }
-                    }
-                }
+                localize_all_iterators(compiler.iterators, buffer);
 
                 size_t oshStart = output.size;
 
@@ -839,22 +780,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
                 Buffer buffer;
 
                 write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-                if(!compiler.iterators.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(const auto& iterator : compiler.iterators) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localize_iterator(iterator.data, iterator.size, buffer);
-                        }
-                    }
-                }
+                localize_all_iterators(compiler.iterators, buffer);
 
                 LOG_DEBUG("Writing void template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 output.write_bdp_pair(BDP832, OSH_TEMPLATE_VOID_MARKER, OSH_TEMPLATE_VOID_LENGTH, buffer.data, buffer.size);
@@ -1005,22 +931,7 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
                 Buffer buffer;
 
                 write_escaped_content(input, buffer, start, end, endInfo.escapes);
-
-                if(!compiler.iterators.empty()) {
-                    LOG_DEBUG("Localizing iterators");
-
-                    // If 2 or more iterators share the same name, don't replace twice.
-                    std::unordered_set<std::string> iteratorSet;
-
-                    for(const auto& iterator : compiler.iterators) {
-                        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
-
-                        if(iteratorSet.end() == iteratorSet.find(iteratorString)) {
-                            iteratorSet.insert(iteratorString);
-                            localize_iterator(iterator.data, iterator.size, buffer);
-                        }
-                    }
-                }
+                localize_all_iterators(compiler.iterators, buffer);
 
                 LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input, end - input);
                 output.write_bdp_pair(BDP832, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_LENGTH, buffer.data, buffer.size);
@@ -1095,6 +1006,135 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
     }
 
     return output.finalize();
+}
+
+void localize_all_iterators(const std::vector<ConstBuffer>& iterators, Buffer& src) {
+    if(iterators.empty()) {
+        return;
+    }
+    
+    LOG_DEBUG("Localizing iterators");
+
+    // If 2 or more iterators share the same name, don't replace twice.
+    std::unordered_set<std::string> iteratorSet;
+
+    for(const auto& iterator : iterators) {
+        std::string iteratorString = std::string(reinterpret_cast<const char*>(iterator.data), iterator.size);
+
+        if(iteratorSet.find(iteratorString) == iteratorSet.end()) {
+            iteratorSet.insert(iteratorString);
+            localize_iterator(iterator, src);
+        }
+    }
+}
+
+void localize_iterator(const ConstBuffer& iterator, Buffer& src) {
+    size_t index = 0;
+    size_t matchIndex = 0;
+
+    uint8_t quoteCount         = 0;
+    uint8_t quoteTemplateCount = 0; // Template count, for template literals such as `text ${template}`.
+    uint8_t quoteType          = 0;
+
+    while(index < src.size) {
+        uint8_t ch = src.data[index];
+
+        switch(ch) {
+            case '\'':
+            case '\"':
+            case  '`':
+                if(index > 0 && src.data[index - 1] == '\\') {
+                    ++index;
+                    matchIndex = index; // Quotes. The iterator won't be matched, so reset the index.
+
+                    continue;
+                }
+
+                if(quoteCount == 0) {
+                    ++quoteCount;
+                    quoteType = ch;
+                } else if(quoteType == ch)
+                    --quoteCount;
+
+                ++index;
+                matchIndex = index;
+
+                continue;
+
+            case '$': // Template literals.
+            case '}':
+                if(ch == '$') { // Doing the check again so both characters can branch, and also fall to default if needed.
+                    if(index < src.size - 1 && src.data[index + 1] == '{') {
+                        if(quoteCount > 0 && quoteType == '`') {
+                            --quoteCount;
+                            ++quoteTemplateCount;
+
+                            index += 2;
+                            matchIndex = index;
+
+                            continue;
+                        }
+                    }
+                } else {
+                    if(quoteTemplateCount > 0) {
+                        --quoteTemplateCount;
+                        ++quoteCount;
+                        quoteType = '`';
+
+                        ++index;
+                        matchIndex = index;
+
+                        continue;
+                    }
+                }
+            
+            default: { // Regular characters fall here.
+                if(index > 0 && matchIndex == index) {
+                    if(src.data[index - 1] == '.'
+                    || src.data[index - 1] == '\\'
+                    || str::valid_in_token(src.data[index - 1])) {
+
+                        ++index;
+                        matchIndex = index;
+
+                        continue;
+                    }
+                }
+
+                if(ch == iterator.data[index - matchIndex] && (quoteCount == 0 || quoteCount < quoteTemplateCount)) {
+                    if(index - matchIndex + 1 == iterator.size) {
+                        if(index < src.size - 1
+                        && (str::valid_in_token(src.data[index + 1])
+                        ||  src.data[index + 1] == ':')) { // For object properties, such as {item: item}.
+
+                            ++index;
+                            matchIndex = index;
+
+                            continue;
+                        }
+
+                        // Copy the prefix.
+                        src.move_right(matchIndex, OSH_TEMPLATE_LOCAL_PREFIX_LENGTH);
+                        src.write_at(matchIndex, OSH_TEMPLATE_LOCAL_PREFIX, OSH_TEMPLATE_LOCAL_PREFIX_LENGTH);
+
+                        matchIndex += OSH_TEMPLATE_LOCAL_PREFIX_LENGTH + iterator.size;
+
+                        // Copy the suffix.
+                        src.move_right(matchIndex, OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH);
+                        src.write_at(matchIndex, OSH_TEMPLATE_LOCAL_SUFFIX, OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH);
+                        
+                        index = matchIndex + OSH_TEMPLATE_LOCAL_SUFFIX_LENGTH;
+                        matchIndex = index;
+
+                        continue;
+                    } else ++index;
+                } else {
+                    ++index;
+                    matchIndex = index;
+                }
+            }
+        }
+    }
 }
 
 static void compiler_error(const char* file, const char* message, const char* description, ConstBuffer& input, size_t errorIndex) {

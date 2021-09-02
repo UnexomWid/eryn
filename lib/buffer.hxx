@@ -25,19 +25,19 @@ struct Buffer {
 
     void write(uint8_t byte);
     void write(const uint8_t* bytes, size_t amount);
+    void write_at(size_t index, const uint8_t* bytes, size_t amount);
     void write_bdp_name(const BDP::Header& header, const uint8_t* name, size_t nameSize);
     void write_bdp_value(const BDP::Header& header, const uint8_t* value, size_t valueSize);
     void write_bdp_pair(const BDP::Header& header, const uint8_t* name, size_t nameSize, const uint8_t* value, size_t valueSize);
     void write_length(size_t source, uint8_t count);
     void write_length(size_t index, size_t source, uint8_t count);
+    void move_right(size_t index, size_t count);
+    void reserve(size_t amount);
 
     // Returns a pointer to the data and resets the buffer data pointer, along with the size and capacity.
     uint8_t* release();
     // Creates a ConstBuffer, shrinks the allocated memory for the data buffer if possible, and releases the data pointer.
     ConstBuffer finalize();
-
-  private:
-    void reserve(size_t amount);
 };
 
 struct ConstBuffer {
