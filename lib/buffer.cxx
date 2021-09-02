@@ -68,6 +68,16 @@ void Buffer::write(const uint8_t* bytes, size_t amount) {
     memcpy(data + size, bytes, amount);
 }
 
+void Buffer::write_at(size_t index, const uint8_t* bytes, size_t amount) {
+    auto diff = size - index;
+    auto extra = diff < amount ? amount - diff : 0;
+
+    reserve(extra);
+    
+    memcpy(data + index, bytes, amount);
+    size += extra;
+}
+
 void Buffer::write_bdp_name(const BDP::Header& header, const uint8_t* name, size_t nameSize) {
     auto amount = nameSize + header.NAME_LENGTH_BYTE_SIZE;
 
@@ -102,6 +112,16 @@ void Buffer::write_length(size_t index, size_t source, uint8_t count) {
     reserve(extra);
 
     BDP::lengthToBytes(data + size, source, count);
+    size += extra;
+}
+
+void Buffer::move_right(size_t index, size_t count) {
+    auto diff = size - index;
+    auto extra = diff < count ? count - diff : 0;
+
+    reserve(extra);
+
+    memmove(data + index + count, data + index, size - index);
     size += extra;
 }
 
