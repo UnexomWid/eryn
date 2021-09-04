@@ -35,6 +35,10 @@ Buffer::~Buffer() {
     }
 }
 
+uint8_t* Buffer::end() const noexcept {
+    return data + size;
+}
+
 Buffer& Buffer::operator=(const Buffer& buffer) {
     if(&buffer == this) {
         return *this;
@@ -111,8 +115,15 @@ void Buffer::write_length(size_t index, size_t source, uint8_t count) {
     
     reserve(extra);
 
-    BDP::lengthToBytes(data + size, source, count);
+    BDP::lengthToBytes(end(), source, count);
     size += extra;
+}
+
+void Buffer::repeat(uint8_t byte, size_t amount) {
+    reserve(amount);
+    memset(end(), byte, amount);
+
+    size += amount;
 }
 
 void Buffer::move_right(size_t index, size_t count) {

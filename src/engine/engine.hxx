@@ -74,7 +74,7 @@ class Engine {
     void compile_dir(const char* path, std::vector<string> filters);
 
   private:
-    void   compile_dir(const char* path, const char* rel, const FilterInfo& info);
+    void        compile_dir(const char* path, const char* rel, const FilterInfo& info);
     ConstBuffer compile_file(const char* path);
     ConstBuffer compile_bytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
 };
