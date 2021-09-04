@@ -33,3 +33,26 @@ size_t path::dir_end_index(const char* path, size_t length) {
 
     return endIndex;
 }
+
+std::string path::append_or_absolute(const char* wd, const char* path, size_t length) {
+    std::string str(reinterpret_cast<const char*>(path, length));
+
+    // TODO: wd should be a string
+    if(strlen(wd) == 0) {
+        return str;
+    }
+
+    if(path::is_absolute(str.c_str(), str.size())) {
+        return str;
+    }
+
+    std::string pathBuilder(wd);
+
+    if(pathBuilder[pathBuilder.size() - 1] != '/' && pathBuilder[pathBuilder.size() - 1] != '\\') {
+        pathBuilder += '/';
+    }
+
+    pathBuilder.append(str);
+
+    return pathBuilder;
+}

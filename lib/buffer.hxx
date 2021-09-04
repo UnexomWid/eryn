@@ -20,6 +20,8 @@ struct Buffer {
 
     ~Buffer();
 
+    uint8_t* end() const noexcept;
+
     Buffer& operator=(const Buffer& buffer);
     Buffer& operator=(Buffer&& buffer);
 
@@ -31,6 +33,7 @@ struct Buffer {
     void write_bdp_pair(const BDP::Header& header, const uint8_t* name, size_t nameSize, const uint8_t* value, size_t valueSize);
     void write_length(size_t source, uint8_t count);
     void write_length(size_t index, size_t source, uint8_t count);
+    void repeat(uint8_t byte, size_t amount);
     void move_right(size_t index, size_t count);
     void reserve(size_t amount);
 
