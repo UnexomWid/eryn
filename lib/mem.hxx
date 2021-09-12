@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstdbool>
 #include <string>
 
 #define HORSPOOL_THRESHOLD 3

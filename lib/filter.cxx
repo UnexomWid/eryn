@@ -11,119 +11,111 @@
 
 using Filter = FilterInfo::Filter;
 
-Filter::Filter(const char* pattern) : glob(strDup(pattern)), exclusions() { }
-Filter::Filter(const char* pattern, size_t count) : glob(strDup(pattern, count)), exclusions() { }
-Filter::~Filter() {
-    re::free(glob);
+Filter::Filter(std::string pattern) : glob(pattern), exclusions() { }
+Filter::Filter(std::string pattern, size_t count) : glob(pattern, 0, count), exclusions() { }
 
-    for(auto exclusion : exclusions)
-        re::free(exclusion);
+void FilterInfo::add_filter(const std::string& const pattern) {
+    filters.emplace_back(pattern);
 }
 
-FilterInfo::~FilterInfo() {
-    for(auto filter : filters)
-        delete filter;
-    for(auto exclusion : exclusions)
-        re::free(exclusion);
+void FilterInfo::add_filter(const std::string&  pattern, size_t count) {
+    filters.emplace_back(pattern, count);
 }
 
-void FilterInfo::addFilter(const char* const pattern) {
-    filters.push_back(new Filter(pattern));
-}
-
-void FilterInfo::addFilter(const char* const pattern, size_t count) {
-    filters.push_back(new Filter(pattern, count));
-}
-
-void FilterInfo::addExclusion(const char* const pattern) {
-    char* exclusion = strDup(pattern);
+void FilterInfo::add_exclusion(const std::string&  pattern) {
+    auto exclusion = pattern;
     bool found = false;
 
     for(size_t i = 0; i < filters.size();) {
-        Filter* filter = filters[i];
+        auto& filter = filters[i];
 
-        if(match(exclusion, filter->glob, GLOB_MATCH_DOTFILES)) {
-            if(strcmp(filter->glob, exclusion) == 0) {
-                delete filters[i];
+        if(match(exclusion.c_str(), filter.glob.c_str(), GLOB_MATCH_DOTFILES)) {
+            if(filter.glob == exclusion) {
                 filters.erase(filters.begin() + i);
                 continue;
             } else {
-                filter->exclusions.push_back(exclusion);
+                filter.exclusions.push_back(exclusion);
                 found = true;
             }
-        } else if(match(filter->glob, exclusion, GLOB_MATCH_DOTFILES)) {
-            delete filters[i];
+        } else if(match(filter.glob.c_str(), exclusion.c_str(), GLOB_MATCH_DOTFILES)) {
             filters.erase(filters.begin() + i);
             continue;
         }
         ++i;
     }
 
-    if(!found)
+    if(!found) {
         exclusions.push_back(exclusion);
+    }
 }
 
-void FilterInfo::addExclusion(const char* const pattern, size_t count) {
-    char* exclusion = strDup(pattern, count);
+void FilterInfo::add_exclusion(const std::string& pattern, size_t count) {
+    auto exclusion(pattern, 0, count);
     bool found = false;
 
     for(size_t i = 0; i < filters.size();) {
-        Filter* filter = filters[i];
+        auto& filter = filters[i];
 
-        if(match(exclusion, filter->glob, GLOB_MATCH_DOTFILES)) {
-            if(strcmp(filter->glob, exclusion) == 0) {
-                delete filters[i];
+        if(match(exclusion.c_str(), filter.glob.c_str(), GLOB_MATCH_DOTFILES)) {
+            if(filter.glob == exclusion) {
                 filters.erase(filters.begin() + i);
                 continue;
             } else {
-                filter->exclusions.push_back(exclusion);
+                filter.exclusions.push_back(exclusion);
                 found = true;
             }
-        } else if(match(filter->glob, exclusion, GLOB_MATCH_DOTFILES)) {
-            delete filters[i];
+        } else if(match(filter.glob.c_str(), exclusion.c_str(), GLOB_MATCH_DOTFILES)) {;
             filters.erase(filters.begin() + i);
             continue;
         }
         ++i;
     }
 
-    if(!found)
+    if(!found) {
         exclusions.push_back(exclusion);
+    }
 }
 
-bool FilterInfo::isFileFiltered(const char* const path) const {
+bool FilterInfo::is_file_filtered(const std::string& path) const {
     bool filtered = false;
 
-    for(size_t i = 0; i < filters.size(); ++i) {
-        Filter* filter = filters[i];
-        if(match(path, filter->glob, GLOB_MATCH_DOTFILES)) {
+    for(auto& filter : filters) {
+        if(match(path.c_str(), filter.glob.c_str(), GLOB_MATCH_DOTFILES)) {
             filtered = true;
-            for(size_t j = 0; j < filter->exclusions.size(); ++j)
-                if(match(path, filter->exclusions[j], GLOB_MATCH_DOTFILES))
+
+            for(auto& exclusion : filter.exclusions) {
+                if(match(path.c_str(), exclusion.c_str(), GLOB_MATCH_DOTFILES)) {
                     filtered = false;
+                }
+            }
         }
     }
 
-    if(!filtered)
+    if(!filtered) {
         return false;
+    }
 
-    for(size_t i = 0; i < exclusions.size(); ++i)
-        if(match(path, exclusions[i], GLOB_MATCH_DOTFILES))
+    for(auto& exclusion : exclusions) {
+        if(match(path.c_str(), exclusion.c_str(), GLOB_MATCH_DOTFILES)) {
             return false;
+        }
+    }
 
     return true;
 }
 
-bool FilterInfo::isDirFiltered(const char* const path) const {
-    for(size_t i = 0; i < filters.size(); ++i) {
-        Filter* filter = filters[i];
-        if(match(path, filter->glob, GLOB_MATCH_DOTFILES))
+bool FilterInfo::is_dir_filtered(const std::string& path) const {
+    for(auto& filter : filters) {
+        if(match(path.c_str(), filter.glob.c_str(), GLOB_MATCH_DOTFILES)) {
             return true;
+        }
     }
     
-    for(size_t i = 0; i < exclusions.size(); ++i)
-        if(match(path, exclusions[i], GLOB_MATCH_DOTFILES))
+    for(auto& exclusion : exclusions) {
+        if(match(path.c_str(), exclusion.c_str(), GLOB_MATCH_DOTFILES)) {
             return false;
+        }
+    }
 
     return true;
 }

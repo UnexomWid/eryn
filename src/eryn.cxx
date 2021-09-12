@@ -4,24 +4,186 @@
 #include <memory>
 
 #include "def/logging.dxx"
+#include "def/macro.dxx"
 
-#include "global/cache.hxx"
-#include "global/global.hxx"
-#include "global/options.hxx"
+#include "engine/engine.hxx"
 
-#include "compiler/compiler.hxx"
-#include "renderer/renderer.hxx"
-
-#include "common/str.hxx"
-#include "common/path.hxx"
-
+#include "../lib/str.hxx"
+#include "../lib/path.hxx"
 #include "../lib/remem.hxx"
 
-using Global::Options;
-
-void finalizeBuffer(Napi::Env env, uint8_t* data) {
+void finalize_buffer(Napi::Env env, uint8_t* data) {
     LOG_DEBUG("Finalizing buffer %p", data);
-    re::free(data);
+    REMEM_FREE(data);
+}
+
+Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data) {
+    auto result = opts;
+    Napi::Array keys = data.GetPropertyNames();
+
+    for(uint32_t i = 0; i < keys.Length(); ++i) {
+        auto& keyVal = static_cast<Napi::Value>(keys[i]);
+
+        if(!keyVal.IsString()) {
+            continue;
+        }
+
+        auto key = keyVal.As<Napi::String>().Utf8Value();
+        const auto& value = data.Get(keyVal);
+
+        #define FLAG_ENTRY(name)                                       \
+            if(key == STRINGIFY(name)) {                               \
+                if(!value.IsBoolean())                                 \
+                    continue;                                          \
+                result.flags.##name = value.ToBoolean().Value();       \
+            }
+
+        #define TEMPLATE_ENTRY2(name, opt)                             \
+            if(key == STRINGIFY(name)) {                               \
+                if(!value.IsString()) {                                \
+                    continue;                                          \
+                }                                                      \
+                result.templates.##opt = value.ToString().Utf8Value(); \
+            }
+
+        #define TEMPLATE_ENTRY(name) TEMPLATE_ENTRY2(name, name)
+
+        FLAG_ENTRY(bypassCache)
+        else FLAG_ENTRY(throwOnEmptyContent)
+        else FLAG_ENTRY(throwOnMissingEntry)
+        else FLAG_ENTRY(throwOnCompileDirError)
+        else FLAG_ENTRY(ignoreBlankPlaintext)
+        else FLAG_ENTRY(logRenderTime)
+        else FLAG_ENTRY(cloneIterators)
+        else FLAG_ENTRY(debugDumpOSH)
+        else TEMPLATE_ENTRY2(templateStart, start)
+        else TEMPLATE_ENTRY2(templateEnd, end)
+        else TEMPLATE_ENTRY(bodyEnd)
+        else TEMPLATE_ENTRY(commentStart)
+        else TEMPLATE_ENTRY(commentEnd)
+        else TEMPLATE_ENTRY(voidStart)
+        else TEMPLATE_ENTRY(conditionalStart)
+        else TEMPLATE_ENTRY(elseStart)
+        else TEMPLATE_ENTRY(elseConditionalStart)
+        else TEMPLATE_ENTRY(loopStart)
+        else TEMPLATE_ENTRY(loopSeparator)
+        else TEMPLATE_ENTRY(loopReverse)
+        else TEMPLATE_ENTRY(componentStart)
+        else TEMPLATE_ENTRY(componentSeparator)
+        else TEMPLATE_ENTRY(componentSelf)
+        else if(key == "workingDirectory") {
+            if(!value.IsString())
+                continue;
+
+            std::string dir = value.ToString().Utf8Value();
+            path::normalize(dir);
+
+            result.workingDir = dir;
+        } else if(key == "templateEscape") {
+            if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
+                continue;
+            result.templates.escape = value.ToString().Utf8Value()[0];
+        }
+
+        #undef TEMPLATE_ENTRY
+        #undef TEMPLATE_ENTRY2
+        #undef FLAG_ENTRY
+    }
+
+    return result;
+}
+
+Napi::Object get_options(Napi::Env env, const Eryn::Options& opts) {
+    auto result = Napi::Object::New(env);
+
+    #define FLAG_ENTRY(name) \
+        result[STRINGIFY(name)] = opts.flags.##name
+
+    #define TEMPLATE_ENTRY2(name, opt) \
+        result[STRINGIFY(name)] = opts.templates.##opt
+
+    #define TEMPLATE_ENTRY(name) \
+        TEMPLATE_ENTRY2(name, name)
+
+    FLAG_ENTRY(bypassCache);
+    FLAG_ENTRY(throwOnEmptyContent);
+    FLAG_ENTRY(throwOnMissingEntry);
+    FLAG_ENTRY(throwOnCompileDirError);
+    FLAG_ENTRY(ignoreBlankPlaintext);
+    FLAG_ENTRY(logRenderTime);
+    FLAG_ENTRY(cloneIterators);
+    FLAG_ENTRY(debugDumpOSH);
+    TEMPLATE_ENTRY2(templateEscape, escape);
+    TEMPLATE_ENTRY2(templateStart, start);
+    TEMPLATE_ENTRY2(templateEnd, end);
+    TEMPLATE_ENTRY(bodyEnd);
+    TEMPLATE_ENTRY(commentStart);
+    TEMPLATE_ENTRY(commentEnd);
+    TEMPLATE_ENTRY(voidStart);
+    TEMPLATE_ENTRY(conditionalStart);
+    TEMPLATE_ENTRY(elseStart);
+    TEMPLATE_ENTRY(elseConditionalStart);
+    TEMPLATE_ENTRY(loopStart);
+    TEMPLATE_ENTRY(loopSeparator);
+    TEMPLATE_ENTRY(loopReverse);
+    TEMPLATE_ENTRY(componentStart);
+    TEMPLATE_ENTRY(componentSeparator);
+    TEMPLATE_ENTRY(componentSelf);
+
+    result["workingDirectory"] = opts.workingDir;
+
+    return result;
+}
+
+class ErynEngine : public Napi::ObjectWrap<ErynEngine> {
+    Eryn::Engine engine;
+
+    Napi::Value options       (const Napi::CallbackInfo& info);
+    Napi::Value compile       (const Napi::CallbackInfo& info);
+    Napi::Value compile_dir   (const Napi::CallbackInfo& info);
+    Napi::Value compile_string(const Napi::CallbackInfo& info);
+    Napi::Value render        (const Napi::CallbackInfo& info);
+    Napi::Value renedr_string (const Napi::CallbackInfo& info);
+
+  public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+    ErynEngine(const Napi::CallbackInfo& info);
+};
+
+Napi::Object ErynEngine::Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function fn = DefineClass(env, "ErynEngine", {
+        InstanceMethod<&ErynEngine::options>       ("options"),
+        InstanceMethod<&ErynEngine::compile>       ("compile"),
+        InstanceMethod<&ErynEngine::compile_dir>   ("compileDir"),
+        InstanceMethod<&ErynEngine::compile_string>("compileString"),
+        InstanceMethod<&ErynEngine::render>        ("render"),
+        InstanceMethod<&ErynEngine::renedr_string> ("renderString")
+    });
+
+    auto ctor = new("Eryn ctor function reference") Napi::FunctionReference();
+    *ctor = Napi::Persistent(fn);
+    exports.Set("ErynEngine", fn);
+
+    env.SetInstanceData<Napi::FunctionReference>(ctor);
+
+    return exports;
+}
+
+ErynEngine::ErynEngine(const Napi::CallbackInfo& info)
+  : Napi::ObjectWrap<ErynEngine>(info) {
+    auto env = info.Env();
+
+    engine.opts = update_options({}, info[0].As<Napi::Object>());
+}
+
+Napi::Value ErynEngine::options(const Napi::CallbackInfo& info) {
+    auto env = info.Env();
+
+    if(info.Length() == 0) {
+        return get_options(env, engine.opts);
+    } else {
+        engine.opts = update_options(engine.opts, info[0].As<Napi::Object>());
+    }
 }
 
 void erynSetOptions(const Napi::CallbackInfo& info) {
@@ -38,126 +200,6 @@ void erynSetOptions(const Napi::CallbackInfo& info) {
 
         std::string key = keyVal.As<Napi::String>().Utf8Value();
         Napi::Value value = options.Get(keys[i]);
-
-        // A switch statement would've been ideal, if only std::string was supported. However, setOptions isn't performance-critical.
-        if(key == "bypassCache") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setBypassCache(value.ToBoolean().Value());
-        } else if(key == "throwOnEmptyContent") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setThrowOnEmptyContent(value.ToBoolean().Value());
-        } else if(key == "throwOnMissingEntry") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setThrowOnMissingEntry(value.ToBoolean().Value());
-        }  else if(key == "throwOnCompileDirError") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setThrowOnCompileDirError(value.ToBoolean().Value());
-        } else if(key == "ignoreBlankPlaintext") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setIgnoreBlankPlaintext(value.ToBoolean().Value());
-        } else if(key == "logRenderTime") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setLogRenderTime(value.ToBoolean().Value());
-        } else if(key == "cloneIterators") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setCloneIterators(value.ToBoolean().Value());
-        } else if(key == "debugDumpOSH") {
-            if(!value.IsBoolean())
-                continue;
-            Global::Options::setDebugDumpOSH(value.ToBoolean().Value());
-        } else if(key == "workingDirectory") {
-            if(!value.IsString())
-                continue;
-
-            std::string dir = value.ToString().Utf8Value();
-
-            size_t i = dir.size() - 1;
-
-            while(i > 0) {
-                if(dir[i] == '\\')
-                    dir[i] = '/';
-                if(dir[i] == '/')
-                    --i;
-                else break;
-            }
-
-            Global::Options::setWorkingDirectory(dir.substr(0, i + 1).c_str());
-        } else if(key == "templateEscape") {
-            if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
-                continue;
-            Global::Options::setTemplateEscape(*value.ToString().Utf8Value().c_str());
-        } else if(key == "templateStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "templateEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateEnd(value.ToString().Utf8Value().c_str());
-        } else if(key == "bodyEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateBodyEnd(value.ToString().Utf8Value().c_str());
-        }else if(key == "commentStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateComment(value.ToString().Utf8Value().c_str());
-        } else if(key == "commentEnd") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateCommentEnd(value.ToString().Utf8Value().c_str());
-        } else if(key == "voidTemplate") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateVoid(value.ToString().Utf8Value().c_str());
-        } else if(key == "conditionalStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateConditionalStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "elseStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateElseStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "elseConditionalStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateElseConditionalStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "invertedConditionalStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateInvertedConditionalStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "loopStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateLoopStart(value.ToString().Utf8Value().c_str());
-        } else if(key == "loopSeparator") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateLoopSeparator(value.ToString().Utf8Value().c_str());
-        } else if(key == "loopReverse") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateLoopReverse(value.ToString().Utf8Value().c_str());
-        } else if(key == "componentStart") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateComponent(value.ToString().Utf8Value().c_str());
-        } else if(key == "componentSeparator") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateComponentSeparator(value.ToString().Utf8Value().c_str());
-        } else if(key == "componentSelf") {
-            if(!value.IsString())
-                continue;
-            Global::Options::setTemplateComponentSelf(value.ToString().Utf8Value().c_str());
-        }
     }
 }
 
@@ -290,8 +332,6 @@ Napi::Buffer<uint8_t> erynRenderString(const Napi::CallbackInfo& info) {
 void destroy(void* args) {
     LOG_DEBUG("Destroying...");
 
-    Global::destroy();
-
     #ifdef REMEM_ENABLE_MAPPING
         re::memPrint();
     #endif
@@ -300,16 +340,9 @@ void destroy(void* args) {
 Napi::Object init(Napi::Env env, Napi::Object exports) {
     LOG_DEBUG("Init...\n");
 
-    Global::init();
+    ErynEngine::Init(env, exports);
 
     napi_add_env_cleanup_hook((napi_env) env, destroy, nullptr);
-
-    exports["compile"] = Napi::Function::New(env, erynCompile);
-    exports["compileDir"] = Napi::Function::New(env, erynCompileDir);
-    exports["compileString"] = Napi::Function::New(env, erynCompileString);
-    exports["render"] = Napi::Function::New(env, erynRender);
-    exports["renderString"] = Napi::Function::New(env, erynRenderString);
-    exports["setOptions"] = Napi::Function::New(env, erynSetOptions);
 
     return exports;
 }

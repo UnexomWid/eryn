@@ -72,6 +72,10 @@ void Buffer::write(const uint8_t* bytes, size_t amount) {
     memcpy(data + size, bytes, amount);
 }
 
+void Buffer::write(const ConstBuffer& buffer) {
+    write(buffer.data, buffer.size);
+}
+
 void Buffer::write_at(size_t index, const uint8_t* bytes, size_t amount) {
     auto diff = size - index;
     auto extra = diff < amount ? amount - diff : 0;
@@ -163,6 +167,8 @@ ConstBuffer Buffer::finalize() {
     return finalized;
 }
 
+ConstBuffer::ConstBuffer() : data(nullptr), size(0) { }
+
 ConstBuffer::ConstBuffer(const void* data, size_t size) :
     data(static_cast<const uint8_t*>(data)), size(size) { }
 
@@ -219,4 +225,8 @@ bool ConstBuffer::match(size_t index, const void* pattern, size_t patternSize) c
     auto min = len <= patternSize ? len : patternSize;
 
     return mem::cmp(data + index, pattern, min);
+}
+
+void ConstBuffer::finalize(ConstBuffer& buffer) {
+    REMEM_FREE(const_cast<uint8_t*>(buffer.data));
 }

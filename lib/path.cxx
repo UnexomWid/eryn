@@ -56,3 +56,19 @@ std::string path::append_or_absolute(const char* wd, const char* path, size_t le
 
     return pathBuilder;
 }
+
+void path::normalize(std::string& path) {
+    for(auto& c : path) {
+        if(c == '\\') {
+            c = '/';
+        }
+    }
+
+    auto index = path.size() - 1;
+
+    while(index > 0 && path[index] == '/') {
+        --index;
+    }
+
+    path = path.substr(0, index + 1);
+}

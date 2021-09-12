@@ -1,0 +1,7 @@
+#ifndef ERYN_DEF_MACRO_DXX_GUARD
+#define ERYN_DEF_MACRO_DXX_GUARD
+
+#define STRINGIFY2(x) #x
+#define STRINGIFY(x) STRINGIFY2(x)
+
+#endif
