@@ -37,7 +37,7 @@ file(GLOB SOURCE_FILES
 
 # Required macros
 add_definitions(-DMODULE_NAME=${PROJECT_NAME})
-add_definitions(-DNAPI_VERSION=3)
+add_definitions(-DNAPI_VERSION=6)
 add_definitions(-DREMEM_DISABLE_MALLOC_ALIGNING)
 add_definitions(-DREMEM_DISABLE_REALLOC_ALIGNING)
 

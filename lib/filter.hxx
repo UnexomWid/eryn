@@ -6,28 +6,25 @@
 
 struct FilterInfo {
     struct Filter {
-        char* glob;
+        std::string glob;
 
-        std::vector<char*> exclusions;
+        std::vector<std::string> exclusions;
 
-        Filter(const char* pattern);
-        Filter(const char* pattern, size_t count);
-        ~Filter();
+        Filter(std::string pattern);
+        Filter(std::string pattern, size_t count);
     };
 
-    std::vector<Filter*> filters;
-    std::vector<char*> exclusions;
+    std::vector<Filter> filters;
+    std::vector<std::string> exclusions;
 
-    ~FilterInfo();
+    void add_filter(const std::string& pattern);
+    void add_filter(const std::string& pattern, size_t count);
 
-    void addFilter(const char* pattern);
-    void addFilter(const char* pattern, size_t count);
+    void add_exclusion(const std::string& pattern);
+    void add_exclusion(const std::string& pattern, size_t count);
 
-    void addExclusion(const char* pattern);
-    void addExclusion(const char* pattern, size_t count);
-
-    bool isFileFiltered(const char* path) const;
-    bool isDirFiltered(const char* path) const;
+    bool is_file_filtered(const std::string& path) const;
+    bool is_dir_filtered(const std::string& path) const;
 };
 
 #endif

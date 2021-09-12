@@ -27,6 +27,7 @@ struct Buffer {
 
     void write(uint8_t byte);
     void write(const uint8_t* bytes, size_t amount);
+    void write(const ConstBuffer& buffer);
     void write_at(size_t index, const uint8_t* bytes, size_t amount);
     void write_bdp_name(const BDP::Header& header, const uint8_t* name, size_t nameSize);
     void write_bdp_value(const BDP::Header& header, const uint8_t* value, size_t valueSize);
@@ -47,6 +48,7 @@ struct ConstBuffer {
     const uint8_t* data;
     size_t size;
 
+    ConstBuffer();
     ConstBuffer(const void* data, size_t size);
 
     const uint8_t* end() const noexcept;
@@ -65,6 +67,8 @@ struct ConstBuffer {
     bool match(size_t index, const std::string& pattern) const noexcept;
     bool match(const void* pattern, size_t patternSize) const noexcept;
     bool match(size_t index, const void* pattern, size_t patternSize) const noexcept;
+
+    static void finalize(ConstBuffer& buffer);
 };
 
 #endif

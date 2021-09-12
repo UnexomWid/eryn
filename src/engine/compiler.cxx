@@ -187,8 +187,10 @@ void Compiler::compile_plaintext() {
 }
 
 void Compiler::compile_comment() {
+    rebase(current);
+
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template?", templateEndIndex - 1);
@@ -204,7 +206,7 @@ void Compiler::compile_conditional() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template?", templateEndIndex - 1);
@@ -248,7 +250,7 @@ void Compiler::compile_else_conditional() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template?", templateEndIndex - 1);
@@ -288,7 +290,7 @@ void Compiler::compile_else() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template body?", (current + endInfo.index) - input.data - 1);
@@ -329,7 +331,7 @@ void Compiler::compile_loop() {
 
     auto sepIndex = input.find_index(current - input.data, opts->templates.loopSeparator) - (current - input.data);
     auto endInfo  = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(sepIndex > endInfo.index) {
         error(path, "Unexpected end of template", "did you forget to write the loop separator?", templateEndIndex - 1);
@@ -351,9 +353,6 @@ void Compiler::compile_loop() {
 
     auto rightStart = current + sepIndex + opts->templates.loopSeparator.size();
 
-    /*while(*leftEnd == ' ' || *leftEnd == '\t')
-        --leftEnd;
-    ++leftEnd;*/
     while(leftEnd >= input.data && str::is_blank(*leftEnd)) {
         --leftEnd;
     }
@@ -435,7 +434,7 @@ void Compiler::compile_component() {
 
     auto sepIndex = input.find_index(current - input.data, opts->templates.componentSeparator) - (current - input.data);
     auto endInfo  = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(sepIndex == 0) {
         error(path, "Unexpected separator", "did you forget to provide the component name before the separator?", current - input.data);
@@ -563,7 +562,7 @@ void Compiler::compile_void() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template?", templateEndIndex - 1);
@@ -596,7 +595,7 @@ void Compiler::compile_body_end() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template body?", templateEndIndex - 1);
@@ -705,7 +704,7 @@ void Compiler::compile_normal() {
     rebase(current);
 
     auto endInfo = std::move(find_template_end(current));
-    auto templateEndIndex = (current + endInfo.index) - input.data;
+    size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
         error(path, "Unexpected EOF", "did you forget to close the template?", templateEndIndex - 1);
@@ -778,9 +777,9 @@ void Eryn::Engine::compile_dir(const char* path, std::vector<string> filters) {
 
             if(start < end) {
                 if(inverted) {
-                    info.addExclusion(start, end - start + 1);
+                    info.add_exclusion(start, end - start + 1);
                 } else {
-                    info.addFilter(start, end - start + 1);
+                    info.add_filter(start, end - start + 1);
                 }
             }
         }
@@ -829,7 +828,7 @@ void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterIn
 
                 strcpy(relativePath.get() + relLength, entry->d_name);
 
-                if(info.isFileFiltered(relativePath.get())) {
+                if(info.is_file_filtered(relativePath.get())) {
                     try {
                         compile(absolute);
 
@@ -863,7 +862,7 @@ void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterIn
                 newRel.get()[newRelLength] = COMPILER_PATH_SEPARATOR;
                 newRel.get()[newRelLength + 1] = '\0';
 
-                if(info.isDirFiltered(newRel.get())) {
+                if(info.is_dir_filtered(newRel.get())) {
                     LOG_DEBUG("Scanning: %s\n", newRel.get());
 
                     strcpy(absoluteEnd, entry->d_name);
