@@ -2,6 +2,7 @@
 #define FILTER_HXX_GUARD
 
 #include <vector>
+#include <string>
 #include <cstddef>
 
 struct FilterInfo {

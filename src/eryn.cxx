@@ -12,7 +12,7 @@
 #include "../lib/path.hxx"
 #include "../lib/remem.hxx"
 
-void finalize_buffer(Napi::Env env, uint8_t* data) {
+void finalize_buffer(Napi::Env, uint8_t* data) {
     LOG_DEBUG("Finalizing buffer %p", data);
     REMEM_FREE(data);
 }
@@ -143,7 +143,7 @@ class ErynEngine : public Napi::ObjectWrap<ErynEngine> {
     Napi::Value compile_dir   (const Napi::CallbackInfo& info);
     Napi::Value compile_string(const Napi::CallbackInfo& info);
     Napi::Value render        (const Napi::CallbackInfo& info);
-    Napi::Value renedr_string (const Napi::CallbackInfo& info);
+    Napi::Value render_string (const Napi::CallbackInfo& info);
 
   public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
@@ -157,7 +157,7 @@ Napi::Object ErynEngine::Init(Napi::Env env, Napi::Object exports) {
         InstanceMethod<&ErynEngine::compile_dir>   ("compileDir"),
         InstanceMethod<&ErynEngine::compile_string>("compileString"),
         InstanceMethod<&ErynEngine::render>        ("render"),
-        InstanceMethod<&ErynEngine::renedr_string> ("renderString")
+        InstanceMethod<&ErynEngine::render_string> ("renderString")
     });
 
     auto ctor = new("Eryn ctor function reference") Napi::FunctionReference();
@@ -173,7 +173,9 @@ ErynEngine::ErynEngine(const Napi::CallbackInfo& info)
   : Napi::ObjectWrap<ErynEngine>(info) {
     auto env = info.Env();
 
-    engine.opts = update_options({}, info[0].As<Napi::Object>());
+    if(info.Length() > 0) {
+        engine.opts = update_options({}, info[0].As<Napi::Object>());
+    }
 }
 
 Napi::Value ErynEngine::options(const Napi::CallbackInfo& info) {
@@ -183,153 +185,133 @@ Napi::Value ErynEngine::options(const Napi::CallbackInfo& info) {
         return get_options(env, engine.opts);
     } else {
         engine.opts = update_options(engine.opts, info[0].As<Napi::Object>());
+        return get_options(env, engine.opts);
     }
 }
 
-void erynSetOptions(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+Napi::Value ErynEngine::compile(const Napi::CallbackInfo& info) {
+    auto env = info.Env();
 
-    Napi::Object options = info[0].As<Napi::Object>();
-    Napi::Array keys = options.GetPropertyNames();
-
-    for(uint32_t i = 0; i < keys.Length(); ++i) {
-        Napi::Value keyVal = keys[i];
-
-        if(!keyVal.IsString())
-            continue;
-
-        std::string key = keyVal.As<Napi::String>().Utf8Value();
-        Napi::Value value = options.Get(keys[i]);
-    }
-}
-
-void erynCompile(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-
-    std::string absPath;
-    std::string pathString = info[0].As<Napi::String>().Utf8Value();
-
-    if(pathIsRelative(pathString.c_str(), pathString.length())) {
-        absPath = Options::getWorkingDirectory();
-
-        if(pathString.size() > 0)
-            absPath += ('/' + pathString);
-    } else absPath = pathString;
-
-    for(size_t i = 0; i < absPath.size(); ++i)
-        if(absPath[i] == '\\')
-            absPath[i] = '/';
+    auto pathString = info[0].As<Napi::String>().Utf8Value();
+    auto absPath = path::append_or_absolute(engine.opts.workingDir, pathString);
+    path::normalize(absPath);
 
     try {
-        compile(absPath.c_str());
+        engine.compile(absPath.c_str());
 
-        if(Options::getDebugDumpOSH()) {
+        if(engine.opts.flags.debugDumpOSH) {
             FILE* dump = fopen((absPath + std::string(".osh")).c_str(), "wb");
-            fwrite(Global::Cache::getEntry(absPath.c_str()).data, 1, Global::Cache::getEntry(absPath.c_str()).size, dump);
+
+            auto& entry = engine.cache.get(absPath);
+
+            fwrite(entry.data, sizeof(uint8_t), entry.size, dump);
             fclose(dump);
         }
+
+        return env.Undefined();
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }
 }
 
-void erynCompileDir(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+Napi::Value ErynEngine::compile_dir(const Napi::CallbackInfo& info) {
+    auto env = info.Env();
 
-    std::string absPath;
-    std::string pathString = info[0].As<Napi::String>().Utf8Value();
-
-    if(pathIsRelative(pathString.c_str(), pathString.length())) {
-        absPath = Options::getWorkingDirectory();
-
-        if(pathString.size() > 0)
-            absPath += ('/' + pathString);
-    } else absPath = pathString;
-
-    for(size_t i = 0; i < absPath.size(); ++i)
-        if(absPath[i] == '\\')
-            absPath[i] = '/';
+    auto pathString = info[0].As<Napi::String>().Utf8Value();
+    auto absPath = path::append_or_absolute(engine.opts.workingDir, pathString);
+    path::normalize(absPath);
 
     std::vector<std::string> filters;
-    Napi::Array filterArray = info[1].As<Napi::Array>();
+    auto filterArray = info[1].As<Napi::Array>();
     
     uint32_t length = filterArray.Length();
 
     for(uint32_t i = 0; i < length; ++i) {
         Napi::Value item = filterArray[i];
-        if(!item.IsString())
+
+        if(!item.IsString()) {
             throw Napi::Error::New(env, "Invalid filter array (expected array of strings)");
+        }
 
         filters.push_back(item.As<Napi::String>().Utf8Value());
     }
 
     try {
-        compileDir(absPath.c_str(), filters);
+        engine.compile_dir(absPath.c_str(), filters);
+
+        return env.Undefined();
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }
 }
 
-void erynCompileString(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+Napi::Value ErynEngine::compile_string(const Napi::CallbackInfo& info) {
+    auto env = info.Env();
 
     try {
-        std::unique_ptr<char, decltype(re::free)*> alias(
-            strDup(info[0].As<Napi::String>().Utf8Value().c_str()), re::free);
+        auto alias = info[0].As<Napi::String>().Utf8Value();
+        auto str   = info[1].As<Napi::String>().Utf8Value();
 
-        std::unique_ptr<char, decltype(re::free)*> str(
-            strDup(info[1].As<Napi::String>().Utf8Value().c_str()), re::free);
+        engine.compile_string(alias.c_str(), str.c_str());
 
-        compileString(alias.get(), str.get());
+        return env.Undefined();
     } catch(std::exception &e) {
         throw Napi::Error::New(env, e.what());
     }
+
+    return env.Undefined();
 }
 
-Napi::Buffer<uint8_t> erynRender(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
+Napi::Value ErynEngine::render(const Napi::CallbackInfo& info) {
+    auto env = info.Env();
 
-    std::string absPath;
-    std::string pathString = info[0].As<Napi::String>().Utf8Value();
-
-    if(pathIsRelative(pathString.c_str(), pathString.length())) {
-        absPath = Options::getWorkingDirectory();
-
-        if(pathString.size() > 0)
-            absPath += ('/' + pathString);
-    } else absPath = pathString;
-
-    for(size_t i = 0; i < absPath.size(); ++i)
-        if(absPath[i] == '\\')
-            absPath[i] = '/';
+    auto pathString = info[0].As<Napi::String>().Utf8Value();
+    auto absPath = path::append_or_absolute(engine.opts.workingDir, pathString);
+    path::normalize(absPath);
 
     try {
-        BinaryData rendered = render(BridgeData(env, info[1].As<Napi::Value>(), info[2].As<Napi::Object>(), info[3].As<Napi::Value>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), absPath.c_str());
+        Eryn::Bridge bridge({
+            env,
+            info[1].As<Napi::Value>(),
+            info[2].As<Napi::Object>(),
+            info[3].As<Napi::Value>(),
+            info[4].As<Napi::Function>(),
+            info[5].As<Napi::Function>()});
 
-        return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
-                   env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);
+        auto rendered = engine.render(bridge, absPath.c_str());
+        
+        return Napi::Buffer<uint8_t>::New<decltype(finalize_buffer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, finalize_buffer);
     } catch(std::exception &e) {
+        // TODO: remove the path from RenderingException
         throw Napi::Error::New(env, ((std::string("Rendering error in '") + absPath.c_str()) + "'\n") + e.what());
     }
 }
 
-Napi::Buffer<uint8_t> erynRenderString(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-
-    std::unique_ptr<char, decltype(re::free)*> alias(
-            strDup(info[0].As<Napi::String>().Utf8Value().c_str()), re::free);
+Napi::Value ErynEngine::render_string(const Napi::CallbackInfo& info) {
+    auto env   = info.Env();
+    auto alias = info[0].As<Napi::String>().Utf8Value();
 
     try {
-        BinaryData rendered = renderString(BridgeData(env, info[1].As<Napi::Value>(), info[2].As<Napi::Object>(), info[3].As<Napi::Value>(), info[4].As<Napi::Function>(), info[5].As<Napi::Function>()), alias.get());
+        Eryn::Bridge bridge({
+            env,
+            info[1].As<Napi::Value>(),
+            info[2].As<Napi::Object>(),
+            info[3].As<Napi::Value>(),
+            info[4].As<Napi::Function>(),
+            info[5].As<Napi::Function>()});
 
-        return Napi::Buffer<uint8_t>::New<decltype(finalizeBuffer)*>(
-                   env, (uint8_t*) rendered.data, rendered.size, finalizeBuffer);
+        auto rendered = engine.render(bridge, alias.c_str());
+        
+        return Napi::Buffer<uint8_t>::New<decltype(finalize_buffer)*>(
+                   env, (uint8_t*) rendered.data, rendered.size, finalize_buffer);
     } catch(std::exception &e) {
-        throw Napi::Error::New(env, ((std::string("Rendering error in '") + alias.get()) + "'\n") + e.what());
+        // TODO: remove the path from RenderingException
+        throw Napi::Error::New(env, ((std::string("Rendering error in '") + alias.c_str()) + "'\n") + e.what());
     }
 }
 
-void destroy(void* args) {
+void destroy(void*) {
     LOG_DEBUG("Destroying...");
 
     #ifdef REMEM_ENABLE_MAPPING

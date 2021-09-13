@@ -13,7 +13,7 @@
 #include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
 #include "../../lib/mem.hxx"
-#include "../../lib/chunk.cxx"
+#include "../../lib/chunk.hxx"
 #include "../../lib/timer.hxx"
 
 struct LoopStackInfo {
@@ -210,7 +210,7 @@ void Renderer::error(const char* msg, const char* description, ConstBuffer token
     throw Eryn::RenderingException(msg, description, meta.c_str(), token);
 }
 
-void Renderer::render_component(ConstBuffer component, const Buffer& content) {
+void Renderer::render_component(ConstBuffer component, const Buffer& contentBuffer) {
     std::string path(reinterpret_cast<const char*>(component.data), component.size);
 
     LOG_DEBUG("===> Rendering component '%s'", path.c_str());
@@ -238,7 +238,7 @@ void Renderer::render_component(ConstBuffer component, const Buffer& content) {
 
     auto subrenderer    = *this;
     subrenderer.input   = entry;
-    subrenderer.content = ConstBuffer(content.data, content.size);
+    subrenderer.content = ConstBuffer(contentBuffer.data, contentBuffer.size);
     subrenderer.meta    = path;
 
     subrenderer.render();
@@ -309,7 +309,7 @@ void Renderer::render() {
                 BDP::bytesToLength(trueConditionalEnd, input.data + inputIndex, OSH_FORMAT);
                 inputIndex += OSH_FORMAT;
 
-                if(!bridge.evalConditionalTemplate({ value, valueLength }, output)) {
+                if(!bridge.evalConditionalTemplate({ value, valueLength })) {
                     inputIndex += conditionalEnd;
 
                     ConditionalStackInfo info;
@@ -351,7 +351,7 @@ void Renderer::render() {
                 BDP::bytesToLength(trueConditionalEnd, input.data + inputIndex, OSH_FORMAT);
                 inputIndex += OSH_FORMAT;
 
-                if(!bridge.evalConditionalTemplate({ value, valueLength }, output)) {
+                if(!bridge.evalConditionalTemplate({ value, valueLength })) {
                     inputIndex += conditionalEnd;
 
                     ConditionalStackInfo info;
@@ -406,7 +406,7 @@ void Renderer::render() {
                 BDP::bytesToLength(trueConditionalEnd, input.data + inputIndex, OSH_FORMAT);
                 inputIndex += OSH_FORMAT;
 
-                if(bridge.evalConditionalTemplate({ value, valueLength }, output)) {
+                if(bridge.evalConditionalTemplate({ value, valueLength })) {
                     inputIndex += conditionalEnd;
 
                     ConditionalStackInfo info;

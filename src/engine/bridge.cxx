@@ -41,6 +41,11 @@ static Napi::Value call_clone(Eryn::BridgeData& data, const Napi::Value& origina
     }));
 }
 
+Eryn::BridgeData::BridgeData(Napi::Env env, Napi::Value context, Napi::Object local, Napi::Value shared, Napi::Function eval, Napi::Function clone)
+  : env(env), context(context), local(local), shared(shared), eval(eval), clone(clone) { }
+
+Eryn::Bridge::Bridge(Eryn::BridgeData&& data) : data(std::forward<Eryn::BridgeData>(data)) { }
+
 void Eryn::Bridge::evalTemplate(ConstBuffer input, Buffer& output) {
     Napi::Value result;
 
@@ -100,7 +105,7 @@ void Eryn::Bridge::evalVoidTemplate(ConstBuffer input) {
     }
 }
 
-bool Eryn::Bridge::evalConditionalTemplate(ConstBuffer input, Buffer& output) {
+bool Eryn::Bridge::evalConditionalTemplate(ConstBuffer input) {
     Napi::Value result;
 
     try {

@@ -18,7 +18,7 @@
 #include "../../lib/remem.hxx"
 #include "../../lib/buffer.hxx"
 #include "../../lib/mem.hxx"
-#include "../../lib/chunk.cxx"
+#include "../../lib/chunk.hxx"
 
 #ifdef _MSC_VER
     #include "../../include/dirent.h"
@@ -86,7 +86,7 @@ struct Compiler {
     void skip_whitespace_back();
     bool match_current(const std::string& pattern);
 
-    TemplateEndInfo find_template_end(const uint8_t* start);
+    TemplateEndInfo find_template_end(const uint8_t* from);
 
     void write_escaped_content(Buffer& buffer, const uint8_t* start, const uint8_t* end, const std::vector<const uint8_t*>& escapes);
     void localize_all_iterators(Buffer& src);
@@ -260,7 +260,7 @@ void Compiler::compile_else_conditional() {
         error(path, "Unexpected template end", "did you forget to write the condition for this template?", start - input.data - 1);
     }
 
-    LOG_DEBUG("Found template end at %zu", end + endInfo.index - input);
+    LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
     advance(endInfo.index - 1);
     skip_whitespace_back();
@@ -296,12 +296,12 @@ void Compiler::compile_else() {
         error(path, "Unexpected EOF", "did you forget to close the template body?", (current + endInfo.index) - input.data - 1);
     }
 
-    LOG_DEBUG("Found template end at %zu", end + endInfo.index - input);
+    LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
     advance(endInfo.index - 1);
     skip_whitespace_back();
 
-    if(start != current - opts->templates.elseStart.size() + 1) {
+    if(start != current + 1) {
         // opts.templates.end.size()
         error(path, "Expected template body end", "else template must only contain the marker", start + 1 - input.data);
     }
@@ -312,7 +312,7 @@ void Compiler::compile_else() {
 
     size_t oshStart = output.size;
 
-    LOG_DEBUG("Writing else template start as BDP832 pair %zu -> %zu...", start - input, end - input);
+    LOG_DEBUG("Writing else template start as BDP832 pair %zu -> %zu...", start - input.data, current - input.data);
     // No OSH value, and no end indices.
     output.write_bdp_pair(BDP832, OSH_TEMPLATE_ELSE_START_MARKER, OSH_TEMPLATE_ELSE_START_LENGTH, NULL, 0);
     
@@ -366,7 +366,7 @@ void Compiler::compile_loop() {
         error(path, "Unexpected end of template", "did you forget to provide the right argument after the separator?", (leftStart + endInfo.index) - input.data - 1);
     }
 
-    while(rightStart < input.data - 1 && str::is_blank(*rightStart)) {
+    while(rightStart < current && str::is_blank(*rightStart)) {
         ++rightStart;
     }
 
@@ -446,8 +446,8 @@ void Compiler::compile_component() {
         error(path, "Unexpected end of template", "did you forget to write the component name?", templateEndIndex);
     }
 
-    LOG_DEBUG("Found template component at %zu", end + sepIndex - input);
-    LOG_DEBUG("Found template end at %zu", end + endInfo.index - input);
+    LOG_DEBUG("Found template component at %zu", current + sepIndex - input.data);
+    LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
     auto rightStart = leftStart;
     auto rightEnd = leftEnd;
@@ -455,9 +455,6 @@ void Compiler::compile_component() {
     if(sepIndex < endInfo.index) {
         leftEnd = current + sepIndex - 1;
 
-        /*while(*leftEnd == ' ' || *leftEnd == '\t')
-            --leftEnd;
-        ++leftEnd;*/
         while(leftEnd >= input.data && str::is_blank(*leftEnd)) {
             --leftEnd;
         }
@@ -470,12 +467,14 @@ void Compiler::compile_component() {
         ++current;
 
         if(current == rightStart) {
-            error(path, "Unexpected end of template", "did you forget to provide the component context after the separator?", (leftStart + endInfo.index) - input.data - 1);
+            error(path, "Unexpected end of template", "did you forget to provide the component context after the separator?", templateEndIndex - 1);
         }
 
         while(str::is_blank(*rightStart)) {
             ++rightStart;
         }
+
+        rightEnd = current;
     } else {
         leftEnd = current + endInfo.index - 1;
 
@@ -489,14 +488,12 @@ void Compiler::compile_component() {
         ++leftEnd;
 
         rightEnd = leftEnd;
-    }
 
-    size_t leftLength = leftEnd - leftStart;
+        seek(rightEnd);
+    }
 
     bool isSelf = false;
     const uint8_t* selfStart;
-
-    seek(rightEnd);
 
     // current - rightStart + 1 >= opts.templates.componentSelf.size()
     selfStart = current - opts->templates.componentSelf.size();
@@ -534,7 +531,8 @@ void Compiler::compile_component() {
 
     size_t oshStart = output.size;
 
-    LOG_DEBUG("Writing component template as BDP832 pair %zu -> %zu...", leftStart - input.data, end - input.data);
+    LOG_DEBUG("Writing component template as BDP832 pair %zu -> %zu...", leftStart - input.data, rightEnd - input.data);
+
     output.write_bdp_name(BDP832, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_LENGTH);
 
     std::string absolutePath = path::append_or_absolute(wd, reinterpret_cast<const char*>(leftStart), leftEnd - leftStart);
@@ -571,7 +569,7 @@ void Compiler::compile_void() {
         error(path, "Unexpected template end", "did you forget to write the template content?", current - input.data - 1);
     }
 
-    LOG_DEBUG("Found template end at %zu", end + endInfo.index - input.data);
+    LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
     advance(endInfo.index - 1);
     skip_whitespace_back();
@@ -601,7 +599,7 @@ void Compiler::compile_body_end() {
         error(path, "Unexpected EOF", "did you forget to close the template body?", templateEndIndex - 1);
     }
 
-    LOG_DEBUG("Found template end at %zu", end + endInfo.index - input.data);
+    LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
     if(endInfo.index > 0) {
         error(path, "Expected template body end", "template body end must only contain the marker", current - input.data);
@@ -635,7 +633,7 @@ void Compiler::compile_body_end() {
     // The output size before writing the conditional end.
     size_t backup = output.size;
 
-    LOG_DEBUG("Writing template body end as BDP832 pair %zu -> %zu...", start - input, end - input);
+    LOG_DEBUG("Writing template body end as BDP832 pair %zu -> %zu...", start - input.data, current - input.data);
     output.write_bdp_pair(BDP832, bodyEndMarker, bodyEndMarkerLength, start, 0);
     // Here, the value length will always be 0. The template body end has no value in OSH.
     // TODO: remove this inefficiency in the future
@@ -711,7 +709,7 @@ void Compiler::compile_normal() {
     }
 
     if(endInfo.index != 0 || endInfo.escapes.size() > 0) {
-        LOG_DEBUG("Found template end at %zu", end + endInfo.index - input.data);
+        LOG_DEBUG("Found template end at %zu", templateEndIndex);
 
         advance(endInfo.index - 1);
         skip_whitespace_back();
@@ -913,9 +911,9 @@ ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, cons
 
     while(compiler.current < limit) {
         compiler.compile_plaintext();
-        compiler.rebase(compiler.current - input.data);
+        compiler.rebase(compiler.current);
 
-        LOG_DEBUG("--> Found template start at %zu", templateStartIndex);
+        LOG_DEBUG("--> Found template start at %zu", compiler.start - input.data);
 
         compiler.advance(opts.templates.start.size());
         compiler.skip_whitespace(); // Skips whitespace such that, for example, both [|? |] and [| ? |] work.
@@ -1012,23 +1010,23 @@ void Compiler::error(const char* file, const char* message, const char* descript
     throw Eryn::CompilationException(file, message, description, chunk);
 }
 
-TemplateEndInfo Compiler::find_template_end(const uint8_t* start) {
-    size_t index = input.find_index(start - input.data, opts->templates.end) - (start - input.data);
+TemplateEndInfo Compiler::find_template_end(const uint8_t* from) {
+    size_t index = input.find_index(from - input.data, opts->templates.end) - (from - input.data);
 
     std::vector<const uint8_t*> escapes;
 
-    while((start + index - 1) < input.end() + 1 && *(start + index - 1) == opts->templates.escape) {
-        LOG_DEBUG("Detected template escape at %zu", end + index - 1 - input);
+    while((from + index - 1) < input.end() + 1 && *(from + index - 1) == opts->templates.escape) {
+        LOG_DEBUG("Detected template escape at %zu", from + index - 1 - input.data);
 
-        escapes.push_back(start + index - 1);
-        index = 1 + input.find_index((start + index + 1) - input.data, opts->templates.end) - (start - input.data);
+        escapes.push_back(from + index - 1);
+        index = 1 + input.find_index((from + index + 1) - input.data, opts->templates.end) - (from - input.data);
     }
 
     return { std::move(escapes), index };
 }
 
 void Compiler::write_escaped_content(Buffer& buffer, const uint8_t* start, const uint8_t* end, const std::vector<const uint8_t*>& escapes) {
-    for(const auto& escape : escapes) {
+    for(auto& escape : escapes) {
         buffer.write(start, escape - start);
         start = escape + 1;
     }
