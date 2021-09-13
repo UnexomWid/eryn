@@ -5,8 +5,6 @@
 #include <cstdint>
 #include <string>
 
-#define HORSPOOL_THRESHOLD 3
-
 namespace mem {
     const uint8_t* find(const void* source, size_t sourceSize, const void* pattern, size_t patternSize);
     bool cmp(const void* m1, const void* m2, size_t size);

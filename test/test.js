@@ -4,8 +4,8 @@ var path = require("path");
 var fs = require("fs");
 
 // Used when generating the tests.
-const KEEP_OUTPUT_FILES = false;
-// Empty callback.
+const KEEP_OUTPUT_FILES = true;
+
 const NOP = () => { };
 
 eryn.setOptions({
@@ -13,37 +13,66 @@ eryn.setOptions({
     workingDirectory: path.join(__dirname, 'input')
 });
 
+// This is where the output files will be written.
+const OUTPUT_DIR = path.join(__dirname, "actual");
+
+if(fs.existsSync(OUTPUT_DIR)){
+    fs.rmdirSync(OUTPUT_DIR, { recursive: true });
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+} else {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
 function oshTestFactory(name) {
     return () => {
-        eryn.compile(`${name}.eryn`);
-        
-        let result = fs.readFileSync(path.join(__dirname, `input/${name}.eryn.osh`));
-        let expected = fs.readFileSync(path.join(__dirname, `expected/${name}.eryn.osh`));
-        
-        if(!KEEP_OUTPUT_FILES)
-            fs.unlink(path.join(__dirname, `input/${name}.eryn.osh`), NOP);
-        
-        return result.equals(expected);
+        try {
+            eryn.compile(`${name}.eryn`);
+            
+            let result = fs.readFileSync(path.join(__dirname, `input/${name}.eryn.osh`));
+            let expected = fs.readFileSync(path.join(__dirname, `expected/${name}.eryn.osh`));
+
+            let outOshFile = path.join(__dirname, `input/${name}.eryn.osh`);
+            
+            if(KEEP_OUTPUT_FILES) {
+                fs.rename(outOshFile, path.join(OUTPUT_DIR, path.basename(outOshFile)), NOP);
+            } else {
+                fs.unlink(outOshFile, NOP);
+            }
+            
+            return result.equals(expected);
+        } catch(ex) {
+            console.error(ex);
+            return false;
+        }
     }
 }
 
 function renderTestFactory(name) {
     return () => {
-        let result = eryn.render(`${name}.eryn`, {
-            conditional_one: 1,
-            loop_numbers: [0, 1, 2, 3, 4]
-        });
+        try {
+            let result = eryn.render(`${name}.eryn`, {
+                conditional_one: 1,
+                loop_numbers: [0, 1, 2, 3, 4]
+            });
 
-        if(KEEP_OUTPUT_FILES) {
-            fs.writeFile(path.join(__dirname, `input/${name}.eryn.rendered`), result, NOP);
-        } else {
-            fs.unlink(path.join(__dirname, `input/${name}.eryn.rendered`), NOP);
-            fs.unlink(path.join(__dirname, `input/${name}.eryn.osh`), NOP);
+            let outOshFile = path.join(__dirname, `input/${name}.eryn.osh`);
+
+            if(KEEP_OUTPUT_FILES) {
+                let outRenderedFile = path.join(OUTPUT_DIR, path.dirname(`${name}.eryn.rendered`));
+
+                fs.writeFile(outRenderedFile, result, NOP);
+                fs.rename(outOshFile, path.join(OUTPUT_DIR, path.basename(outOshFile)), NOP);
+            } else {
+                fs.unlink(outOshFile, NOP);
+            }
+
+            let expected = fs.readFileSync(path.join(__dirname, `expected/${name}.eryn.rendered`));
+            
+            return result.equals(expected);
+        } catch(ex) {
+            console.error(ex);
+            return false;
         }
-
-        let expected = fs.readFileSync(path.join(__dirname, `expected/${name}.eryn.rendered`));
-        
-        return result.equals(expected);
     }
 }
 

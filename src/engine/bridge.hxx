@@ -19,16 +19,17 @@ struct BridgeData {
     Napi::Object local;
     Napi::Value  shared;
 
-    BridgeData(Napi::Env en, Napi::Value ctx, Napi::Object lcl, Napi::Value shrd, Napi::Function ev, Napi::Function cln) :
-        env(en), context(ctx), local(lcl), shared(shrd), eval(ev), clone(cln) { }
+    BridgeData(Napi::Env env, Napi::Value context, Napi::Object local, Napi::Value shared, Napi::Function eval, Napi::Function clone);
 };
 
 struct Bridge {
     BridgeData data;
 
+    Bridge(BridgeData&& data);
+
     void evalTemplate(ConstBuffer input, Buffer& output);
     void evalVoidTemplate(ConstBuffer input);
-    bool evalConditionalTemplate(ConstBuffer input, Buffer& output);
+    bool evalConditionalTemplate(ConstBuffer input);
     void evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment);
     void unassign(const std::string& iterator);
 

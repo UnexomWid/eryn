@@ -33,7 +33,7 @@ bool str::is_blank(unsigned char c) {
     return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
 }
 
-bool valid_in_token(uint8_t c) {
+bool str::valid_in_token(uint8_t c) {
     if(c >= 'A' && c <= 'Z')
         return true;
     if(c >= 'a' && c <= 'z')

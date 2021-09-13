@@ -35,9 +35,8 @@ size_t path::dir_end_index(const char* path, size_t length) {
 }
 
 std::string path::append_or_absolute(const char* wd, const char* path, size_t length) {
-    std::string str(reinterpret_cast<const char*>(path, length));
+    std::string str(reinterpret_cast<const char*>(path), length);
 
-    // TODO: wd should be a string
     if(strlen(wd) == 0) {
         return str;
     }
@@ -53,6 +52,46 @@ std::string path::append_or_absolute(const char* wd, const char* path, size_t le
     }
 
     pathBuilder.append(str);
+
+    return pathBuilder;
+}
+
+std::string path::append_or_absolute(const char* wd, const std::string& path) {
+    if(strlen(wd) == 0) {
+        return path;
+    }
+
+    if(path::is_absolute(path.c_str(), path.size())) {
+        return path;
+    }
+
+    std::string pathBuilder(wd);
+
+    if(pathBuilder[pathBuilder.size() - 1] != '/' && pathBuilder[pathBuilder.size() - 1] != '\\') {
+        pathBuilder += '/';
+    }
+
+    pathBuilder.append(path);
+
+    return pathBuilder;
+}
+
+std::string path::append_or_absolute(const std::string& wd, const std::string& path) {
+    if(wd.size() == 0) {
+        return path;
+    }
+
+    if(path::is_absolute(path.c_str(), path.size())) {
+        return path;
+    }
+
+    std::string pathBuilder(wd);
+
+    if(pathBuilder[pathBuilder.size() - 1] != '/' && pathBuilder[pathBuilder.size() - 1] != '\\') {
+        pathBuilder += '/';
+    }
+
+    pathBuilder.append(path);
 
     return pathBuilder;
 }

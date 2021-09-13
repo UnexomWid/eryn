@@ -14,6 +14,12 @@ if(NODE_ARCH STREQUAL "ia32")
     endif()
 endif()
 
+if(MSVC)
+    message(STATUS "Detected MSVC compiler")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
+endif()
+
 include_directories(${CMAKE_JS_INC})
 
 file(GLOB SOURCE_FILES

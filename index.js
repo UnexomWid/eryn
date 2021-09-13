@@ -1,5 +1,7 @@
-var binding = require('./build-load')(__dirname);
+var { ErynEngine } = require('./build-load')(__dirname);
 const v8 = require('v8');
+
+var binding = new ErynEngine();
 
 var bridgeOptions = {
     enableDeepCloning: false
@@ -76,7 +78,7 @@ const eryn = {
         if(options.hasOwnProperty("enableDeepCloning") && ((typeof options.enableDeepCloning) === "boolean"))
             bridgeOptions.enableDeepCloning = options.enableDeepCloning;
 
-        binding.setOptions(options);
+        binding.options(options);
     }
 };
 

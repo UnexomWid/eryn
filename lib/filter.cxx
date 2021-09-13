@@ -14,7 +14,7 @@ using Filter = FilterInfo::Filter;
 Filter::Filter(std::string pattern) : glob(pattern), exclusions() { }
 Filter::Filter(std::string pattern, size_t count) : glob(pattern, 0, count), exclusions() { }
 
-void FilterInfo::add_filter(const std::string& const pattern) {
+void FilterInfo::add_filter(const std::string& pattern) {
     filters.emplace_back(pattern);
 }
 
@@ -50,7 +50,7 @@ void FilterInfo::add_exclusion(const std::string&  pattern) {
 }
 
 void FilterInfo::add_exclusion(const std::string& pattern, size_t count) {
-    auto exclusion(pattern, 0, count);
+    std::string exclusion(pattern, 0, count);
     bool found = false;
 
     for(size_t i = 0; i < filters.size();) {

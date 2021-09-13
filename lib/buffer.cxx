@@ -11,6 +11,8 @@
     #pragma warning(disable: 4996 4293)
 #endif
 
+static constexpr size_t BUFFER_INITIAL_SIZE = 64;
+
 Buffer::Buffer() : Buffer(nullptr, 0) {
     data = nullptr;
     size = 0;
@@ -68,8 +70,9 @@ void Buffer::write(uint8_t byte) {
 }
 
 void Buffer::write(const uint8_t* bytes, size_t amount) {
-    reserve(size);
+    reserve(amount);
     memcpy(data + size, bytes, amount);
+    size += amount;
 }
 
 void Buffer::write(const ConstBuffer& buffer) {
@@ -88,7 +91,7 @@ void Buffer::write_at(size_t index, const uint8_t* bytes, size_t amount) {
 
 void Buffer::write_bdp_name(const BDP::Header& header, const uint8_t* name, size_t nameSize) {
     auto amount = nameSize + header.NAME_LENGTH_BYTE_SIZE;
-
+    
     reserve(amount);
     BDP::writeName(&header, data + size, name, nameSize);
 
@@ -99,7 +102,7 @@ void Buffer::write_bdp_value(const BDP::Header& header, const uint8_t* value, si
     auto amount = valueSize + header.VALUE_LENGTH_BYTE_SIZE;
     
     reserve(amount);
-    BDP::writeName(&header, data + size, value, valueSize);
+    BDP::writeValue(&header, data + size, value, valueSize);
 
     size += amount;
 }
@@ -110,7 +113,7 @@ void Buffer::write_bdp_pair(const BDP::Header& header, const uint8_t* name, size
 }
 
 void Buffer::write_length(size_t source, uint8_t count) {
-    write_length(0, source, count);
+    write_length(size, source, count);
 }
 
 void Buffer::write_length(size_t index, size_t source, uint8_t count) {
@@ -119,7 +122,7 @@ void Buffer::write_length(size_t index, size_t source, uint8_t count) {
     
     reserve(extra);
 
-    BDP::lengthToBytes(end(), source, count);
+    BDP::lengthToBytes(data + index, source, count);
     size += extra;
 }
 
@@ -131,18 +134,24 @@ void Buffer::repeat(uint8_t byte, size_t amount) {
 }
 
 void Buffer::move_right(size_t index, size_t count) {
-    auto diff = size - index;
-    auto extra = diff < count ? count - diff : 0;
-
-    reserve(extra);
+    reserve(count);
 
     memmove(data + index + count, data + index, size - index);
-    size += extra;
+    size += count;
 }
 
 void Buffer::reserve(size_t amount) {
+    if(amount == 0) {
+        return;
+    }
+
+    if(data == nullptr) {
+        capacity = BUFFER_INITIAL_SIZE;
+        data = static_cast<uint8_t*>(REMEM_ALLOC(capacity, "Buffer"));
+    }
+
     while(size + amount > capacity) {
-        data = static_cast<uint8_t*>(REMEM_EXPAND(data, size));
+        data = static_cast<uint8_t*>(REMEM_EXPAND(data, capacity));
     }
 }
 
