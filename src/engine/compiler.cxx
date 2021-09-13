@@ -526,8 +526,11 @@ void Compiler::compile_component() {
     
     Buffer buffer;
 
-    write_escaped_content(buffer, rightStart, rightEnd, endInfo.escapes);
-    localize_all_iterators(buffer);
+    // If the component template has context (i.e. context start is not the same as the path start).
+    if(rightStart != leftStart) {
+        write_escaped_content(buffer, rightStart, rightEnd, endInfo.escapes);
+        localize_all_iterators(buffer);
+    }
 
     size_t oshStart = output.size;
 

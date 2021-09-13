@@ -395,32 +395,6 @@ void Renderer::render() {
                 conditionalStack.pop();
                 continue;
             }
-            case *OSH_TEMPLATE_INVERTED_CONDITIONAL_START: {
-                LOG_DEBUG("--> Found inverted conditional template start");
-
-                size_t conditionalEnd;
-                BDP::bytesToLength(conditionalEnd, input.data + inputIndex, OSH_FORMAT);
-                inputIndex += OSH_FORMAT;
-
-                size_t trueConditionalEnd;
-                BDP::bytesToLength(trueConditionalEnd, input.data + inputIndex, OSH_FORMAT);
-                inputIndex += OSH_FORMAT;
-
-                if(bridge.evalConditionalTemplate({ value, valueLength })) {
-                    inputIndex += conditionalEnd;
-
-                    ConditionalStackInfo info;
-                    info.lastConditionalTrue = false;
-                    info.lastTrueEndIndex = 0;
-                    conditionalStack.push(info);
-                } else {
-                    ConditionalStackInfo info;
-                    info.lastConditionalTrue = true;
-                    info.lastTrueEndIndex = trueConditionalEnd;
-                    conditionalStack.push(info);
-                }
-                break;
-            }
             case *OSH_TEMPLATE_LOOP_START: {
                 LOG_DEBUG("--> Found loop template start");
 
