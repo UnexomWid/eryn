@@ -426,7 +426,7 @@ void Renderer::render() {
                     loopStack.pop();
                 } else {
                     inputIndex += OSH_FORMAT;
-                    localStack.push(bridge.backupLocal());
+                    localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
                     bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
                 }
 
@@ -462,7 +462,7 @@ void Renderer::render() {
                     loopStack.pop();
                 } else {
                     inputIndex += OSH_FORMAT;
-                    localStack.push(bridge.backupLocal());
+                    localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
                     bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
                 }
 
@@ -527,8 +527,8 @@ void Renderer::render() {
                 if(contentLength == 0) {
                     info.hasContent = false;
 
-                    auto contextBackup = bridge.backupContext();
-                    auto localBackup   = bridge.backupLocal();
+                    auto contextBackup = bridge.backupContext(opts.flags.cloneBackups);
+                    auto localBackup   = bridge.backupLocal(opts.flags.cloneBackups);
 
                     bridge.initContext({ info.context, info.contextLength });
                     bridge.initLocal();
@@ -562,8 +562,8 @@ void Renderer::render() {
 
                     output.size = info.startIndex;
 
-                    auto contextBackup = bridge.backupContext();
-                    auto localBackup   = bridge.backupLocal();
+                    auto contextBackup = bridge.backupContext(opts.flags.cloneBackups);
+                    auto localBackup   = bridge.backupLocal(opts.flags.cloneBackups);
 
                     bridge.initContext({ info.context, info.contextLength });
                     bridge.initLocal();
