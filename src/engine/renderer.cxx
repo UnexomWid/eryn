@@ -432,6 +432,7 @@ void Renderer::render() {
 
                 break;
             }
+            // TODO: merge this with the one above.
             case *OSH_TEMPLATE_LOOP_REVERSE_START: {
                 LOG_DEBUG("--> Found reverse loop template start");
 
@@ -462,7 +463,11 @@ void Renderer::render() {
                     loopStack.pop();
                 } else {
                     inputIndex += OSH_FORMAT;
-                    localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
+
+                    if(opts.flags.cloneLocalInLoops) {
+                        localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
+                    }
+                    
                     bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
                 }
 
@@ -480,7 +485,11 @@ void Renderer::render() {
                     loopStack.top().update();
 
                     // TODO: add option to disable cloning
-                    bridge.restoreLocal(bridge.copyValue(localStack.top())); // In case the array uses the parent local object.
+                    if(opts.flags.cloneLocalInLoops) {
+                        // For when the array uses the parent local object and the local changes in an inner scope.
+                        bridge.restoreLocal(bridge.copyValue(localStack.top()));
+                    }
+
                     bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
 
                     size_t loopStart;
@@ -496,8 +505,10 @@ void Renderer::render() {
                     bridge.unassign(loopStack.top().iterator);
                     loopStack.pop();
 
-                    bridge.restoreLocal(localStack.top());
-                    localStack.pop();
+                    if(opts.flags.cloneLocalInLoops) {
+                        bridge.restoreLocal(localStack.top());
+                        localStack.pop();
+                    }
                 }
 
                 break;
