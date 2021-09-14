@@ -55,6 +55,7 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
         else FLAG_ENTRY(ignoreBlankPlaintext)
         else FLAG_ENTRY(logRenderTime)
         else FLAG_ENTRY(cloneIterators)
+        else FLAG_ENTRY(cloneBackups)
         else FLAG_ENTRY(debugDumpOSH)
         else TEMPLATE_ENTRY2(templateStart, start)
         else TEMPLATE_ENTRY2(templateEnd, end)
@@ -112,6 +113,7 @@ Napi::Object get_options(Napi::Env env, const Eryn::Options& opts) {
     FLAG_ENTRY(ignoreBlankPlaintext);
     FLAG_ENTRY(logRenderTime);
     FLAG_ENTRY(cloneIterators);
+    FLAG_ENTRY(cloneBackups);
     FLAG_ENTRY(debugDumpOSH);
     TEMPLATE_ENTRY2(templateEscape, escape);
     TEMPLATE_ENTRY2(templateStart, start);

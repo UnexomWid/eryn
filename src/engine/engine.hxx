@@ -19,6 +19,11 @@ using std::string;
 #define ERYN_INTERNAL_EXCEPTION(msg) (InternalException(msg, __FILE__, __LINE__))
 
 namespace Eryn {
+enum class EngineMode {
+    NORMAL,  // Normal speed: the engine is not limited in any way.
+    STRICT   // Full speed: the engine is limited to basic content inside the templates.
+};
+
 struct Options {
     struct {
         bool bypassCache            : 1;
@@ -28,9 +33,11 @@ struct Options {
         bool ignoreBlankPlaintext   : 1;
         bool logRenderTime          : 1;
         bool cloneIterators         : 1;
+        bool cloneBackups           : 1;
         bool debugDumpOSH           : 1;
     } flags;
 
+    EngineMode mode;
     string workingDir;
 
     struct {
