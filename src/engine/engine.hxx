@@ -34,6 +34,7 @@ struct Options {
         bool logRenderTime          : 1;
         bool cloneIterators         : 1;
         bool cloneBackups           : 1;
+        bool cloneLocalInLoops      : 1;
         bool debugDumpOSH           : 1;
     } flags;
 

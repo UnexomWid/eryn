@@ -9,6 +9,7 @@ Eryn::Options::Options() {
     flags.logRenderTime            = false;
     flags.cloneIterators           = false;
     flags.cloneBackups             = false;
+    flags.cloneLocalInLoops        = false;
     flags.debugDumpOSH             = false;
 
     mode                           = Eryn::EngineMode::NORMAL;
