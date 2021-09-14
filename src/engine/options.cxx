@@ -8,8 +8,10 @@ Eryn::Options::Options() {
     flags.ignoreBlankPlaintext     = false;
     flags.logRenderTime            = false;
     flags.cloneIterators           = false;
+    flags.cloneBackups             = false;
     flags.debugDumpOSH             = false;
 
+    mode                           = Eryn::EngineMode::NORMAL;
     workingDir                     = ".";
 
     templates.escape               = '\\';

@@ -41,11 +41,11 @@ struct Bridge {
 
     BridgeBackup copyValue(const Napi::Value& value);
 
-    BridgeBackup backupContext();
+    BridgeBackup backupContext(bool cloneBackup);
     void initContext(ConstBuffer context);
     void restoreContext(BridgeBackup backup);
 
-    BridgeBackup backupLocal();
+    BridgeBackup backupLocal(bool cloneBackup);
     void initLocal();
     void restoreLocal(BridgeBackup backup);
 };

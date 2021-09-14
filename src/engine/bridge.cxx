@@ -250,9 +250,12 @@ Eryn::BridgeBackup Eryn::Bridge::copyValue(const Napi::Value& value) {
     }
 }
 
-Eryn::BridgeBackup Eryn::Bridge::backupContext() {
+Eryn::BridgeBackup Eryn::Bridge::backupContext(bool cloneBackup) {
     try {
-        return call_clone(data, data.context);
+        if(cloneBackup) {
+            return call_clone(data, data.context);
+        }
+        return data.context;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -261,9 +264,12 @@ Eryn::BridgeBackup Eryn::Bridge::backupContext() {
     }
 }
 
-Eryn::BridgeBackup Eryn::Bridge::backupLocal() {
+Eryn::BridgeBackup Eryn::Bridge::backupLocal(bool cloneBackup) {
     try {
-        return call_clone(data, data.local);
+        if(cloneBackup) {
+            return call_clone(data, data.local);
+        }
+        return data.local;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
