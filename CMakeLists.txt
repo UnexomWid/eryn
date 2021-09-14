@@ -43,9 +43,14 @@ file(GLOB SOURCE_FILES
 
 # Required macros
 add_definitions(-DMODULE_NAME=${PROJECT_NAME})
-add_definitions(-DNAPI_VERSION=6)
 add_definitions(-DREMEM_DISABLE_MALLOC_ALIGNING)
 add_definitions(-DREMEM_DISABLE_REALLOC_ALIGNING)
+
+# NAPI_VERSION > 5 is required for Napi::ObjectWrap.
+# If, for some reason, the version changes in the future, the prebuild for ia32 may fail.
+# In that case, `cmake-js install -a ia32` should be used.
+# The same command is valid when the failing arch is x64.
+add_definitions(-DNAPI_VERSION=6)
 
 # Optional macros (for debugging)
 #add_definitions(-DDEBUG)
