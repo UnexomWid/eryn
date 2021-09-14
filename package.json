@@ -15,17 +15,16 @@
     "prebuild": "node prebuild.js",
     "check": "node build-check.js"
   },
-  "dependencies": {},
   "author": "UnexomWid <uw@exom.dev> (https://uw.exom.dev)",
   "license": "MIT",
   "repository": "github:UnexomWid/eryn",
   "homepage": "https://github.com/UnexomWid/eryn",
   "bugs": "https://github.com/UnexomWid/eryn/issues",
   "devDependencies": {
-    "node-addon-api": "github:nodejs/node-addon-api",
-    "cmake-js": "^6.1.0",
+    "cmake-js": "^6.2.1",
     "cross-spawn": "^7.0.2",
     "minimist": "^1.2.5",
+    "node-addon-api": "github:nodejs/node-addon-api",
     "npm-run-path": "^4.0.1"
   }
 }
