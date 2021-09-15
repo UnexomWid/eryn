@@ -22,24 +22,15 @@ endif()
 
 include_directories(${CMAKE_JS_INC})
 
-file(GLOB SOURCE_FILES
+file(GLOB_RECURSE SOURCE_FILES
     src/*.hxx
     src/*.cxx
     src/*.dxx
 
-    src/**/*.hxx
-    src/**/*.cxx
-    src/**/*.dxx
-
     lib/*.hxx
     lib/*.cxx
     lib/*.h
-    lib/*.c
-
-    lib/**/*.hxx
-    lib/**/*.cxx
-    lib/**/*.h
-    lib/**/*.c)
+    lib/*.c)
 
 # Required macros
 add_definitions(-DMODULE_NAME=${PROJECT_NAME})

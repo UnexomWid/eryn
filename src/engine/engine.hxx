@@ -12,7 +12,7 @@
 // TODO: Remove these
 #include <unordered_set>
 
-#include "bridge.hxx"
+#include "bridge/bridge.hxx"
 
 using std::string;
 

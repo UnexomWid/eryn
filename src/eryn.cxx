@@ -274,7 +274,7 @@ Napi::Value ErynEngine::render(const Napi::CallbackInfo& info) {
     path::normalize(absPath);
 
     try {
-        Eryn::Bridge bridge({
+        Eryn::NormalBridge bridge({
             env,
             info[1].As<Napi::Value>(),
             info[2].As<Napi::Object>(),
@@ -297,7 +297,7 @@ Napi::Value ErynEngine::render_string(const Napi::CallbackInfo& info) {
     auto alias = info[0].As<Napi::String>().Utf8Value();
 
     try {
-        Eryn::Bridge bridge({
+        Eryn::NormalBridge bridge({
             env,
             info[1].As<Napi::Value>(),
             info[2].As<Napi::Object>(),

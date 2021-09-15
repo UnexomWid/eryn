@@ -13,7 +13,8 @@
     "rebuild": "node build.js",
     "compile": "cmake-js build",
     "prebuild": "node prebuild.js",
-    "check": "node build-check.js"
+    "check": "node build-check.js",
+    "test": "node test/test.js"
   },
   "author": "UnexomWid <uw@exom.dev> (https://uw.exom.dev)",
   "license": "MIT",
