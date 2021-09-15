@@ -1,9 +1,9 @@
 #include "bridge.hxx"
-#include "engine.hxx"
+#include "../engine.hxx"
 
-#include "../def/logging.dxx"
-#include "../def/warnings.dxx"
-#include "../../lib/buffer.hxx"
+#include "../../def/logging.dxx"
+#include "../../def/warnings.dxx"
+#include "../../../lib/buffer.hxx"
 
 static std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     Napi::Object json = env.Global().Get("JSON").As<Napi::Object>();
@@ -22,15 +22,15 @@ static Napi::Value call_eval(Eryn::BridgeData& data, const Napi::String& script)
 }
 
 static Napi::Value call_eval(Eryn::BridgeData& data, ConstBuffer script) {
-    std::string str;
+    std::string str = std::string(reinterpret_cast<const char*>(script.data), script.size);
     
     // If the user writes {test: "Test"}, this should be treated as an expression.
     // By default, it's treated as a block, but it will be treated as an expression if it's
     // surrounded by parentheses. If the user truly wants the script to start with a block,
     // they have to place dummy content like /**/ or /* Block */ before the opening bracket.
     if(script.size > 0 && script.data[0] == '{') {
-        str ="(" + std::string(reinterpret_cast<const char*>(script.data), script.size) + ")";
-    } else str = std::string(reinterpret_cast<const char*>(script.data), script.size);
+        str ="(" + str + ")";
+    }
 
     return call_eval(data, Napi::String::New(data.env, str));
 }
@@ -41,12 +41,9 @@ static Napi::Value call_clone(Eryn::BridgeData& data, const Napi::Value& origina
     }));
 }
 
-Eryn::BridgeData::BridgeData(Napi::Env env, Napi::Value context, Napi::Object local, Napi::Value shared, Napi::Function eval, Napi::Function clone)
-  : env(env), context(context), local(local), shared(shared), eval(eval), clone(clone) { }
+Eryn::NormalBridge::NormalBridge(Eryn::BridgeData&& data) : Bridge(std::forward<Eryn::BridgeData>(data)) { }
 
-Eryn::Bridge::Bridge(Eryn::BridgeData&& data) : data(std::forward<Eryn::BridgeData>(data)) { }
-
-void Eryn::Bridge::evalTemplate(ConstBuffer input, Buffer& output) {
+void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
     Napi::Value result;
 
     try {
@@ -97,7 +94,7 @@ void Eryn::Bridge::evalTemplate(ConstBuffer input, Buffer& output) {
     }
 }
 
-void Eryn::Bridge::evalVoidTemplate(ConstBuffer input) {
+void Eryn::NormalBridge::evalVoidTemplate(ConstBuffer input) {
     try {
         call_eval(data, input);
     } catch(std::exception &e) {
@@ -105,7 +102,7 @@ void Eryn::Bridge::evalVoidTemplate(ConstBuffer input) {
     }
 }
 
-bool Eryn::Bridge::evalConditionalTemplate(ConstBuffer input) {
+bool Eryn::NormalBridge::evalConditionalTemplate(ConstBuffer input) {
     Napi::Value result;
 
     try {
@@ -117,7 +114,7 @@ bool Eryn::Bridge::evalConditionalTemplate(ConstBuffer input) {
     return result.ToBoolean().Value();
 }
 
-void Eryn::Bridge::evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment) {
+void Eryn::NormalBridge::evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment) {
     if(cloneIterators) {
         // Object
         if(propertyAssignment.size() > 0) {
@@ -148,14 +145,14 @@ void Eryn::Bridge::evalAssignment(bool cloneIterators, const std::string& iterat
     }
 }
 
-void Eryn::Bridge::unassign(const std::string &iterator) {
+void Eryn::NormalBridge::unassign(const std::string &iterator) {
     data.local[iterator] = call_eval(
         data,
         Napi::String::New(data.env, "undefined")
     );
 }
 
-size_t Eryn::Bridge::initArray(ConstBuffer array, std::string*& propertyArray, int8_t direction) {
+size_t Eryn::NormalBridge::initArray(ConstBuffer array, std::string*& propertyArray, int8_t direction) {
     Napi::Value result;
 
     try {
@@ -210,7 +207,7 @@ size_t Eryn::Bridge::initArray(ConstBuffer array, std::string*& propertyArray, i
     return properties.Length();
 }
 
-void Eryn::Bridge::buildLoopAssignment(std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, ConstBuffer it, ConstBuffer array) {
+void Eryn::NormalBridge::buildLoopAssignment(std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, ConstBuffer it, ConstBuffer array) {
     iterator.assign(reinterpret_cast<const char*>(it.data), it.size);
     
     assignment.reserve(32);
@@ -222,7 +219,7 @@ void Eryn::Bridge::buildLoopAssignment(std::string& iterator, std::string& assig
 
 // Assignment: iterator = arr[index]
 // Assignment: iterator = Object({key: prop, value: obj["prop"]})
-void Eryn::Bridge::updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction) {
+void Eryn::NormalBridge::updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction) {
     if(propertyArray == nullptr) {
         assignment += std::to_string(arrayIndex);
         assignment += "]";
@@ -234,12 +231,12 @@ void Eryn::Bridge::updateLoopAssignment(std::string& assignment, std::string& pr
     arrayIndex += direction;
 }
 
-void Eryn::Bridge::invalidateLoopAssignment(std::string& assignment, const size_t& assignmentUpdateIndex) {
+void Eryn::NormalBridge::invalidateLoopAssignment(std::string& assignment, const size_t& assignmentUpdateIndex) {
     assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
 }
 
 // Like call_clone, but this one is exposed by the bridge and also catches any exceptions.
-Eryn::BridgeBackup Eryn::Bridge::copyValue(const Napi::Value& value) {
+Eryn::BridgeBackup Eryn::NormalBridge::copyValue(const Napi::Value& value) {
     try {
         return call_clone(data, value);
     } catch(std::exception& e) {
@@ -250,7 +247,7 @@ Eryn::BridgeBackup Eryn::Bridge::copyValue(const Napi::Value& value) {
     }
 }
 
-Eryn::BridgeBackup Eryn::Bridge::backupContext(bool cloneBackup) {
+Eryn::BridgeBackup Eryn::NormalBridge::backupContext(bool cloneBackup) {
     try {
         if(cloneBackup) {
             return call_clone(data, data.context);
@@ -264,7 +261,7 @@ Eryn::BridgeBackup Eryn::Bridge::backupContext(bool cloneBackup) {
     }
 }
 
-Eryn::BridgeBackup Eryn::Bridge::backupLocal(bool cloneBackup) {
+Eryn::BridgeBackup Eryn::NormalBridge::backupLocal(bool cloneBackup) {
     try {
         if(cloneBackup) {
             return call_clone(data, data.local);
@@ -278,7 +275,7 @@ Eryn::BridgeBackup Eryn::Bridge::backupLocal(bool cloneBackup) {
     }
 }
 
-void Eryn::Bridge::initContext(ConstBuffer context) {
+void Eryn::NormalBridge::initContext(ConstBuffer context) {
     try {
         if(context.size == 0) {
             data.context = call_eval(
@@ -296,7 +293,7 @@ void Eryn::Bridge::initContext(ConstBuffer context) {
     }
 }
 
-void Eryn::Bridge::initLocal() {
+void Eryn::NormalBridge::initLocal() {
     try {
         data.local = call_eval(
             data,
@@ -307,10 +304,10 @@ void Eryn::Bridge::initLocal() {
     }
 }
 
-void Eryn::Bridge::restoreContext(Eryn::BridgeBackup backup) {
+void Eryn::NormalBridge::restoreContext(Eryn::BridgeBackup backup) {
     data.context = backup;//.ToObject();
 }
 
-void Eryn::Bridge::restoreLocal(Eryn::BridgeBackup backup) {
+void Eryn::NormalBridge::restoreLocal(Eryn::BridgeBackup backup) {
     data.local = backup.ToObject();
 }

@@ -1,0 +1,21 @@
+BRIDGE_METHOD(void evalTemplate(ConstBuffer input, Buffer& output));
+BRIDGE_METHOD(void evalVoidTemplate(ConstBuffer input));
+BRIDGE_METHOD(bool evalConditionalTemplate(ConstBuffer input));
+BRIDGE_METHOD(void evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment));
+BRIDGE_METHOD(void unassign(const std::string& iterator));
+
+BRIDGE_METHOD(size_t initArray(ConstBuffer array, std::string*& propertyArray, int8_t direction));
+
+BRIDGE_METHOD(void buildLoopAssignment(std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, ConstBuffer it, ConstBuffer array));
+BRIDGE_METHOD(void updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction));
+BRIDGE_METHOD(void invalidateLoopAssignment(std::string& assignment, const size_t& assignmentUpdateIndex));
+
+BRIDGE_METHOD(BridgeBackup copyValue(const Napi::Value& value));
+
+BRIDGE_METHOD(BridgeBackup backupContext(bool cloneBackup));
+BRIDGE_METHOD(void initContext(ConstBuffer context));
+BRIDGE_METHOD(void restoreContext(BridgeBackup backup));
+
+BRIDGE_METHOD(BridgeBackup backupLocal(bool cloneBackup));
+BRIDGE_METHOD(void initLocal());
+BRIDGE_METHOD(void restoreLocal(BridgeBackup backup));
