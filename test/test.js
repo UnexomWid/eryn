@@ -58,7 +58,9 @@ function renderTestFactory(name) {
             let outOshFile = path.join(__dirname, `input/${name}.eryn.osh`);
 
             if(KEEP_OUTPUT_FILES) {
-                let outRenderedFile = path.join(OUTPUT_DIR, path.dirname(`${name}.eryn.rendered`));
+                let file = `${name}.eryn.rendered`;
+                
+                let outRenderedFile = path.join(OUTPUT_DIR, path.dirname(file), path.basename(file));
 
                 fs.writeFile(outRenderedFile, result, NOP);
                 fs.rename(outOshFile, path.join(OUTPUT_DIR, path.basename(outOshFile)), NOP);

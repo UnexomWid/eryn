@@ -19,69 +19,37 @@
 struct LoopStackInfo {
     Eryn::Bridge& bridge;
 
-    size_t arrayIndex;               // Used to iterate over the array.
-    size_t arrayLength;              // Used to stop the iteration.
-    size_t assignmentUpdateIndex;    // Used to update the assignment string.
+    uint32_t index;
+    Eryn::BridgeIterable iterable;
+    Eryn::BridgeObjectKeys keys;
 
-    int8_t increment;                // Used to update the iterator.
+    std::string iterator;
+    bool isArray;
 
-    bool atEnd;                      // Used to stop a reversed loop.
+    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, int8_t step)
+        : bridge(bridge), iterator(std::string(reinterpret_cast<const char*>(iterator.data), iterator.size)), index(0) {
 
-    std::string  iterator;           // The iterator name.
-    std::string  assignment;         // Used to assign a value from the array to a variable.
-    std::string  propertyAssignment; // Used to assign a key-value pair from the object to a variable.
-
-    // TODO: use std::vector
-    std::string* propertyArray;      // Used for objects.
-
-    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, int8_t increment)
-        : bridge(bridge), arrayIndex(0), propertyArray(nullptr), increment(increment), atEnd(false) {
-
-        arrayLength = bridge.initArray(array, propertyArray, increment);
-        bridge.buildLoopAssignment(this->iterator, assignment, assignmentUpdateIndex, iterator, array);
-
-        if(increment < 0) {
-            arrayIndex = arrayLength - 1;
-        }
-
-        update();
-    };
-
-    LoopStackInfo(const LoopStackInfo& info)
-        : bridge(bridge), arrayIndex(info.arrayIndex), arrayLength(info.arrayLength),
-          assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator),
-          assignment(info.assignment), propertyAssignment(info.propertyAssignment),
-          increment(info.increment), atEnd(info.atEnd) {
-        
-        propertyArray = new std::string[info.arrayLength];
-
-        for(size_t i = 0; i < info.arrayLength; ++i)
-            propertyArray[i] = info.propertyArray[i];
+        isArray = this->bridge.initLoopIterable(array, iterable, keys, step);
     }
 
-    LoopStackInfo(LoopStackInfo&& info)
-        : bridge(info.bridge), arrayIndex(info.arrayIndex), arrayLength(info.arrayLength),
-          assignmentUpdateIndex(info.assignmentUpdateIndex), iterator(info.iterator),
-          assignment(info.assignment), propertyAssignment(info.propertyAssignment),
-          increment(info.increment), atEnd(info.atEnd) {
-
-        propertyArray = info.propertyArray;
-        info.propertyArray = nullptr;
+    void next() {
+        ++index;
     }
 
-    ~LoopStackInfo() {
-        if(propertyArray != nullptr) {
-            delete[] propertyArray;
-            propertyArray = nullptr;
+    void update(bool cloneIterators) {
+        if(isArray) {
+            bridge.evalIteratorArrayAssignment(cloneIterators, iterator, iterable, keys, index);
+        } else {
+            bridge.evalIteratorObjectAssignment(cloneIterators, iterator, iterable, keys, index);
         }
     }
 
-    void invalidate() {
-        bridge.invalidateLoopAssignment(assignment, assignmentUpdateIndex);
+    uint32_t length() {
+        return (uint32_t) keys.size();
     }
 
-    void update() {
-        bridge.updateLoopAssignment(assignment, propertyAssignment, arrayIndex, propertyArray, increment);
+    bool end() {
+        return index >= length();
     }
 };
 
@@ -395,7 +363,9 @@ void Renderer::render() {
                 conditionalStack.pop();
                 continue;
             }
-            case *OSH_TEMPLATE_LOOP_START: {
+            case *OSH_TEMPLATE_LOOP_START:
+                // Fallthrough
+            case *OSH_TEMPLATE_LOOP_REVERSE_START: {
                 LOG_DEBUG("--> Found loop template start");
 
                 size_t leftLength;
@@ -415,47 +385,9 @@ void Renderer::render() {
                 right = input.data + inputIndex;
                 inputIndex += rightLength;
 
-                // 1 = direction (+1 increments)
-                loopStack.push(LoopStackInfo(bridge, { left, leftLength }, { right, rightLength }, 1));
+                loopStack.push(LoopStackInfo(bridge, { left, leftLength }, { right, rightLength }, nameByte == *OSH_TEMPLATE_LOOP_REVERSE_START ? -1 : 1));
 
-                if(loopStack.top().arrayLength == 0) {
-                    size_t loopEnd;
-                    BDP::bytesToLength(loopEnd, input.data + inputIndex, OSH_FORMAT);
-
-                    inputIndex += OSH_FORMAT + loopEnd;
-                    loopStack.pop();
-                } else {
-                    inputIndex += OSH_FORMAT;
-                    localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
-                    bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
-                }
-
-                break;
-            }
-            // TODO: merge this with the one above.
-            case *OSH_TEMPLATE_LOOP_REVERSE_START: {
-                LOG_DEBUG("--> Found reverse loop template start");
-
-                size_t leftLength;
-                size_t rightLength;
-
-                const uint8_t* left;
-                const uint8_t* right;
-
-                inputIndex -= valueLength;
-
-                left = input.data + inputIndex + BDP832.VALUE_LENGTH_BYTE_SIZE;
-                BDP::bytesToLength(leftLength, input.data + inputIndex, BDP832.VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += BDP832.VALUE_LENGTH_BYTE_SIZE + leftLength;
-
-                BDP::bytesToLength(rightLength, input.data + inputIndex, BDP832.VALUE_LENGTH_BYTE_SIZE);
-                inputIndex += BDP832.VALUE_LENGTH_BYTE_SIZE;
-                right = input.data + inputIndex;
-                inputIndex += rightLength;
-
-                loopStack.push(LoopStackInfo(bridge, { left, leftLength }, { right, rightLength }, -1));
-
-                if(loopStack.top().arrayLength == 0) {
+                if(loopStack.top().length() == 0) {
                     size_t loopEnd;
                     BDP::bytesToLength(loopEnd, input.data + inputIndex, OSH_FORMAT);
 
@@ -467,30 +399,23 @@ void Renderer::render() {
                     if(opts.flags.cloneLocalInLoops) {
                         localStack.push(bridge.backupLocal(opts.flags.cloneBackups));
                     }
-                    
-                    bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+
+                    loopStack.top().update(opts.flags.cloneIterators);
                 }
 
                 break;
             }
             case *OSH_TEMPLATE_LOOP_BODY_END: {
                 LOG_DEBUG("--> Found loop template end");
+                loopStack.top().next();
 
-                if(loopStack.top().arrayIndex < loopStack.top().arrayLength && !loopStack.top().atEnd) {
-                    if(loopStack.top().arrayIndex == 0 && loopStack.top().increment < 0) {// Mark this as the last iteration (the index will overflow).
-                        loopStack.top().atEnd = true;
-                    }
-
-                    loopStack.top().invalidate();
-                    loopStack.top().update();
-
-                    // TODO: add option to disable cloning
+                if(!loopStack.top().end()) {
                     if(opts.flags.cloneLocalInLoops) {
                         // For when the array uses the parent local object and the local changes in an inner scope.
                         bridge.restoreLocal(bridge.copyValue(localStack.top()));
                     }
 
-                    bridge.evalAssignment(opts.flags.cloneIterators, loopStack.top().iterator, loopStack.top().assignment, loopStack.top().propertyAssignment);
+                    loopStack.top().update(opts.flags.cloneIterators);
 
                     size_t loopStart;
 

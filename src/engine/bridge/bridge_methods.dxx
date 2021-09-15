@@ -2,9 +2,12 @@ BRIDGE_METHOD(void evalTemplate(ConstBuffer input, Buffer& output));
 BRIDGE_METHOD(void evalVoidTemplate(ConstBuffer input));
 BRIDGE_METHOD(bool evalConditionalTemplate(ConstBuffer input));
 BRIDGE_METHOD(void evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment));
+BRIDGE_METHOD(void evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, const BridgeObjectKeys& keys, uint32_t index));
+BRIDGE_METHOD(void evalIteratorObjectAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, const BridgeObjectKeys& keys, uint32_t index));
 BRIDGE_METHOD(void unassign(const std::string& iterator));
 
-BRIDGE_METHOD(size_t initArray(ConstBuffer array, std::string*& propertyArray, int8_t direction));
+// Returns true if the iterable is an array, false otherwise.
+BRIDGE_METHOD(bool initLoopIterable(ConstBuffer arrayScript, BridgeIterable& iterable, BridgeObjectKeys& keys, int8_t step));
 
 BRIDGE_METHOD(void buildLoopAssignment(std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, ConstBuffer it, ConstBuffer array));
 BRIDGE_METHOD(void updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction));
