@@ -114,37 +114,6 @@ bool Eryn::NormalBridge::evalConditionalTemplate(ConstBuffer input) {
     return result.ToBoolean().Value();
 }
 
-void Eryn::NormalBridge::evalAssignment(bool cloneIterators, const std::string& iterator, const std::string& assignment, const std::string& propertyAssignment) {
-    if(cloneIterators) {
-        // Object
-        if(propertyAssignment.size() > 0) {
-            data.local[iterator] = call_clone(
-                data,
-                call_eval(data, Napi::String::New(data.env, propertyAssignment + assignment + "})"))
-            ).ToObject();
-        } else {
-            data.local[iterator] = call_clone(
-                data,
-                call_eval(data, Napi::String::New(data.env, assignment))
-            );
-        }
-    } else {
-        // Object.
-        if(propertyAssignment.size() > 0) {
-            data.local[iterator] = call_eval(
-                data,
-                Napi::String::New(data.env, propertyAssignment + assignment + "})")
-            ).ToObject();
-        }
-        else {
-            data.local[iterator] = call_eval(
-                data,
-                Napi::String::New(data.env, assignment)
-            );
-        }
-    }
-}
-
 void Eryn::NormalBridge::evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, uint32_t index) {
     if(cloneIterators) {
         data.local[iterator] = call_clone(
@@ -222,34 +191,6 @@ void Eryn::NormalBridge::unassign(const std::string &iterator) {
         data,
         Napi::String::New(data.env, "undefined")
     );
-}
-
-void Eryn::NormalBridge::buildLoopAssignment(std::string& iterator, std::string& assignment, size_t& assignmentUpdateIndex, ConstBuffer it, ConstBuffer array) {
-    iterator.assign(reinterpret_cast<const char*>(it.data), it.size);
-    
-    assignment.reserve(32);
-    assignment.append(reinterpret_cast<const char*>(array.data), array.size);
-    assignment += "[";
-
-    assignmentUpdateIndex = assignment.size();
-}
-
-// Assignment: arr[ + index]
-// Assignment: Object({key: prop, value: obj["prop"]
-void Eryn::NormalBridge::updateLoopAssignment(std::string& assignment, std::string& propertyAssignment, size_t& arrayIndex, std::string*& propertyArray, int8_t direction) {
-    if(propertyArray == nullptr) {
-        assignment += std::to_string(arrayIndex);
-        assignment += "]";
-    } else {
-        propertyAssignment = "Object({key:\"" + propertyArray[arrayIndex] + "\",value:";
-        assignment += "\"" + propertyArray[arrayIndex] + "\"]";
-    }
-    
-    arrayIndex += direction;
-}
-
-void Eryn::NormalBridge::invalidateLoopAssignment(std::string& assignment, const size_t& assignmentUpdateIndex) {
-    assignment.erase(assignmentUpdateIndex, assignment.size() - assignmentUpdateIndex);
 }
 
 // Like call_clone, but this one is exposed by the bridge and also catches any exceptions.

@@ -2,6 +2,7 @@
 #include <node_api.h>
 
 #include <memory>
+#include <cctype>
 
 #include "def/logging.dxx"
 #include "def/macro.dxx"
@@ -85,6 +86,21 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
             if(!value.IsString() || value.As<Napi::String>().Utf8Value().size() != 1)
                 continue;
             result.templates.escape = value.ToString().Utf8Value()[0];
+        } else if(key == "mode") {
+            if(!value.IsString())
+                continue;
+
+            auto mode = value.ToString().Utf8Value();
+
+            for(auto& c : mode) {
+                c = std::tolower(c);
+            }
+
+            if(mode == "normal") {
+                result.mode = Eryn::EngineMode::NORMAL;
+            } else if(mode == "strict") {
+                result.mode = Eryn::EngineMode::STRICT;
+            }
         }
 
         #undef TEMPLATE_ENTRY
@@ -135,6 +151,7 @@ Napi::Object get_options(Napi::Env env, const Eryn::Options& opts) {
     TEMPLATE_ENTRY(componentSelf);
 
     result["workingDirectory"] = opts.workingDir;
+    result["mode"] = (opts.mode == Eryn::EngineMode::NORMAL) ? "normal" : "strict";
 
     return result;
 }
@@ -274,15 +291,30 @@ Napi::Value ErynEngine::render(const Napi::CallbackInfo& info) {
     path::normalize(absPath);
 
     try {
-        Eryn::NormalBridge bridge({
-            env,
-            info[1].As<Napi::Value>(),
-            info[2].As<Napi::Object>(),
-            info[3].As<Napi::Value>(),
-            info[4].As<Napi::Function>(),
-            info[5].As<Napi::Function>()});
+        ConstBuffer rendered;
 
-        auto rendered = engine.render(bridge, absPath.c_str());
+        if(engine.opts.mode == Eryn::EngineMode::NORMAL) {
+            Eryn::NormalBridge bridge({
+                env,
+                info[1].As<Napi::Value>(),
+                info[2].As<Napi::Object>(),
+                info[3].As<Napi::Value>(),
+                info[4].As<Napi::Function>(),
+                info[5].As<Napi::Function>()});
+
+            rendered = engine.render(bridge, absPath.c_str());
+        } else {
+            Eryn::StrictBridge bridge({
+                env,
+                info[1].As<Napi::Value>(),
+                info[2].As<Napi::Object>(),
+                info[3].As<Napi::Value>(),
+                info[4].As<Napi::Function>(),
+                info[5].As<Napi::Function>()});
+
+            rendered = engine.render(bridge, absPath.c_str());
+        }
+        
         
         return Napi::Buffer<uint8_t>::New<decltype(finalize_buffer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, finalize_buffer);

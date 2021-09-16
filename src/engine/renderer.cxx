@@ -16,6 +16,7 @@
 #include "../../lib/chunk.hxx"
 #include "../../lib/timer.hxx"
 
+// Contains information about a loop, such as the iterator, the iterable, and the current index.
 struct LoopStackInfo {
     Eryn::Bridge& bridge;
 
@@ -24,11 +25,14 @@ struct LoopStackInfo {
     uint32_t length;
     uint32_t step;
 
-    // The iterable is either an array or an object. Keys are only used for objects.
+    // Since Napi::Array is an object, the iterable is an object.
     Eryn::BridgeIterable   iterable;
+    // Keys are only used for objects.
     Eryn::BridgeObjectKeys keys;
 
+    // The name of the iterator (e.g. [|@ item  : context.items |] -> 'item')
     std::string iterator;
+    // Whether the iterable is an array or an object.
     bool isArray;
 
     LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, uint32_t step)
