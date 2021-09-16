@@ -2,6 +2,8 @@
 #include "str.hxx"
 #include "../src/def/os.dxx"
 
+#include <cstring>
+
 bool path::is_absolute(const char* path, size_t length) {
     #ifdef OS_WINDOWS
         return (length > 2)

@@ -23,20 +23,20 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
     Napi::Array keys = data.GetPropertyNames();
 
     for(uint32_t i = 0; i < keys.Length(); ++i) {
-        auto& keyVal = static_cast<Napi::Value>(keys[i]);
+        auto keyVal = static_cast<Napi::Value>(keys[i]);
 
         if(!keyVal.IsString()) {
             continue;
         }
 
-        auto key = keyVal.As<Napi::String>().Utf8Value();
-        const auto& value = data.Get(keyVal);
+        auto key   = keyVal.As<Napi::String>().Utf8Value();
+        auto value = data.Get(keyVal);
 
         #define FLAG_ENTRY(name)                                       \
             if(key == STRINGIFY(name)) {                               \
                 if(!value.IsBoolean())                                 \
                     continue;                                          \
-                result.flags.##name = value.ToBoolean().Value();       \
+                result.flags.name = value.ToBoolean().Value();       \
             }
 
         #define TEMPLATE_ENTRY2(name, opt)                             \
@@ -44,7 +44,7 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
                 if(!value.IsString()) {                                \
                     continue;                                          \
                 }                                                      \
-                result.templates.##opt = value.ToString().Utf8Value(); \
+                result.templates.opt = value.ToString().Utf8Value(); \
             }
 
         #define TEMPLATE_ENTRY(name) TEMPLATE_ENTRY2(name, name)
@@ -115,10 +115,10 @@ Napi::Object get_options(Napi::Env env, const Eryn::Options& opts) {
     auto result = Napi::Object::New(env);
 
     #define FLAG_ENTRY(name) \
-        result[STRINGIFY(name)] = opts.flags.##name
+        result[STRINGIFY(name)] = opts.flags.name
 
     #define TEMPLATE_ENTRY2(name, opt) \
-        result[STRINGIFY(name)] = opts.templates.##opt
+        result[STRINGIFY(name)] = opts.templates.opt
 
     #define TEMPLATE_ENTRY(name) \
         TEMPLATE_ENTRY2(name, name)
