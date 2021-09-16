@@ -156,7 +156,7 @@ void Eryn::NormalBridge::evalIteratorArrayAssignment(bool cloneIterators, const 
     }
 }
 
-void Eryn::NormalBridge::evalIteratorObjectAssignment(bool cloneIterators, const std::string& iterator, const Eryn::BridgeObject& obj, const Eryn::BridgeObjectKeys& keys, uint32_t index) {
+void Eryn::NormalBridge::evalIteratorObjectAssignment(bool cloneIterators, const std::string& iterator, const Eryn::BridgeIterable& iterable, const Eryn::BridgeObjectKeys& keys, uint32_t index) {
     auto it = Napi::Object::New(data.env);
 
     it["key"] = keys[index];
@@ -164,10 +164,10 @@ void Eryn::NormalBridge::evalIteratorObjectAssignment(bool cloneIterators, const
     if(cloneIterators) {
         it["value"] = call_clone(
             data,
-            obj.Get(keys[index])
+            iterable.Get(keys[index])
         );
     } else {
-        it["value"] = obj.Get(keys[index]);
+        it["value"] = iterable.Get(keys[index]);
     }
 
     data.local[iterator] = it;
