@@ -19,11 +19,13 @@
 struct LoopStackInfo {
     Eryn::Bridge& bridge;
 
+    // Index and length of the array (or the key collection for objects).
     uint32_t index;
     uint32_t length;
     uint32_t step;
 
-    Eryn::BridgeIterable iterable;
+    // The iterable is either an array or an object. Keys are only used for objects.
+    Eryn::BridgeIterable   iterable;
     Eryn::BridgeObjectKeys keys;
 
     std::string iterator;
