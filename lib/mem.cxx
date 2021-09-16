@@ -19,7 +19,8 @@ const uint8_t* mem::find(const void* source, size_t sourceSize, const void* patt
         }
 
         // First char was already found, compare the rest.
-        if(mem::cmp(ptn + 1, pos + 1, patternSize - 1)) {
+        // Note that mem::cmp with a size of 0 returns false, hence the check for the patternSize.
+        if(patternSize == 1 || mem::cmp(ptn + 1, pos + 1, patternSize - 1)) {
             return pos;
         }
 
@@ -30,6 +31,10 @@ const uint8_t* mem::find(const void* source, size_t sourceSize, const void* patt
 }
 
 bool mem::cmp(const void* m1, const void* m2, size_t size) {
+    if(size == 0) {
+        return false;
+    }
+
     return 0 == memcmp(m1, m2, size);
 }
 
@@ -38,6 +43,10 @@ bool mem::cmp(const void* m1, const std::string& m2) {
 }
 
 bool mem::rcmp(const void* m1, const void* m2, size_t size) {
+    if(size == 0) {
+        return false;
+    }
+    
     auto left = static_cast<const uint8_t*>(m1);
     auto right = static_cast<const uint8_t*>(m2);
 
