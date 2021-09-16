@@ -4,6 +4,7 @@
 #include "../../def/logging.dxx"
 #include "../../def/warnings.dxx"
 #include "../../../lib/buffer.hxx"
+#include "../../../lib/str.hxx"
 
 static std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     Napi::Object json = env.Global().Get("JSON").As<Napi::Object>();
@@ -38,7 +39,7 @@ static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
     } else if(script.match("local", sizeof("local") - 1)) {
         baseValue = data.local;
         accessorIndex = sizeof("local") - 1;
-    } else if(script.match("shared"), sizeof("shared") - 1) {
+    } else if(script.match("shared", sizeof("shared") - 1)) {
         baseValue = data.shared;
         accessorIndex = sizeof("shared") - 1;
     } else {
@@ -50,18 +51,22 @@ static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
     // If the dot isn't found, check for ["field"] or return the base value itself.
     if(script.match(accessorIndex, ".", sizeof(".") - 1)) {
         accessorIndex += sizeof(".") - 1;
-        fieldEnd = script.size - 1;
+        fieldEnd = script.size;
+
+        for(size_t i = accessorIndex; i < script.size; ++i) {
+            if(str::is_blank(script.data[i])) {
+                throw Eryn::RenderingException("Unexpected space or newline after field", ("'strict' mode doesn't support content after the field; index " + std::to_string(i)).c_str(), script);
+            }
+        }
     } else if(script.match(accessorIndex, "[\"", sizeof("[\"") - 1)) {
         accessorIndex += sizeof("[\"") - 1;
 
-        auto accessorEnd = script.find_index(accessorIndex, "\"]", sizeof("\"]") - 1);
+        fieldEnd = script.find_index(accessorIndex, "\"]", sizeof("\"]") - 1);
 
-        if(accessorEnd == script.size) {
+        // Script should end with "], which is not part of the field.
+        if(fieldEnd == script.size) {
             throw Eryn::RenderingException("Expected \"] after [\"", "did you forget to write the accessor end?", script);
         }
-
-        // Script ends with "], which is not part of the field.
-        fieldEnd = accessorEnd - 1;
     } else {
         // There shouldn't be anything after the object.
         if(accessorIndex != script.size) {
