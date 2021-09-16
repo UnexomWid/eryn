@@ -54,8 +54,8 @@ static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
         fieldEnd = script.size;
 
         for(size_t i = accessorIndex; i < script.size; ++i) {
-            if(str::is_blank(script.data[i])) {
-                throw Eryn::RenderingException("Unexpected space or newline after field", ("'strict' mode doesn't support content after the field; index " + std::to_string(i)).c_str(), script);
+            if(!str::valid_in_token(script.data[i])) {
+                throw Eryn::RenderingException("Unexpected character after field", ("'strict' mode doesn't support content after the field; index " + std::to_string(i)).c_str(), script);
             }
         }
     } else if(script.match(accessorIndex, "[\"", sizeof("[\"") - 1)) {
@@ -66,6 +66,11 @@ static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
         // Script should end with "], which is not part of the field.
         if(fieldEnd == script.size) {
             throw Eryn::RenderingException("Expected \"] after [\"", "did you forget to write the accessor end?", script);
+        }
+
+        // Script shouldn't have anything after "]
+        if(fieldEnd < script.size - (sizeof("\"]") - 1)) {
+            throw Eryn::RenderingException("Unexpected character after field", ("'strict' mode doesn't support content after the field; index " + std::to_string(fieldEnd + (sizeof("\"]") - 1))).c_str(), script);
         }
     } else {
         // There shouldn't be anything after the object.

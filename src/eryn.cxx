@@ -34,9 +34,10 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
 
         #define FLAG_ENTRY(name)                                       \
             if(key == STRINGIFY(name)) {                               \
-                if(!value.IsBoolean())                                 \
+                if(!value.IsBoolean()) {                               \
                     continue;                                          \
-                result.flags.name = value.ToBoolean().Value();       \
+                }                                                      \
+                result.flags.name = value.ToBoolean().Value();         \
             }
 
         #define TEMPLATE_ENTRY2(name, opt)                             \
@@ -44,7 +45,7 @@ Eryn::Options update_options(const Eryn::Options& opts, const Napi::Object& data
                 if(!value.IsString()) {                                \
                     continue;                                          \
                 }                                                      \
-                result.templates.opt = value.ToString().Utf8Value(); \
+                result.templates.opt = value.ToString().Utf8Value();   \
             }
 
         #define TEMPLATE_ENTRY(name) TEMPLATE_ENTRY2(name, name)
