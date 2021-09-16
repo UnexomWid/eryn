@@ -20,36 +20,46 @@ struct LoopStackInfo {
     Eryn::Bridge& bridge;
 
     uint32_t index;
+    uint32_t length;
+    uint32_t step;
+
     Eryn::BridgeIterable iterable;
     Eryn::BridgeObjectKeys keys;
 
     std::string iterator;
     bool isArray;
 
-    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, int8_t step)
-        : bridge(bridge), iterator(std::string(reinterpret_cast<const char*>(iterator.data), iterator.size)), index(0) {
+    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, uint32_t step)
+        : bridge(bridge), iterator(std::string(reinterpret_cast<const char*>(iterator.data), iterator.size)), index(0), step(step) {
 
         isArray = this->bridge.initLoopIterable(array, iterable, keys, step);
+
+        length = (uint32_t) keys.size();
+
+        if(step < 0) {
+            index = length - 1;
+        }
+
+        // Keys are only needed for objects, because the keys of an array are just indices (0, 1, 2, ...)
+        if(isArray) {
+            keys.clear();
+        }
     }
 
     void next() {
-        ++index;
+        index += step;
     }
 
     void update(bool cloneIterators) {
         if(isArray) {
-            bridge.evalIteratorArrayAssignment(cloneIterators, iterator, iterable, keys, index);
+            bridge.evalIteratorArrayAssignment(cloneIterators, iterator, iterable, index);
         } else {
             bridge.evalIteratorObjectAssignment(cloneIterators, iterator, iterable, keys, index);
         }
     }
 
-    uint32_t length() {
-        return (uint32_t) keys.size();
-    }
-
     bool end() {
-        return index >= length();
+        return (step > 0 && index >= length - step) || (step < 0 && index < step);
     }
 };
 
@@ -387,7 +397,7 @@ void Renderer::render() {
 
                 loopStack.push(LoopStackInfo(bridge, { left, leftLength }, { right, rightLength }, nameByte == *OSH_TEMPLATE_LOOP_REVERSE_START ? -1 : 1));
 
-                if(loopStack.top().length() == 0) {
+                if(loopStack.top().length == 0) {
                     size_t loopEnd;
                     BDP::bytesToLength(loopEnd, input.data + inputIndex, OSH_FORMAT);
 
@@ -407,7 +417,6 @@ void Renderer::render() {
             }
             case *OSH_TEMPLATE_LOOP_BODY_END: {
                 LOG_DEBUG("--> Found loop template end");
-                loopStack.top().next();
 
                 if(!loopStack.top().end()) {
                     if(opts.flags.cloneLocalInLoops) {
@@ -415,6 +424,7 @@ void Renderer::render() {
                         bridge.restoreLocal(bridge.copyValue(localStack.top()));
                     }
 
+                    loopStack.top().next();
                     loopStack.top().update(opts.flags.cloneIterators);
 
                     size_t loopStart;
