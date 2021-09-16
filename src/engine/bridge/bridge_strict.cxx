@@ -91,6 +91,8 @@ void Eryn::StrictBridge::evalTemplate(ConstBuffer input, Buffer& output) {
 
     try {
         result = eval(data, input);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Template error", e.what(), input);
     }
@@ -146,6 +148,8 @@ bool Eryn::StrictBridge::evalConditionalTemplate(ConstBuffer input) {
 
     try {
         result = eval(data, input);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Conditional template error", e.what(), input);
     }
@@ -186,6 +190,8 @@ bool Eryn::StrictBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeI
 
     try {
         result = eval(data, arrayScript);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Loop template error", e.what(), arrayScript);
     }
@@ -233,6 +239,8 @@ void Eryn::StrictBridge::unassign(const std::string &iterator) {
 Eryn::BridgeBackup Eryn::StrictBridge::copyValue(const Napi::Value& value) {
     try {
         return call_clone(data, value);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -247,6 +255,8 @@ Eryn::BridgeBackup Eryn::StrictBridge::backupContext(bool cloneBackup) {
             return call_clone(data, data.context);
         }
         return data.context;
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -261,6 +271,8 @@ Eryn::BridgeBackup Eryn::StrictBridge::backupLocal(bool cloneBackup) {
             return call_clone(data, data.local);
         }
         return data.local;
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -279,6 +291,8 @@ void Eryn::StrictBridge::initContext(ConstBuffer context) {
                 context
             );//.As<Napi::Object>();
         }
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context);
     }
@@ -287,6 +301,8 @@ void Eryn::StrictBridge::initContext(ConstBuffer context) {
 void Eryn::StrictBridge::initLocal() {
     try {
         data.local = Napi::Object::New(data.env);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Component template error", (std::string("cannot init local object") + e.what()).c_str());
     }

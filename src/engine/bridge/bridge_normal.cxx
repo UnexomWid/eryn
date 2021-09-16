@@ -48,6 +48,8 @@ void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
 
     try {
         result = call_eval(data, input);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Template error", e.what(), input);
     }
@@ -97,6 +99,8 @@ void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
 void Eryn::NormalBridge::evalVoidTemplate(ConstBuffer input) {
     try {
         call_eval(data, input);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Void template error", e.what(), input);
     }
@@ -107,6 +111,8 @@ bool Eryn::NormalBridge::evalConditionalTemplate(ConstBuffer input) {
 
     try {
         result = call_eval(data, input);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Conditional template error", e.what(), input);
     }
@@ -147,6 +153,8 @@ bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeI
 
     try {
         result = call_eval(data, arrayScript);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Loop template error", e.what(), arrayScript);
     }
@@ -197,6 +205,8 @@ void Eryn::NormalBridge::unassign(const std::string &iterator) {
 Eryn::BridgeBackup Eryn::NormalBridge::copyValue(const Napi::Value& value) {
     try {
         return call_clone(data, value);
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -211,6 +221,8 @@ Eryn::BridgeBackup Eryn::NormalBridge::backupContext(bool cloneBackup) {
             return call_clone(data, data.context);
         }
         return data.context;
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -225,6 +237,8 @@ Eryn::BridgeBackup Eryn::NormalBridge::backupLocal(bool cloneBackup) {
             return call_clone(data, data.local);
         }
         return data.local;
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception& e) {
         UNREFERENCED(e); // The exception data is used in debug mode. Suppress release warnings.
 
@@ -246,6 +260,8 @@ void Eryn::NormalBridge::initContext(ConstBuffer context) {
                 context
             );//.As<Napi::Object>();
         }
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Component template error", (std::string("context: ") + e.what()).c_str(), context);
     }
@@ -257,6 +273,8 @@ void Eryn::NormalBridge::initLocal() {
             data,
             Napi::String::New(data.env, "Object({})")
         ).ToObject();
+    } catch(Eryn::RenderingException& e) {
+        throw e;
     } catch(std::exception &e) {
         throw Eryn::RenderingException("Component template error", (std::string("cannot init local object") + e.what()).c_str());
     }

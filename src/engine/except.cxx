@@ -49,8 +49,6 @@ const char* Eryn::CompilationException::what() const noexcept {
 
 Eryn::RenderingException::RenderingException(const char* msg, const char* description)
   : msg(msg), description(description), token(nullptr, 0) {
-    message = "Rendering error\n";
-
     message += msg;
     message += " (";
     message += description;
@@ -59,7 +57,7 @@ Eryn::RenderingException::RenderingException(const char* msg, const char* descri
 
 Eryn::RenderingException::RenderingException(const char* msg, const char* description, const char* path)
   : msg(msg), description(description), path(path), token(nullptr, 0) {
-    message = "Rendering error in '";
+    message = "Error in '";
     message += path;
     message += "'\n";
 
@@ -71,8 +69,6 @@ Eryn::RenderingException::RenderingException(const char* msg, const char* descri
 
 Eryn::RenderingException::RenderingException(const char* msg, const char* description, ConstBuffer token)
   : msg(msg), description(description), token(token) {
-    message = "Rendering error\n";
-
     message += msg;
     message += " (";
     message += description;
