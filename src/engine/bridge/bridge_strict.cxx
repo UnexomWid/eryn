@@ -161,7 +161,7 @@ void Eryn::StrictBridge::evalAssignment(bool cloneIterators, const std::string& 
     }
 }
 
-void Eryn::StrictBridge::evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, const BridgeObjectKeys& keys, uint32_t index) {
+void Eryn::StrictBridge::evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, uint32_t index) {
     
 }
 
@@ -169,7 +169,7 @@ void Eryn::StrictBridge::evalIteratorObjectAssignment(bool cloneIterators, const
     
 }
 
-bool Eryn::StrictBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys, int8_t step) {
+bool Eryn::StrictBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys, uint32_t step) {
     return false;
 }
 

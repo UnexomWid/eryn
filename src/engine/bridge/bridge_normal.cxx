@@ -145,14 +145,14 @@ void Eryn::NormalBridge::evalAssignment(bool cloneIterators, const std::string& 
     }
 }
 
-void Eryn::NormalBridge::evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, const BridgeObjectKeys& keys, uint32_t index) {
+void Eryn::NormalBridge::evalIteratorArrayAssignment(bool cloneIterators, const std::string& iterator, const BridgeIterable& iterable, uint32_t index) {
     if(cloneIterators) {
         data.local[iterator] = call_clone(
             data,
-            iterable.Get(keys[index])
+            iterable.Get(index)
         );
     } else {
-        data.local[iterator] = iterable.Get(keys[index]);
+        data.local[iterator] = iterable.Get(index);
     }
 }
 
@@ -173,7 +173,7 @@ void Eryn::NormalBridge::evalIteratorObjectAssignment(bool cloneIterators, const
     data.local[iterator] = it;
 }
 
-bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys, int8_t step) {
+bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys, uint32_t step) {
     Napi::Value result;
 
     try {
@@ -199,21 +199,11 @@ bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeI
     keys.clear();
     keys.reserve(propertiesCount);
 
-    if(step > 0) {
-        for(int64_t i = 0; i < properties.Length(); i += step) {
-            keys.push_back(((Napi::Value) properties[(uint32_t) i]));
+    for(uint32_t i = 0; i < properties.Length(); i += step) {
+        keys.push_back(((Napi::Value) properties[i]));
 
-            if(((Napi::Value) properties[(uint32_t) i]).As<Napi::String>().Utf8Value() != std::to_string(i)) {
-                isSimpleArray = false; // Object.
-            }
-        }
-    } else {
-        for(int64_t i = properties.Length() - 1; i >= 0; i += step) {
-            keys.push_back((((Napi::Value) properties[(uint32_t) i])));
-
-            if(((Napi::Value) properties[(uint32_t) i]).As<Napi::String>().Utf8Value() != std::to_string(i)) {
-                isSimpleArray = false; // Object.
-            }
+        if(((Napi::Value) properties[i]).As<Napi::String>().Utf8Value() != std::to_string(i)) {
+            isSimpleArray = false; // Object.
         }
     }
 
