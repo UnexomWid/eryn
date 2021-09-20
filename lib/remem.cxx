@@ -38,7 +38,7 @@
 #endif
 
 // Rounds the size to the nearest power of 2 that is >= size.
-void adjustSize(size_t &size) {
+void adjustSize(size_t& size) {
     --size;
     size |= size >> 1;
     size |= size >> 2;
