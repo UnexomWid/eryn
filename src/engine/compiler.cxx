@@ -1018,11 +1018,11 @@ TemplateEndInfo Compiler::find_template_end(const uint8_t* from) {
 
     std::vector<const uint8_t*> escapes;
 
-    while((from + index - 1) < input.end() + 1 && *(from + index - 1) == opts->templates.escape) {
+    while((from + index) > input.data && (from + index) < input.end() && *(from + index - 1) == opts->templates.escape) {
         LOG_DEBUG("Detected template escape at %zu", from + index - 1 - input.data);
 
         escapes.push_back(from + index - 1);
-        index = 1 + input.find_index((from + index + 1) - input.data, opts->templates.end) - (from - input.data);
+        index = input.find_index((from + index + 1) - input.data, opts->templates.end) - (from - input.data);
     }
 
     return { std::move(escapes), index };
