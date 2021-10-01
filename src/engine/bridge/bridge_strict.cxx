@@ -215,11 +215,6 @@ bool Eryn::StrictBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeI
     auto properties = result.ToObject().GetPropertyNames();
     size_t propertiesCount = properties.Length();
 
-    // TODO: render nothing?
-    if(propertiesCount == 0) {
-        throw RenderingException("Unsupported loop right operand", "length is 0", arrayScript);
-    }
-
     keys.clear();
     keys.reserve(propertiesCount);
 
