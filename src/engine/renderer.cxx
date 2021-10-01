@@ -23,7 +23,7 @@ struct LoopStackInfo {
     // Index and length of the array (or the key collection for objects).
     uint32_t index;
     uint32_t length;
-    uint32_t step;
+    int32_t  step;
 
     // Since Napi::Array is an object, the iterable is an object.
     Eryn::BridgeIterable   iterable;
@@ -35,10 +35,10 @@ struct LoopStackInfo {
     // Whether the iterable is an array or an object.
     bool isArray;
 
-    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, uint32_t step)
+    LoopStackInfo(Eryn::Bridge& bridge, ConstBuffer iterator, ConstBuffer array, int32_t step)
         : bridge(bridge), iterator(std::string(reinterpret_cast<const char*>(iterator.data), iterator.size)), index(0), step(step) {
 
-        isArray = this->bridge.initLoopIterable(array, iterable, keys, step);
+        isArray = this->bridge.initLoopIterable(array, iterable, keys);
 
         length = (uint32_t) keys.size();
 
@@ -65,7 +65,7 @@ struct LoopStackInfo {
     }
 
     bool end() {
-        return (step > 0 && index >= length - step) || (step < 0 && index < step);
+        return (step > 0 && index >= length - static_cast<uint32_t>(step)) || (step < 0 && index < static_cast<uint32_t>((-1) * step));
     }
 };
 
