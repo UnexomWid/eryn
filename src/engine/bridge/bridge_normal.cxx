@@ -148,7 +148,7 @@ void Eryn::NormalBridge::evalIteratorObjectAssignment(bool cloneIterators, const
     data.local[iterator] = it;
 }
 
-bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys, uint32_t step) {
+bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeIterable& iterable, Eryn::BridgeObjectKeys& keys) {
     Napi::Value result;
 
     try {
@@ -176,7 +176,7 @@ bool Eryn::NormalBridge::initLoopIterable(ConstBuffer arrayScript, Eryn::BridgeI
     keys.clear();
     keys.reserve(propertiesCount);
 
-    for(uint32_t i = 0; i < properties.Length(); i += step) {
+    for(uint32_t i = 0; i < properties.Length(); ++i) {
         keys.push_back(((Napi::Value) properties[i]));
 
         if(((Napi::Value) properties[i]).As<Napi::String>().Utf8Value() != std::to_string(i)) {

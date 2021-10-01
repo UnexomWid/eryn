@@ -6,7 +6,7 @@ BRIDGE_METHOD(void evalIteratorObjectAssignment(bool cloneIterators, const std::
 BRIDGE_METHOD(void unassign(const std::string& iterator));
 
 // Returns true if the iterable is an array, false otherwise.
-BRIDGE_METHOD(bool initLoopIterable(ConstBuffer arrayScript, BridgeIterable& iterable, BridgeObjectKeys& keys, uint32_t step));
+BRIDGE_METHOD(bool initLoopIterable(ConstBuffer arrayScript, BridgeIterable& iterable, BridgeObjectKeys& keys));
 
 BRIDGE_METHOD(BridgeBackup copyValue(const Napi::Value& value));
 
