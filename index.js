@@ -69,7 +69,7 @@ const eryn = {
         if(!shared)
             shared = {};
 
-        return binding.renderString(alias, context, {}, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
+        return binding.renderString(alias, context, {}, shared, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     },
     setOptions: (options) => {
         if(!(options && (typeof options === 'object')))
