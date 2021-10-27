@@ -338,7 +338,7 @@ Napi::Value ErynEngine::render_string(const Napi::CallbackInfo& info) {
             info[4].As<Napi::Function>(),
             info[5].As<Napi::Function>()});
 
-        auto rendered = engine.render(bridge, alias.c_str());
+        auto rendered = engine.render_string(bridge, alias.c_str());
         
         return Napi::Buffer<uint8_t>::New<decltype(finalize_buffer)*>(
                    env, (uint8_t*) rendered.data, rendered.size, finalize_buffer);
