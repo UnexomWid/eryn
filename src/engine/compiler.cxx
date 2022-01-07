@@ -27,7 +27,7 @@
 #endif
 
 static constexpr auto COMPILER_PATH_SEPARATOR   = '/';
-static constexpr auto COMPILER_ERROR_CHUNK_SIZE = 20u;
+static constexpr auto COMPILER_ERROR_CHUNK_SIZE = 40u;
 static constexpr auto COMPILER_PATH_MAX_LENGTH  = 4096u;
 
 static void localize_iterator(const ConstBuffer& iterator, Buffer& src);
