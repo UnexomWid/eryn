@@ -42,7 +42,7 @@ enum class TemplateType {
 
 struct TemplateStackInfo {
     TemplateType type;
-    size_t inputIndex;      // Where the emplate starts in the input (provides more information when an exception occurs).
+    size_t inputIndex;      // Where the template starts in the input (provides more information when an exception occurs).
     size_t outputIndex;     // Where the template starts in the output. Points at the start of the OSH data.
     size_t outputBodyIndex; // Where the template body starts in the output (for writing the body size). Points immediately after the OSH data (1 byte after). 
 
