@@ -1,6 +1,8 @@
 .vscode/
+.idea/
 build/
 node_modules/
 test/node_modules/
 test/actual
 playground/
+cmake-*/
