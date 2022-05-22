@@ -74,7 +74,7 @@ class ErynBinding {
 
     renderString(alias, context, shared) {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
-            throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
+            throw `Invalid argument 'alias' (expected: string | found: ${typeof(alias)})`
         if(!context)
             context = {};
         if(!shared)
@@ -85,7 +85,7 @@ class ErynBinding {
 
     renderStringUncached(src, context, shared) {
         if(!(src && (typeof src === 'string' && !(src instanceof String))))
-            throw `Invalid argument 'src' (expected: string | found: ${typeof(path)})`
+            throw `Invalid argument 'src' (expected: string | found: ${typeof(src)})`
         if(!context)
             context = {};
         if(!shared)
