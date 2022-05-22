@@ -14,7 +14,11 @@ function bridgeEval(script, context, local, shared) {
 }
 
 class ErynBinding {
-    constructor(options = undefined) {
+    constructor(options) {
+        if (!options) {
+            options = {};
+        }
+
         this.binding = new ErynEngine(options);
         this.bridgeOptions = {
             enableDeepCloning: false
@@ -107,7 +111,7 @@ class ErynBinding {
     }
 }
 
-const eryn = (options = undefined) => {
+const eryn = (options) => {
     return new ErynBinding(options);
 };
 
