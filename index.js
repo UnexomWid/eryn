@@ -1,12 +1,6 @@
 var { ErynEngine } = require('./build-load')(__dirname);
 const v8 = require('v8');
 
-var binding = new ErynEngine();
-
-var bridgeOptions = {
-    enableDeepCloning: false
-}
-
 function bridgeDeepClone(obj) {
     return v8.deserialize(v8.serialize(obj));
 }
@@ -19,14 +13,27 @@ function bridgeEval(script, context, local, shared) {
     return eval(script);
 }
 
-const eryn = {
-    compile: (path) => {
+class ErynBinding {
+    constructor(options) {
+        this.binding = new ErynEngine(options);
+        this.bridgeOptions = {
+            enableDeepCloning: false
+        };
+
+        // Annoying edge case.
+        if(options.hasOwnProperty("enableDeepCloning") && ((typeof options.enableDeepCloning) === "boolean")) {
+            this.bridgeOptions.enableDeepCloning = options.enableDeepCloning;
+        }
+    }
+
+    compile(path) {
         if(!(path && (typeof path === 'string' && !(path instanceof String))))
             throw `Invalid argument 'path' (expected: string | found: ${typeof(path)})`
 
-        binding.compile(path);
-    },
-    compileDir: (dirPath, filters) => {
+        this.binding.compile(path);
+    }
+
+    compileDir(dirPath, filters) {
         if(!dirPath)
             dirPath = "";
         if(!(typeof dirPath === 'string' || (dirPath instanceof String)))
@@ -34,24 +41,27 @@ const eryn = {
         if(!(filters && (filters instanceof Array)))
             throw `Invalid argument 'filters' (expected: array | found: ${typeof(filters)})`
 
-        binding.compileDir(dirPath, filters);
-    },
-    compileString: (alias, str) => {
+        this.binding.compileDir(dirPath, filters);
+    }
+
+    compileString(alias, str) {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
             throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
         if(!(str && (typeof str === 'string' && !(str instanceof String))))
             throw `Invalid argument 'str' (expected: string | found: ${typeof(path)})`
 
-        binding.compileString(alias, str);
-    },
-    express: (path, context, callback) => {
+        this.binding.compileString(alias, str);
+    }
+
+    express(path, context, callback) {
         try {
             callback(null, eryn.render(path, context));
         } catch (error) {
             callback(error);
         }
-    },
-    render: (path, context, shared) => {
+    }
+
+    render(path, context, shared) {
         if(!(path && (typeof path === 'string' && !(path instanceof String))))
             throw `Invalid argument 'path' (expected: string | found: ${typeof(path)})`
         if(!context)
@@ -59,9 +69,10 @@ const eryn = {
         if(!shared)
             shared = {};
 
-        return binding.render(path, context, {}, shared, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
-    },
-    renderString: (alias, context, shared) => {
+        return this.binding.render(path, context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
+    }
+
+    renderString(alias, context, shared) {
         if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
             throw `Invalid argument 'alias' (expected: string | found: ${typeof(path)})`
         if(!context)
@@ -69,24 +80,22 @@ const eryn = {
         if(!shared)
             shared = {};
 
-        return binding.renderString(alias, context, {}, shared, bridgeEval, bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
-    },
-    setOptions: (options) => {
+        return this.binding.renderString(alias, context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
+    }
+
+    setOptions(options) {
         if(!(options && (typeof options === 'object')))
             throw `Invalid argument 'options' (expected: object | found: ${typeof(options)})`
 
         if(options.hasOwnProperty("enableDeepCloning") && ((typeof options.enableDeepCloning) === "boolean"))
-            bridgeOptions.enableDeepCloning = options.enableDeepCloning;
+            this.bridgeOptions.enableDeepCloning = options.enableDeepCloning;
 
-        binding.options(options);
+        this.binding.options(options);
     }
+}
+
+const eryn = (options) => {
+    return new ErynBinding(options);
 };
 
 module.exports = eryn;
-module.exports.compile = eryn.compile;
-module.exports.compileDir = eryn.compileDir;
-module.exports.compileString = eryn.compileString;
-module.exports.express = eryn.express;
-module.exports.render = eryn.render;
-module.exports.renderString = eryn.renderString;
-module.exports.setOptions = eryn.setOptions;
