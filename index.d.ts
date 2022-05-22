@@ -31,16 +31,18 @@ interface ErynOptions {
     componentSelf?:            string
 }
 
-export class ErynBinding {
+declare class ErynBinding {
+    constructor(options: ErynOptions | undefined);
     compile(filePath: string): void;
     compileDir(dirPath: string, filters: string[]): void;
     compileString(alias: string, str: string): void;
     express(path: string, context: any, callback: (error: any, rendered: string) => void): void;
     render(filePath: string, context: any, shared: any): Buffer;
     renderString(alias: string, context: any, shared: any): Buffer;
+    renderStringUncached(src: string, context: any, shared: any): Buffer;
     setOptions(options: ErynOptions): void;
 }
 
-function eryn(options: ErynOptions): ErynBinding;
+declare function eryn(options: ErynOptions | undefined): ErynBinding;
   
 export = eryn;

@@ -83,6 +83,19 @@ class ErynBinding {
         return this.binding.renderString(alias, context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     }
 
+    renderStringUncached(src, context, shared) {
+        if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
+            throw `Invalid argument 'src' (expected: string | found: ${typeof(path)})`
+        if(!context)
+            context = {};
+        if(!shared)
+            shared = {};
+
+        compileString('__ERYN_uncached', src);
+
+        return this.binding.renderString('__ERYN_uncached', context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
+    }
+
     setOptions(options) {
         if(!(options && (typeof options === 'object')))
             throw `Invalid argument 'options' (expected: object | found: ${typeof(options)})`
