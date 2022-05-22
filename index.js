@@ -84,14 +84,14 @@ class ErynBinding {
     }
 
     renderStringUncached(src, context, shared) {
-        if(!(alias && (typeof alias === 'string' && !(alias instanceof String))))
+        if(!(src && (typeof src === 'string' && !(src instanceof String))))
             throw `Invalid argument 'src' (expected: string | found: ${typeof(path)})`
         if(!context)
             context = {};
         if(!shared)
             shared = {};
 
-        compileString('__ERYN_uncached', src);
+        this.compileString('__ERYN_uncached', src);
 
         return this.binding.renderString('__ERYN_uncached', context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     }
