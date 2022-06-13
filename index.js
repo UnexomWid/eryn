@@ -59,7 +59,7 @@ class ErynBinding {
 
     express(path, context, callback) {
         try {
-            callback(null, eryn.render(path, context));
+            callback(null, this.binding.render(path, context));
         } catch (error) {
             callback(error);
         }
@@ -72,7 +72,7 @@ class ErynBinding {
             context = {};
         if(!shared)
             shared = {};
-
+        
         return this.binding.render(path, context, {}, shared, bridgeEval, this.bridgeOptions.enableDeepCloning ? bridgeDeepClone : bridgeShallowClone);
     }
 
