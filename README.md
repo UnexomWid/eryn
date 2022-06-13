@@ -6,9 +6,7 @@
 
 **eryn** is a native template engine for [NodeJS](https://nodejs.org).
 
-It was built with high performance in mind, such that it can be used for fast server-side rendering.
-
-**This is a pre-release and, as such, may suffer from breaking changes without prior notice.**
+It was built with high performance and flexibility in mind, such that it can be used for fast server-side rendering.
 
 # Getting started
 
@@ -69,7 +67,7 @@ Here's a basic example.
 
 ```js
 var path = require("path");
-var eryn = require("eryn");
+var eryn = require("eryn")();
 
 // Pass the absolute path to the file. Relative paths might not be safe (see the wiki).
 var data = eryn.render(path.join(__dirname, "test.eryn"), {
@@ -98,7 +96,7 @@ Here's a more complex example, which shows a glimpse of what **eryn** can do.
 
 ```js
 var path = require("path");
-var eryn = require("eryn");
+var eryn = require("eryn")();
 
 var data = eryn.render(path.join(__dirname, "test.eryn"), {
     firstName: "Tyler",
@@ -252,6 +250,8 @@ This will give the exact same result.
 For the complete documentation, and some more examples, check [the wiki](https://github.com/UnexomWid/eryn/wiki).
 
 # Releases
+
+[0.3.0](https://github.com/UnexomWid/eryn/releases/tag/0.2.7) - June 13th, 2022
 
 [0.2.7](https://github.com/UnexomWid/eryn/releases/tag/0.2.7) - March 9th, 2021
 
