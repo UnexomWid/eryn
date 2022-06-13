@@ -1,5 +1,5 @@
 var shiyou = require('@exom-dev/jshiyou');
-var eryn = require("../index.js");
+var eryn = require("../index.js")();
 var path = require("path");
 var fs = require("fs");
 
