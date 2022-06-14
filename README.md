@@ -1,6 +1,9 @@
 <p align="center">
   <img src="public/logo.png" alt="eryn">
 </p>
+<p align="center">
+  <img src="public/logo_strict.png" alt="eryn">
+</p>
 
 # About <a href="https://cmake.org/cmake/help/v3.0/release/3.0.0.html"><img align="right" src="https://img.shields.io/badge/CMake-3.0-BA1F28?logo=CMake" alt="CMake 3.0" /></a><a href="https://en.wikipedia.org/wiki/C%2B%2B17"><img align="right" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=C%2B%2B" alt="C++ 17" /></a><a href="https://nodejs.org/api/n-api.html"><img align="right" src="https://img.shields.io/badge/N--API-6-339933?logo=Node.js&logoColor=FFFFFF" alt="N-API 6" /></a>
 
@@ -251,7 +254,7 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 # Releases
 
-[0.3.0](https://github.com/UnexomWid/eryn/releases/tag/0.2.7) - June 13th, 2022
+[0.3.0](https://github.com/UnexomWid/eryn/releases/tag/0.3.0) - June 14th, 2022
 
 [0.2.7](https://github.com/UnexomWid/eryn/releases/tag/0.2.7) - March 9th, 2021
 
