@@ -7,7 +7,7 @@
 
 # About <a href="https://cmake.org/cmake/help/v3.0/release/3.0.0.html"><img align="right" src="https://img.shields.io/badge/CMake-3.0-BA1F28?logo=CMake" alt="CMake 3.0" /></a><a href="https://en.wikipedia.org/wiki/C%2B%2B17"><img align="right" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=C%2B%2B" alt="C++ 17" /></a><a href="https://nodejs.org/api/n-api.html"><img align="right" src="https://img.shields.io/badge/N--API-6-339933?logo=Node.js&logoColor=FFFFFF" alt="N-API 6" /></a>
 
-**eryn** is a native template engine for [NodeJS](https://nodejs.org).
+**eryn** is a native template engine for [NodeJS](https://nodejs.org) written in C++17.
 
 It was built with high performance and flexibility in mind, such that it can be used for fast server-side rendering.
 
@@ -29,7 +29,7 @@ The list of prebuilds can be found [here](https://github.com/UnexomWid/eryn/wiki
 
 For the complete documentation, check [the wiki](https://github.com/UnexomWid/eryn/wiki).
 
-## Compiling the Package
+# Compiling the Package
 
 You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
 
