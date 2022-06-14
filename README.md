@@ -25,6 +25,10 @@ If a prebuild is already available for your platform, you can jump straight to [
 
 The list of prebuilds can be found [here](https://github.com/UnexomWid/eryn/wiki/Getting-Started#prebuilds).
 
+# Documentation
+
+For the complete documentation, check [the wiki](https://github.com/UnexomWid/eryn/wiki).
+
 ## Compiling the Package
 
 You'll need to install a C/C++ compiler, as well as [CMake](https://cmake.org).
@@ -248,10 +252,6 @@ This will give the exact same result.
 >
 > Also: change the syntax wisely. Otherwise, you might run into some problems (see [here](https://github.com/UnexomWid/eryn/wiki/Options#remarks)).
 
-# Documentation
-
-For the complete documentation, and some more examples, check [the wiki](https://github.com/UnexomWid/eryn/wiki).
-
 # Releases
 
 [0.3.0](https://github.com/UnexomWid/eryn/releases/tag/0.3.0) - June 14th, 2022
@@ -276,21 +276,7 @@ For the complete documentation, and some more examples, check [the wiki](https:/
 
 # Contributing
 
-You can contribute by reporting bugs and requesting features on the [issue page](https://github.com/UnexomWid/eryn/issues).
-
-However, please see [known issues](https://github.com/UnexomWid/eryn/wiki/Known-Issues) before reporting bugs.
-
-#### Pull Requests
-
-I don't think I'll accept any of them yet, as the engine is still in its early stages and the code might change in the future.
-
-However, when I release a stable version, I'll also release documentation for the code and I might start reviewing PRs.
-
-Until then, feel free to use the [issue page](https://github.com/UnexomWid/eryn/issues).
-
-# TODO
-
-- Replace the global static variables with environment-dependent data
+See the guidelines [here](https://github.com/UnexomWid/eryn/blob/master/CONTRIBUTING.md).
 
 # License <a href="https://github.com/UnexomWid/eryn/blob/master/LICENSE"><img align="right" src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
 
