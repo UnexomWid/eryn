@@ -11,6 +11,7 @@ interface ErynOptions {
     enableDeepCloning?:        boolean,
     cloneIterators?:           boolean,
     debugDumpOSH?:             boolean,
+    mode?:                     "normal" | "strict",
     workingDirectory?:         string,
     templateEscape?:           string,
     templateStart?:            string,
