@@ -254,6 +254,8 @@ This will give the exact same result.
 
 # Releases
 
+[0.3.2](https://github.com/UnexomWid/eryn/releases/tag/0.3.2) - October 20th, 2022
+
 [0.3.1](https://github.com/UnexomWid/eryn/releases/tag/0.3.1) - October 15th, 2022
 
 [0.3.0](https://github.com/UnexomWid/eryn/releases/tag/0.3.0) - June 14th, 2022
