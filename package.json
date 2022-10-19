@@ -9,7 +9,7 @@
   ],
   "main": "index.js",
   "scripts": {
-    "install": "node build-check.js || npm run rebuild",
+    "install": "(node build-check.js || npm run rebuild)",
     "rebuild": "node build.js",
     "compile": "cmake-js build",
     "prebuild": "node prebuild.js",
