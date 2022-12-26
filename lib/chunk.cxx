@@ -57,7 +57,7 @@ Chunk::Chunk(const uint8_t* source, size_t sourceSize, size_t index, size_t maxC
         ++start;
     }
 
-    this->index = source + index - start;
+    this->index = index + (source - start);
 
     if(index + halfChunkSize < sourceSize) {
         limit = source + index + halfChunkSize;
@@ -76,7 +76,16 @@ Chunk::Chunk(const uint8_t* source, size_t sourceSize, size_t index, size_t maxC
         --end;
     }
 
+    // First char is \n
+    if (end < start) {
+        start = &source[index];
+        end   = &source[index];
+
+        this->index = index;
+    }
+
     // The size can be smaller than chunkSize if the source is small enough.
     auto finalSize = (end - start + 1);
+
     this->data = std::string(reinterpret_cast<const char*>(start), finalSize);
 }

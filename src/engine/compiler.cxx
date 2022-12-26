@@ -185,7 +185,7 @@ void Compiler::compile_plaintext() {
     }
 
     if(!skip) {
-        if (current - start > 0 && !opts->compileHook.IsEmpty()) {
+        if (!opts->compileHook.IsEmpty()) {
             Buffer buffer;
             buffer.write(start, current - start);
 
