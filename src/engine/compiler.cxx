@@ -423,7 +423,7 @@ void Compiler::compile_loop() {
     if (!opts->compileHook.IsEmpty()) {
         iterableBuffer.write(leftStart, leftEnd - leftStart);
 
-        call_hook(iterableBuffer, "for_iterator");
+        call_hook(iterableBuffer, "loop_iterator");
 
         finalIterableBuffer.data = iterableBuffer.data;
         finalIterableBuffer.size = iterableBuffer.size;
@@ -435,7 +435,7 @@ void Compiler::compile_loop() {
     localize_all_iterators(buffer);
 
     if (!opts->compileHook.IsEmpty()) {
-        call_hook(buffer, "for_iterable");
+        call_hook(buffer, "loop_iterable");
     }
 
     const uint8_t* oshStartMarker;

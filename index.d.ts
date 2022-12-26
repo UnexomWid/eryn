@@ -1,7 +1,17 @@
 // Type definitions for eryn 0.3
 // Definitions by UnexomWid <https://uw.exom.dev>
 
-type Hook = (content: Buffer, origin: string) => Buffer;
+type Hook = (content: Buffer, origin:
+    'plaintext'
+    | 'template'
+    | 'void'
+    | 'comment'
+    | 'conditional'
+    | 'else_conditional'
+    | 'loop_iterator'
+    | 'loop_iterable'
+    | 'component_path'
+    | 'component_context') => Buffer;
 
 interface ErynOptions {
     bypassCache?:              boolean,
