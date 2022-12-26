@@ -45,7 +45,7 @@ add_definitions(-DNAPI_VERSION=6)
 
 # Optional macros (for debugging)
 #add_definitions(-DDEBUG)
-#add_definitions(-DREMEM_ENABLE_MAPPING)
+#dd_definitions(-DREMEM_ENABLE_MAPPING)
 #add_definitions(-DREMEM_ENABLE_LOGGING)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})

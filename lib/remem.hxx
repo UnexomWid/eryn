@@ -22,6 +22,7 @@
 #ifndef REMEM_HXX_GUARD
 #define REMEM_HXX_GUARD
 
+#include <new>
 #include <string>
 #include <cstddef>
 #include <unordered_map>
@@ -54,8 +55,8 @@ namespace re {
     #if defined(REMEM_ENABLE_MAPPING)
         const std::unordered_map<void*, AddressInfo>& mem() noexcept;
 
-        void   memPrint() noexcept;
-        size_t memSize()  noexcept;
+        void   mem_print() noexcept;
+        size_t mem_size()  noexcept;
     #endif
 
     void* malloc(size_t size, const char* who = nullptr, const char* file = nullptr, size_t line = 0);

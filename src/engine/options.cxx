@@ -1,19 +1,19 @@
 #include "engine.hxx"
 
 Eryn::Options::Options() {
-    flags.bypassCache              = false;
-    flags.throwOnEmptyContent      = false;
-    flags.throwOnMissingEntry      = false;
-    flags.throwOnCompileDirError   = false;
-    flags.ignoreBlankPlaintext     = false;
-    flags.logRenderTime            = false;
-    flags.cloneIterators           = false;
-    flags.cloneBackups             = false;
-    flags.cloneLocalInLoops        = false;
-    flags.debugDumpOSH             = false;
+    flags.bypassCache            = false;
+    flags.throwOnEmptyContent    = false;
+    flags.throwOnMissingEntry    = false;
+    flags.throwOnCompileDirError = false;
+    flags.ignoreBlankPlaintext   = false;
+    flags.logRenderTime          = false;
+    flags.cloneIterators         = false;
+    flags.cloneBackups           = false;
+    flags.cloneLocalInLoops      = false;
+    flags.debugDumpOSH           = false;
 
-    mode                           = Eryn::EngineMode::NORMAL;
-    workingDir                     = ".";
+    mode       = Eryn::EngineMode::NORMAL;
+    workingDir = ".";
 
     templates.escape               = '\\';
     templates.start                = "[|";

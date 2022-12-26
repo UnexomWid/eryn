@@ -6,6 +6,7 @@ AlignConsecutiveDeclarations: 'true'
 AlignEscapedNewlines: Right
 AlignOperands: 'true'
 AlignTrailingComments: 'true'
+AlignConsecutiveBitFields: 'true'
 AllowAllArgumentsOnNextLine: 'false'
 AllowAllConstructorInitializersOnNextLine: 'false'
 AllowAllParametersOfDeclarationOnNextLine: 'false'

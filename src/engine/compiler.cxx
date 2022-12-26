@@ -13,6 +13,8 @@
 #include "../def/osh.dxx"
 #include "../def/logging.dxx"
 
+#include "bridge/bridge.hxx"
+
 #include "../../lib/str.hxx"
 #include "../../lib/path.hxx"
 #include "../../lib/remem.hxx"
@@ -60,6 +62,8 @@ struct TemplateEndInfo {
 struct Compiler {
     Eryn::Options* opts;
 
+    Eryn::BridgeCompileData bridge;
+
     ConstBuffer    input;
     Buffer         output;
 
@@ -74,8 +78,8 @@ struct Compiler {
 
     const BDP::Header BDP832 = BDP::Header(8, 32);
 
-    Compiler(Eryn::Options* opts, ConstBuffer input, const char* wd, const char* path)
-        : opts(opts), input(input), wd(wd), path(path), start(input.data), current(start) { }
+    Compiler(Eryn::Options* opts, Eryn::BridgeCompileData bridge, ConstBuffer input, const char* wd, const char* path)
+        : opts(opts), bridge(bridge), input(input), wd(wd), path(path), start(input.data), current(start) { }
 
     void rebase(size_t index);
     void rebase(const uint8_t* ptr);
@@ -87,6 +91,7 @@ struct Compiler {
     bool match_current(const std::string& pattern);
 
     TemplateEndInfo find_template_end(const uint8_t* from);
+    TemplateEndInfo find_comment_template_end(const uint8_t* from);
 
     void write_escaped_content(Buffer& buffer, const uint8_t* start, const uint8_t* end, const std::vector<const uint8_t*>& escapes);
     void localize_all_iterators(Buffer& src);
@@ -104,6 +109,8 @@ struct Compiler {
     void compile_void();
     void compile_body_end();
     void compile_normal();
+
+    void call_hook(Buffer& buffer, const char* origin);
 };
 
 void Compiler::rebase(size_t index) {
@@ -178,6 +185,13 @@ void Compiler::compile_plaintext() {
     }
 
     if(!skip) {
+        if (current - start > 0 && !opts->compileHook.IsEmpty()) {
+            Buffer buffer;
+            buffer.write(start, current - start);
+
+            call_hook(buffer, "plaintext");
+        }
+
         LOG_DEBUG("Writing plaintext as BDP832 pair %zu -> %zu...", start - input.data, current - input.data);
         output.write_bdp_pair(BDP832, OSH_PLAINTEXT_MARKER, OSH_PLAINTEXT_LENGTH, start, current - start);
         LOG_DEBUG("done\n");
@@ -189,7 +203,7 @@ void Compiler::compile_plaintext() {
 void Compiler::compile_comment() {
     rebase(current);
 
-    auto endInfo = std::move(find_template_end(current));
+    auto endInfo = std::move(find_comment_template_end(current));
     size_t templateEndIndex = (current + endInfo.index) - input.data;
 
     if(templateEndIndex >= input.size) {
@@ -197,6 +211,13 @@ void Compiler::compile_comment() {
     }
 
     LOG_DEBUG("Found template end at %zu", templateEndIndex);
+
+    if (!opts->compileHook.IsEmpty()) {
+        Buffer buffer;
+        buffer.write(start, templateEndIndex - (start - input.data));
+
+        call_hook(buffer, "comment");
+    }
 
     seek(templateEndIndex);
     advance(opts->templates.commentEnd.size());
@@ -227,6 +248,10 @@ void Compiler::compile_conditional() {
 
     write_escaped_content(buffer, start, current, endInfo.escapes);
     localize_all_iterators(buffer);
+
+    if (!opts->compileHook.IsEmpty()) {
+        call_hook(buffer, "conditional");
+    }
 
     auto oshStart = output.size;
 
@@ -271,6 +296,10 @@ void Compiler::compile_else_conditional() {
 
     write_escaped_content(buffer, start, current, endInfo.escapes);
     localize_all_iterators(buffer);
+
+    if (!opts->compileHook.IsEmpty()) {
+        call_hook(buffer, "else_conditional");
+    }
 
     auto oshStart = output.size;
 
@@ -388,10 +417,26 @@ void Compiler::compile_loop() {
         ++current;
     }
 
+    Buffer iterableBuffer;
+    ConstBuffer finalIterableBuffer(leftStart, leftLength);
+
+    if (!opts->compileHook.IsEmpty()) {
+        iterableBuffer.write(leftStart, leftEnd - leftStart);
+
+        call_hook(iterableBuffer, "for_iterator");
+
+        finalIterableBuffer.data = iterableBuffer.data;
+        finalIterableBuffer.size = iterableBuffer.size;
+    }
+
     Buffer buffer;
 
     write_escaped_content(buffer, rightStart, current, endInfo.escapes);
     localize_all_iterators(buffer);
+
+    if (!opts->compileHook.IsEmpty()) {
+        call_hook(buffer, "for_iterable");
+    }
 
     const uint8_t* oshStartMarker;
     size_t         oshStartMarkerLength;
@@ -411,7 +456,7 @@ void Compiler::compile_loop() {
 
     Buffer tempBuffer;
 
-    tempBuffer.write_bdp_value(BDP832, leftStart, leftLength);
+    tempBuffer.write_bdp_value(BDP832, finalIterableBuffer.data, finalIterableBuffer.size);
     tempBuffer.write_bdp_value(BDP832, buffer.data, buffer.size);
 
     output.write_bdp_value(BDP832, tempBuffer.data, tempBuffer.size);
@@ -523,6 +568,18 @@ void Compiler::compile_component() {
     if(rightStart == leftStart && endInfo.escapes.size() > 0) {
         error(path, "Unexpected escape character(s) before end", "escape characters can only exist after the separator, which was not found; delete all escape characters", (selfStart) - input.data);
     }
+
+    Buffer pathBuffer;
+    ConstBuffer finalPathBuffer(leftStart, leftEnd - leftStart);
+
+    if (!opts->compileHook.IsEmpty()) {
+        pathBuffer.write(leftStart, leftEnd - leftStart);
+
+        call_hook(pathBuffer, "component_path");
+
+        finalPathBuffer.data = pathBuffer.data;
+        finalPathBuffer.size = pathBuffer.size;
+    }
     
     Buffer buffer;
 
@@ -530,6 +587,10 @@ void Compiler::compile_component() {
     if(rightStart != leftStart) {
         write_escaped_content(buffer, rightStart, rightEnd, endInfo.escapes);
         localize_all_iterators(buffer);
+
+        if (!opts->compileHook.IsEmpty()) {
+            call_hook(buffer, "component_context");
+        }
     }
 
     size_t oshStart = output.size;
@@ -538,7 +599,7 @@ void Compiler::compile_component() {
 
     output.write_bdp_name(BDP832, OSH_TEMPLATE_COMPONENT_MARKER, OSH_TEMPLATE_COMPONENT_LENGTH);
 
-    std::string absolutePath = path::append_or_absolute(wd, reinterpret_cast<const char*>(leftStart), leftEnd - leftStart);
+    std::string absolutePath = path::append_or_absolute(wd, reinterpret_cast<const char*>(finalPathBuffer.data), finalPathBuffer.size);
 
     Buffer tempBuffer;
     tempBuffer.write_bdp_value(BDP832, reinterpret_cast<const uint8_t*>(absolutePath.c_str()), absolutePath.size());
@@ -583,6 +644,10 @@ void Compiler::compile_void() {
 
     write_escaped_content(buffer, start, current, endInfo.escapes);
     localize_all_iterators(buffer);
+
+    if (!opts->compileHook.IsEmpty()) {
+        call_hook(buffer, "void");
+    }
 
     LOG_DEBUG("Writing void template as BDP832 pair %zu -> %zu...", start - input.data, current - input.data);
     output.write_bdp_pair(BDP832, OSH_TEMPLATE_VOID_MARKER, OSH_TEMPLATE_VOID_LENGTH, buffer.data, buffer.size);
@@ -723,6 +788,10 @@ void Compiler::compile_normal() {
         write_escaped_content(buffer, start, current, endInfo.escapes);
         localize_all_iterators(buffer);
 
+        if (!opts->compileHook.IsEmpty()) {
+            call_hook(buffer, "template");
+        }
+
         LOG_DEBUG("Writing template as BDP832 pair %zu -> %zu...", start - input.data, current - input.data);
         output.write_bdp_pair(BDP832, OSH_TEMPLATE_MARKER, OSH_TEMPLATE_LENGTH, buffer.data, buffer.size);
         LOG_DEBUG("done\n");
@@ -734,24 +803,31 @@ void Compiler::compile_normal() {
     advance(opts->templates.end.size());
 }
 
-void Eryn::Engine::compile(const char* path) {
+void Compiler::call_hook(Buffer& buffer, const char* origin) {
+    LOG_DEBUG("Running hook");
+    if (!Eryn::Bridge::call_hook(bridge, opts->compileHook, buffer, origin)) {
+        error(path, "Hook returned invalid value", "the compile hook should return Buffer, String, Null or Undefined", start - input.data);
+    }
+}
+
+void Eryn::Engine::compile(BridgeCompileData bridge, const char* path) {
     LOG_DEBUG("===> Compiling file '%s'", path);
 
-    cache.add(path, std::move(compile_file(path)));
+    cache.add(path, std::move(compile_file(bridge, path)));
 
     LOG_DEBUG("===> Done\n");
 }
 
-void Eryn::Engine::compile_string(const char* alias, const char* str) {
+void Eryn::Engine::compile_string(BridgeCompileData bridge, const char* alias, const char* str) {
     LOG_DEBUG("===> Compiling string '%s'", alias);
 
     ConstBuffer input(str, strlen(str));
-    cache.add(alias, compile_bytes(input, "", alias));
+    cache.add(alias, compile_bytes(bridge, input, "", alias));
 
     LOG_DEBUG("===> Done\n");
 }
 
-void Eryn::Engine::compile_dir(const char* path, std::vector<string> filters) {
+void Eryn::Engine::compile_dir(BridgeCompileData bridge, const char* path, std::vector<string> filters) {
     LOG_DEBUG("===> Compiling directory '%s'", path);
 
     FilterInfo info;
@@ -786,14 +862,14 @@ void Eryn::Engine::compile_dir(const char* path, std::vector<string> filters) {
         }
     }
 
-    compile_dir(path, "", info);
+    compile_dir(bridge, path, "", info);
 
     LOG_DEBUG("===> Done\n");
 }
 
 // 'rel' is relative to the working directory, and is used for filtering
 // 'path' is the full path and is used to read the directory
-void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterInfo& info) {
+void Eryn::Engine::compile_dir(BridgeCompileData bridge, const char* path, const char* rel, const FilterInfo& info) {
     DIR* dir;
     struct dirent* entry;
 
@@ -831,7 +907,7 @@ void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterIn
 
                 if(info.is_file_filtered(relativePath.get())) {
                     try {
-                        compile(absolute);
+                        compile(bridge, absolute);
 
                         if(opts.flags.debugDumpOSH) {
                             FILE* dump = fopen((absolute + std::string(".osh")).c_str(), "wb");
@@ -867,7 +943,7 @@ void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterIn
                     LOG_DEBUG("Scanning: %s\n", newRel.get());
 
                     strcpy(absoluteEnd, entry->d_name);
-                    compile_dir(absolute, newRel.get(), info);
+                    compile_dir(bridge, absolute, newRel.get(), info);
                 } else LOG_DEBUG("Ignoring: %s\n", newRel.get());
             }
         }
@@ -875,7 +951,7 @@ void Eryn::Engine::compile_dir(const char* path, const char* rel, const FilterIn
     }
 }
 
-ConstBuffer Eryn::Engine::compile_file(const char* path) {
+ConstBuffer Eryn::Engine::compile_file(BridgeCompileData bridge, const char* path) {
     FILE* input = fopen(path, "rb");
 
     if(input == NULL) {
@@ -899,13 +975,13 @@ ConstBuffer Eryn::Engine::compile_file(const char* path) {
     ConstBuffer inputBuffer(inputPtr.get(), inputSize);
     string wd(path, path::dir_end_index(path, strlen(path)));
 
-    return compile_bytes(inputBuffer, wd.c_str(), path);
+    return compile_bytes(bridge, inputBuffer, wd.c_str(), path);
 }
 
 // 'wd' is the working directory, which is necessary to find components
 // 'path' is either the full path of the source file, or the alias of the source string
-ConstBuffer Eryn::Engine::compile_bytes(ConstBuffer& input, const char* wd, const char* path) {
-    Compiler compiler(&opts, input, wd, path);
+ConstBuffer Eryn::Engine::compile_bytes(BridgeCompileData bridge, ConstBuffer& input, const char* wd, const char* path) {
+    Compiler compiler(&opts, bridge, input, wd, path);
 
     compiler.rebase((size_t) 0);
     compiler.seek(input.find(opts.templates.start));
@@ -1023,6 +1099,21 @@ TemplateEndInfo Compiler::find_template_end(const uint8_t* from) {
 
         escapes.push_back(from + index - 1);
         index = input.find_index((from + index + 1) - input.data, opts->templates.end) - (from - input.data);
+    }
+
+    return { std::move(escapes), index };
+}
+
+TemplateEndInfo Compiler::find_comment_template_end(const uint8_t* from) {
+    size_t index = input.find_index(from - input.data, opts->templates.commentEnd) - (from - input.data);
+
+    std::vector<const uint8_t*> escapes;
+
+    while((from + index) > input.data && (from + index) < input.end() && *(from + index - 1) == opts->templates.escape) {
+        LOG_DEBUG("Detected template escape at %zu", from + index - 1 - input.data);
+
+        escapes.push_back(from + index - 1);
+        index = input.find_index((from + index + 1) - input.data, opts->templates.commentEnd) - (from - input.data);
     }
 
     return { std::move(escapes), index };

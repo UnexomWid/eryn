@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <memory>
 #include <unordered_map>
 
 #include "../def/warnings.dxx"
@@ -20,8 +21,8 @@ using std::string;
 
 namespace Eryn {
 enum class EngineMode {
-    NORMAL,  // Normal speed: the engine is not limited in any way.
-    STRICT   // Full speed: the engine is limited to basic content inside the templates.
+    NORMAL, // Normal speed: the engine is not limited in any way.
+    STRICT  // Full speed: the engine is limited to basic content inside the templates.
 };
 
 struct Options {
@@ -39,7 +40,7 @@ struct Options {
     } flags;
 
     EngineMode mode;
-    string workingDir;
+    string     workingDir;
 
     struct {
         char escape;
@@ -63,13 +64,15 @@ struct Options {
         string componentSelf;
     } templates;
 
+    BridgeHook compileHook;
+
     Options();
 };
 
 class Cache {
     std::unordered_map<string, ConstBuffer> entries;
 
-  public:
+    public:
     ~Cache();
 
     void         add(const string& key, ConstBuffer&& value);
@@ -78,25 +81,25 @@ class Cache {
 };
 
 class Engine {
-  public:
+    public:
     Options opts;
     Cache   cache;
 
-    void compile(const char* path);
-    void compile_string(const char* alias, const char* str);
-    void compile_dir(const char* path, std::vector<string> filters);
+    void compile(BridgeCompileData bridge, const char* path);
+    void compile_string(BridgeCompileData bridge, const char* alias, const char* str);
+    void compile_dir(BridgeCompileData bridge, const char* path, std::vector<string> filters);
 
     ConstBuffer render(Bridge& bridge, const char* path);
     ConstBuffer render_string(Bridge& bridge, const char* alias);
 
-  private:
-    void        compile_dir(const char* path, const char* rel, const FilterInfo& info);
-    ConstBuffer compile_file(const char* path);
-    ConstBuffer compile_bytes(ConstBuffer& inputBuffer, const char* wd, const char* path = "");
+    private:
+    void        compile_dir(BridgeCompileData bridge, const char* path, const char* rel, const FilterInfo& info);
+    ConstBuffer compile_file(BridgeCompileData bridge, const char* path);
+    ConstBuffer compile_bytes(BridgeCompileData bridge, ConstBuffer& inputBuffer, const char* wd, const char* path = "");
 };
 
 class InternalException : public std::exception {
-  public:
+    public:
     string message;
     string function;
     int    line;
@@ -107,34 +110,34 @@ class InternalException : public std::exception {
 };
 
 class CompilationException : public std::exception {
-  public:
-      string file;
-      string msg;
-      string description;
-      Chunk chunk;
+    public:
+    string file;
+    string msg;
+    string description;
+    Chunk  chunk;
 
-      string message;
+    string message;
 
-      CompilationException(const char* file, const char* msg, const char* description);
-      CompilationException(const char* file, const char* msg, const char* description, const Chunk& chunk);
+    CompilationException(const char* file, const char* msg, const char* description);
+    CompilationException(const char* file, const char* msg, const char* description, const Chunk& chunk);
 
-      const char* what() const noexcept override;
+    const char* what() const noexcept override;
 };
 
 class RenderingException : public std::exception {
-  public:
-      string msg;
-      string description;
-      string path;
-      ConstBuffer token;
+    public:
+    string      msg;
+    string      description;
+    string      path;
+    ConstBuffer token;
 
-      string message;
+    string message;
 
-      RenderingException(const char* msg, const char* description);
-      RenderingException(const char* msg, const char* description, const char* path);
-      RenderingException(const char* msg, const char* description, ConstBuffer token);
-      RenderingException(const char* msg, const char* description, const char* path, ConstBuffer token);
+    RenderingException(const char* msg, const char* description);
+    RenderingException(const char* msg, const char* description, const char* path);
+    RenderingException(const char* msg, const char* description, ConstBuffer token);
+    RenderingException(const char* msg, const char* description, const char* path, ConstBuffer token);
 
-      const char* what() const noexcept override;
+    const char* what() const noexcept override;
 };
-}
+} // namespace Eryn

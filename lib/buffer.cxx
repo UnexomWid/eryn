@@ -65,6 +65,10 @@ Buffer& Buffer::operator=(Buffer&& buffer) {
     return *this;
 }
 
+void Buffer::clear() {
+    size = 0;
+}
+
 void Buffer::write(uint8_t byte) {
     write(&byte, sizeof(uint8_t));
 }

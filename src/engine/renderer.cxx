@@ -135,14 +135,14 @@ ConstBuffer Eryn::Engine::render(Eryn::Bridge& bridge, const char* path) {
     std::unordered_set<std::string> recompiled;
 
     if(opts.flags.bypassCache) {
-        compile(path);
+        compile(bridge.to_compile_data(), path);
         recompiled.insert(std::string(path));
     } else if(!cache.has(path)) {
         if(opts.flags.throwOnMissingEntry) {
             throw Eryn::RenderingException("Item does not exist in cache", "did you forget to compile this?", path);
         }
 
-        compile(path);
+        compile(bridge.to_compile_data(), path);
     }
 
     Buffer output;
@@ -207,14 +207,14 @@ void Renderer::render_component(ConstBuffer component, const Buffer& contentBuff
         if(opts.flags.bypassCache) {
             // Don't recompile the same file twice.
             if(recompiled.find(path) == recompiled.end()) {
-                engine.compile(path.c_str());
+                engine.compile(bridge.to_compile_data(), path.c_str());
                 recompiled.insert(path);
             }
         } else if(!cache.has(path)) {
             if(opts.flags.throwOnMissingEntry) {
                 error(("Item '" + path + "' does not exist in cache").c_str(), "did you forget to compile this?");
             }
-            engine.compile(path.c_str());
+            engine.compile(bridge.to_compile_data(), path.c_str());
         }
     }
 

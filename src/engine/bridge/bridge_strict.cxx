@@ -1,3 +1,5 @@
+#include <initializer_list>
+
 #include "bridge.hxx"
 #include "../engine.hxx"
 
@@ -13,7 +15,7 @@ static std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-static Napi::Value call_eval(Eryn::BridgeData& data, const Napi::String& script) {
+static Napi::Value call_eval(Eryn::BridgeRenderData& data, const Napi::String& script) {
     return data.eval.Call(std::initializer_list<napi_value>({
         script,
         data.context,
@@ -22,14 +24,14 @@ static Napi::Value call_eval(Eryn::BridgeData& data, const Napi::String& script)
     }));
 }
 
-static Napi::Value call_clone(Eryn::BridgeData& data, const Napi::Value& original) {
+static Napi::Value call_clone(Eryn::BridgeRenderData& data, const Napi::Value& original) {
     return data.clone.Call(std::initializer_list<napi_value>({
         original
     }));
 }
 
 // Evaluates a piece of script to a Napi::Value.
-static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
+static Napi::Value eval(Eryn::BridgeRenderData& data, ConstBuffer script) {
     Napi::Value baseValue;
     size_t accessorIndex;
 
@@ -94,7 +96,7 @@ static Napi::Value eval(Eryn::BridgeData& data, ConstBuffer script) {
     return base.Get(field);
 }
 
-Eryn::StrictBridge::StrictBridge(Eryn::BridgeData&& data) : Bridge(std::forward<Eryn::BridgeData>(data)) { }
+Eryn::StrictBridge::StrictBridge(Eryn::BridgeRenderData&& data) : Bridge(std::forward<Eryn::BridgeRenderData>(data)) { }
 
 void Eryn::StrictBridge::evalTemplate(ConstBuffer input, Buffer& output) {
     Napi::Value result;

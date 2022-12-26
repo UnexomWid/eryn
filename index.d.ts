@@ -1,6 +1,8 @@
 // Type definitions for eryn 0.3
 // Definitions by UnexomWid <https://uw.exom.dev>
 
+type Hook = (content: Buffer, origin: string) => Buffer;
+
 interface ErynOptions {
     bypassCache?:              boolean,
     throwOnEmptyContent?:      boolean,
@@ -29,7 +31,8 @@ interface ErynOptions {
     loopReverse?:              string,
     componentStart?:           string,
     componentSeparator?:       string,
-    componentSelf?:            string
+    componentSelf?:            string,
+    compileHook?:              Hook
 }
 
 declare class ErynBinding {

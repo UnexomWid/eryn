@@ -1,3 +1,5 @@
+#include <initializer_list>
+
 #include "bridge.hxx"
 #include "../engine.hxx"
 
@@ -12,7 +14,7 @@ static std::string stringify(const Napi::Env& env, const Napi::Object& object) {
     return stringify.Call(json, { object }).As<Napi::String>().Utf8Value();
 }
 
-static Napi::Value call_eval(Eryn::BridgeData& data, const Napi::String& script) {
+static Napi::Value call_eval(Eryn::BridgeRenderData& data, const Napi::String& script) {
     return data.eval.Call(std::initializer_list<napi_value>({
         script,
         data.context,
@@ -21,7 +23,7 @@ static Napi::Value call_eval(Eryn::BridgeData& data, const Napi::String& script)
     }));
 }
 
-static Napi::Value call_eval(Eryn::BridgeData& data, ConstBuffer script) {
+static Napi::Value call_eval(Eryn::BridgeRenderData& data, ConstBuffer script) {
     std::string str = std::string(reinterpret_cast<const char*>(script.data), script.size);
     
     // If the user writes {test: "Test"}, this should be treated as an expression.
@@ -35,13 +37,13 @@ static Napi::Value call_eval(Eryn::BridgeData& data, ConstBuffer script) {
     return call_eval(data, Napi::String::New(data.env, str));
 }
 
-static Napi::Value call_clone(Eryn::BridgeData& data, const Napi::Value& original) {
+static Napi::Value call_clone(Eryn::BridgeRenderData& data, const Napi::Value& original) {
     return data.clone.Call(std::initializer_list<napi_value>({
         original
     }));
 }
 
-Eryn::NormalBridge::NormalBridge(Eryn::BridgeData&& data) : Bridge(std::forward<Eryn::BridgeData>(data)) { }
+Eryn::NormalBridge::NormalBridge(Eryn::BridgeRenderData&& data) : Bridge(std::forward<Eryn::BridgeRenderData>(data)) { }
 
 void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
     Napi::Value result;

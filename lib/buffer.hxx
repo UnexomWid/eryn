@@ -25,6 +25,7 @@ struct Buffer {
     Buffer& operator=(const Buffer& buffer);
     Buffer& operator=(Buffer&& buffer);
 
+    void clear();
     void write(uint8_t byte);
     void write(const uint8_t* bytes, size_t amount);
     void write(const ConstBuffer& buffer);
