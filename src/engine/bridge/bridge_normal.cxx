@@ -93,6 +93,16 @@ void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
         auto ptr = reinterpret_cast<const uint8_t*>(str.c_str());
 
         output.write(ptr, str.size());
+    } else if(result.IsBoolean()) {
+        LOG_DEBUG("    Type: bool");
+
+        auto val = result.ToBoolean().Value();
+
+        if (val) {
+            output.write(reinterpret_cast<const uint8_t*>("true"), sizeof("true") - 1);
+        } else {
+            output.write(reinterpret_cast<const uint8_t*>("false"), sizeof("false") - 1);
+        }
     } else {
         throw Eryn::RenderingException("Unsupported template return type", "must be String, Number, Object, Array, Buffer, null or undefined", input);
     }
