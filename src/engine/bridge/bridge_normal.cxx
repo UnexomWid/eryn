@@ -104,7 +104,7 @@ void Eryn::NormalBridge::evalTemplate(ConstBuffer input, Buffer& output) {
             output.write(reinterpret_cast<const uint8_t*>("false"), sizeof("false") - 1);
         }
     } else {
-        throw Eryn::RenderingException("Unsupported template return type", "must be String, Number, Object, Array, Buffer, null or undefined", input);
+        throw Eryn::RenderingException("Unsupported template return type", "must be string, number, boolean, Object, Array, Buffer, null or undefined", input);
     }
 }
 
