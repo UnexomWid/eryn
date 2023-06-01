@@ -61,7 +61,7 @@ class ErynBinding {
         try {
             callback(null, this.binding.render(path, context));
         } catch (error) {
-            callback(error);
+            callback(error, null);
         }
     }
 
